@@ -22,7 +22,6 @@ def get_contact_info(data, section_name, id_type, data_key):
         return name, address1, address2
 
 def create_invoice(data, invoice_number):
-    print("Loaded data:", data)  # Add this line to print the loaded data
     invoice_data = {
         'invoice_number': format_invoice_number(invoice_number),
         'bill_to_name': '',
@@ -43,14 +42,16 @@ def create_invoice(data, invoice_number):
     invoice_data['send_to_name'], invoice_data['send_to_address1'], invoice_data['send_to_address2'] = get_contact_info(data, 'Send To', 'employee', 'employees')
     
     # Date of Service
-    invoice_data['date_of_service'] = safe_input("Date of Sale or Service (YYYY-MM-DD, leave blank for today): ", parse_date, default_value=date.today().strftime('%B %d, %Y'))
+    date_input = safe_input("Date of Sale or Service (YYYY-MM-DD, leave blank for today): ", str, default_value=date.today().strftime('%Y-%m-%d'))
+    invoice_data['date_of_service'] = parse_date(date_input)
     
     # Items
     invoice_data['items'], invoice_data['subtotal'] = get_items()
     
     # Calculate totals
-    invoice_data['tax'] = safe_input("Enter tax percentage (default is 0): ", float, default_value=0)
-    invoice_data['total'] = calculate_totals(invoice_data['subtotal'], invoice_data['tax'])
+    tax_percentage = safe_input("Enter tax percentage (default is 0): ", float, default_value=0.0)
+    invoice_data['tax'] = tax_percentage
+    invoice_data['total'] = calculate_totals(invoice_data['subtotal'], tax_percentage)
     
     return invoice_data
 
@@ -66,14 +67,15 @@ def get_items():
         quantity = safe_input(f"Enter quantity for '{description}': ", int)
         amount = safe_input(f"Enter amount for '{description}': ", float)
         
-        sub_items = []
+        item = {'description': description, 'quantity': quantity, 'amount': amount, 'sub_items': []}
+        
         while True:
             sub_item = input(f"Enter sub-item for '{description}' (or leave empty to finish): ")
             if not sub_item:
                 break
-            sub_items.append(sub_item)
+            item['sub_items'].append(sub_item)
         
-        items.append({'description': description, 'quantity': quantity, 'amount': amount, 'sub_items': sub_items})
+        items.append(item)
         subtotal += quantity * amount
     
     return items, subtotal

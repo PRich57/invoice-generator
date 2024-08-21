@@ -5,12 +5,23 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from modules.config_manager import config
 
+
 PAGE_SIZES = {
     'A4': A4,
     'LETTER': LETTER,
     'LEGAL': LEGAL
 }
 
+"""
+Generate a PDF invoice from the given data.
+
+Args:
+    invoice_data (dict): The invoice data to be used for generating the PDF.
+    output_file (str): The name of the output PDF file.
+    template (str, optional): The name of the template to use. Defaults to 'default'.
+    template_config (dict, optional): Additional configuration for the template. Defaults to an empty dictionary.
+    styles (dict, optional): Additional styles for the PDF. Defaults to an empty dictionary.
+"""
 def generate_pdf(invoice_data, output_file, template='default'):
     # Get configuration values
     output_dir = config.get('paths', 'output_directory', default='data/invoices')
