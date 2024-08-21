@@ -1,0 +1,62 @@
+{
+    "invoice_number": "#005",
+    "bill_to_name": "Cohen Denver Airport, LLC",
+    "bill_to_address1": "",
+    "bill_to_address2": "",
+    "send_to_name": "Pete Richards",
+    "send_to_address1": "2720 S Gilpin St",
+    "send_to_address2": "Denver, CO 80210",
+    "date_of_service": "August 20, 2024",
+    "items": [
+        {
+            "description": "All Phase on-site",
+            "quantity": 0,
+            "amount": 0.0,
+            "sub_items": [
+                "Planting trees on Biscay and 90th",
+                "Appeared to be clearing weeds and grass on 95th to start planting trees there as well"
+            ]
+        },
+        {
+            "description": "Noted prairie dog at dirt road that bifurcates the property",
+            "quantity": 0,
+            "amount": 0.0,
+            "sub_items": [
+                "I've been made aware that these can cause problems for development so I will monitor the property and report back if I discover more"
+            ]
+        },
+        {
+            "description": "No change at 4th sign location",
+            "quantity": 0,
+            "amount": 0.0,
+            "sub_items": [
+                "I'll provide further updates after they break ground"
+            ]
+        },
+        {
+            "description": "Trash cleanup in progress",
+            "quantity": 0,
+            "amount": 0.0,
+            "sub_items": [
+                "Mess left across from the dump on Monday is being tended to"
+            ]
+        },
+        {
+            "description": "Substantial sunflower growth on corner of 96th and Picadilly",
+            "quantity": 0,
+            "amount": 0.0,
+            "sub_items": [
+                "This area needs tended to ASAP"
+            ]
+        },
+        {
+            "description": "Services rendered",
+            "quantity": 1,
+            "amount": 500.0,
+            "sub_items": []
+        }
+    ],
+    "subtotal": 500.0,
+    "tax": 0,
+    "total": 500.0
+}

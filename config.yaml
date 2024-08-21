@@ -1,0 +1,39 @@
+# Company Information
+company:
+  name: "Your Company Name"
+  address: "123 Business St, City, State, ZIP"
+  phone: "(123) 456-7890"
+  email: "contact@yourcompany.com"
+
+# Invoice Defaults
+invoice:
+  currency: "$"
+  tax_rate: 0.0
+  payment_terms: " "
+
+# PDF Styling
+styling:
+  colors:
+    primary: "#000000"
+    secondary: "#888888"
+    highlight: "#4A86E8"
+  fonts:
+    main: "Helvetica"
+    accent: "Helvetica-Bold"
+  font_sizes:
+    title: 20
+    invoice_number: 14
+    section_header: 10
+    normal_text: 9
+
+# Layout
+layout:
+  page_size: "A4"
+  margin_top: 0.3
+  margin_right: 0.5
+  margin_bottom: 0.5
+  margin_left: 0.5
+
+# File paths
+paths:
+  output_directory: "data/invoices"
