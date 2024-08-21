@@ -49,9 +49,9 @@ def create_invoice(data, invoice_number):
     invoice_data['items'], invoice_data['subtotal'] = get_items()
     
     # Calculate totals
-    tax_percentage = safe_input("Enter tax percentage (default is 0): ", float, default_value=0.0)
-    invoice_data['tax'] = tax_percentage
-    invoice_data['total'] = calculate_totals(invoice_data['subtotal'], tax_percentage)
+    invoice_data['tax_percentage'] = safe_input("Enter tax percentage (default is 0): ", float, default_value=0.0)
+    invoice_data['total'] = calculate_totals(invoice_data['subtotal'], invoice_data['tax_percentage'])
+    invoice_data['tax'] = invoice_data['total'] - invoice_data['subtotal']
     
     return invoice_data
 

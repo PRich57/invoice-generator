@@ -2,7 +2,7 @@ templates:
   default:
     colors:
       primary: "#000000"
-      secondary: "#888888"
+      secondary: "#555555"
       accent: "#444444"
     fonts:
       main: "Helvetica"
@@ -10,7 +10,7 @@ templates:
     font_sizes:
       title: 20
       invoice_number: 14
-      section_header: 10
+      section_header: 8
       normal_text: 9
     layout:
       page_size: "A4"
@@ -25,8 +25,8 @@ templates:
       secondary: "#7F8C8D"
       accent: "#3498DB"
     fonts:
-      main: "Arial"
-      accent: "Arial-Bold"
+      main: "Helvetica"
+      accent: "Helvetica-Bold"
     font_sizes:
       title: 24
       invoice_number: 16

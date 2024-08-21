@@ -25,6 +25,7 @@ class TestPDFGenerator(unittest.TestCase):
                 {'description': 'Item 2', 'quantity': 1, 'amount': 25.00, 'sub_items': []}
             ],
             'subtotal': 45.00,
+            'tax_percentage': 10.00,
             'tax': 4.50,
             'total': 49.50
         }

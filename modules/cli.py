@@ -1,8 +1,8 @@
 import click
-import yaml
 import json
+import yaml
 from modules.data_manager import load_data, save_data
-from modules.invoice import create_invoice, edit_invoice, format_invoice_number
+from modules.invoice import create_invoice, format_invoice_number
 from modules.pdf_generator import generate_pdf
 from modules.config_manager import ConfigManager
 from modules.preview import preview_invoice
@@ -34,8 +34,10 @@ def generate_invoice(output, invoice_number, template, preview):
     # Create the invoice data
     invoice_data = create_invoice(data, invoice_number)
     
+    # Add template information to invoice_data
+    invoice_data['template'] = template
+    
     if preview:
-        # Generate a preview (you'll need to implement this function)
         preview_invoice(invoice_data, template)
         if not click.confirm('Do you want to generate the final invoice?'):
             return
@@ -51,24 +53,40 @@ def generate_invoice(output, invoice_number, template, preview):
 @click.command()
 @click.option('--input', prompt="Enter the JSON file path", help="Path to the JSON file to load invoice data from.")
 @click.option('--output', default=None, help='Output file name (without extension).')
-@click.option('--template', default='default', help='Template to use for the invoice.')
+@click.option('--template', default=None, help='Template to use for the invoice. If not specified, uses the original template.')
 def regenerate_invoice(input, output, template):
     """Regenerate an invoice from saved JSON data"""
     config_manager = ConfigManager()
     templates = config_manager.get_template('templates', default={})
     
+    invoice_data = load_invoice_from_json(input)
+    
+    # Use the original template if no new template is specified
+    if template is None:
+        template = invoice_data.get('template', 'default')
+    
     if template not in templates:
         click.echo(f"Template '{template}' not found. Using default template.")
         template = 'default'
-    
-    invoice_data = load_invoice_from_json(input)
     
     if not output:
         output = input.split('/')[-1].split('.')[0]  # Use the input filename without extension
     
     # Generate the PDF
     generate_pdf(invoice_data, output, template)
-    click.echo(f"Invoice '{output}.pdf' regenerated successfully!")
+    click.echo(f"Invoice '{output}.pdf' regenerated successfully using the '{template}' template!")
+
+def load_invoice_from_json(file_path):
+    """Load invoice data from a JSON file"""
+    try:
+        with open(file_path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        click.echo(f"Error: File '{file_path}' not found.")
+        exit(1)
+    except json.JSONDecodeError:
+        click.echo(f"Error: Invalid JSON in file '{file_path}'.")
+        exit(1)
     
 @click.command()
 @click.argument('template_name')

@@ -1,7 +1,7 @@
 import os
 import sys
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from modules.invoice import (calculate_totals, create_invoice,
                              format_invoice_number, get_contact_info,
@@ -25,7 +25,7 @@ class TestInvoice(unittest.TestCase):
             ('Test Company', '123 Test St', 'Test City, TS 12345'),
             ('John Doe', '456 Employee St', 'Work City, WC 67890')
         ]
-        mock_get_items.return_value = ([], 0.0)
+        mock_get_items.return_value = ([], 100.0)
         mock_safe_input.side_effect = ['2024-08-21', 10.0]
 
         result = create_invoice(self.sample_data, '#001')
@@ -34,9 +34,10 @@ class TestInvoice(unittest.TestCase):
         self.assertEqual(result['bill_to_name'], 'Test Company')
         self.assertEqual(result['send_to_name'], 'John Doe')
         self.assertEqual(result['date_of_service'], 'August 21, 2024')
-        self.assertEqual(result['subtotal'], 0.0)
+        self.assertEqual(result['subtotal'], 100.0)
+        self.assertEqual(result['tax_percentage'], 10.0)
         self.assertEqual(result['tax'], 10.0)
-        self.assertEqual(result['total'], 0.0)
+        self.assertEqual(result['total'], 110.0)
 
     @patch('builtins.input')
     def test_get_contact_info(self, mock_input):

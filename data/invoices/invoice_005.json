@@ -1,52 +1,58 @@
 {
     "invoice_number": "#005",
     "bill_to_name": "Cohen Denver Airport, LLC",
-    "bill_to_address1": "2720 S Gilpin St",
-    "bill_to_address2": "Denver, CO 80210",
+    "bill_to_address1": "",
+    "bill_to_address2": "",
     "send_to_name": "Pete Richards",
     "send_to_address1": "2720 S Gilpin St",
     "send_to_address2": "Denver, CO 80210",
-    "date_of_service": "August 20, 2024",
+    "date_of_service": "August 17, 2024",
     "items": [
         {
-            "description": "All Phase on-site",
-            "quantity": 0,
+            "description": "Drove entire property",
+            "quantity": 1,
             "amount": 0.0,
             "sub_items": [
-                "Planting trees on Biscay and 90th",
-                "Appeared to be clearing weeds and grass on 95th to start planting trees there as well"
+                "E 96th Ave",
+                "Picadilly Rd",
+                "E 88th Ave",
+                "E470 Greenway Trail",
+                "Tower Rd",
+                "Legato Pkwy",
+                "Argonne St",
+                "Biscay St",
+                "E 90th Ave",
+                "E 94th Ave",
+                "E 93rd Pl",
+                "Cathay Ct"
             ]
         },
         {
-            "description": "Noted prairie dog at dirt road that bifurcates the property",
-            "quantity": 0,
+            "description": "Inspected new trees on Argonne St",
+            "quantity": 1,
             "amount": 0.0,
             "sub_items": [
-                "I've been made aware that these can cause problems for development so I will monitor the property and report back if I discover more"
+                "Trees have been planted as expected",
+                "There is a section of Argonne St north of Legato Pkwy that doesn't have trees on either side, but this appeared to be intentional"
             ]
         },
         {
-            "description": "No change at 4th sign location",
-            "quantity": 0,
+            "description": "Inspected storage lot off E 96th Ave",
+            "quantity": 1,
             "amount": 0.0,
             "sub_items": [
-                "I'll provide further updates after they break ground"
+                "It has been cleaned",
+                "There are still some pvc pipes left out, but they may be too long to fit inside the storage containers",
+                "Sent photo of cleaned lot to Brad"
             ]
         },
         {
-            "description": "Trash cleanup in progress",
-            "quantity": 0,
+            "description": "Trash assessment",
+            "quantity": 1,
             "amount": 0.0,
             "sub_items": [
-                "Mess left across from the dump on Monday is being tended to"
-            ]
-        },
-        {
-            "description": "Substantial sunflower growth on corner of 96th and Picadilly",
-            "quantity": 0,
-            "amount": 0.0,
-            "sub_items": [
-                "This area needs tended to ASAP"
+                "Trash across from the dump has been cleaned",
+                "Trash cleaned in previously reported areas"
             ]
         },
         {
@@ -57,6 +63,8 @@
         }
     ],
     "subtotal": 500.0,
-    "tax": 0,
-    "total": 500.0
+    "tax": 0.0,
+    "total": 500.0,
+    "tax_percentage": 0.0,
+    "template": "default"
 }
