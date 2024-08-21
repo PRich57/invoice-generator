@@ -1,29 +1,30 @@
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, LETTER, LEGAL
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
 from modules.config_manager import config
 
-# Define a dictionary to map string values to ReportLab page sizes
 PAGE_SIZES = {
     'A4': A4,
     'LETTER': LETTER,
     'LEGAL': LEGAL
 }
 
-def generate_pdf(invoice_data, output_file):
+def generate_pdf(invoice_data, output_file, template='default'):
     # Get configuration values
     output_dir = config.get('paths', 'output_directory', default='data/invoices')
     path = f"{output_dir}/{output_file}.pdf"
     
-    page_size_str = config.get('layout', 'page_size', default='A4')
-    page_size = PAGE_SIZES.get(page_size_str.upper(), A4)  # Default to A4 if not found
+    template_config = config.get_template('templates', template, default={})
     
-    margin_top = config.get('layout', 'margin_top', default=0.3)
-    margin_right = config.get('layout', 'margin_right', default=0.5)
-    margin_bottom = config.get('layout', 'margin_bottom', default=0.5)
-    margin_left = config.get('layout', 'margin_left', default=0.5)
+    page_size_str = template_config.get('layout', {}).get('page_size', 'A4')
+    page_size = PAGE_SIZES.get(page_size_str.upper(), A4)
+    
+    margin_top = template_config.get('layout', {}).get('margin_top', 0.3)
+    margin_right = template_config.get('layout', {}).get('margin_right', 0.5)
+    margin_bottom = template_config.get('layout', {}).get('margin_bottom', 0.5)
+    margin_left = template_config.get('layout', {}).get('margin_left', 0.5)
     
     doc = SimpleDocTemplate(path, pagesize=page_size, 
                             topMargin=margin_top*inch, 
@@ -33,37 +34,52 @@ def generate_pdf(invoice_data, output_file):
     
     styles = getSampleStyleSheet()
 
+    # Use template configuration for colors
+    primary_color = colors.HexColor(template_config.get('colors', {}).get('primary', "#000000"))
+    secondary_color = colors.HexColor(template_config.get('colors', {}).get('secondary', "#888888"))
+    accent_color = colors.HexColor(template_config.get('colors', {}).get('accent', "#4A86E8"))
+
+    # Use template configuration for fonts
+    main_font = template_config.get('fonts', {}).get('main', "Helvetica")
+    accent_font = template_config.get('fonts', {}).get('accent', "Helvetica-Bold")
+
     # Custom styles
     styles.add(ParagraphStyle(name='InvoiceTitle', 
                               parent=styles['Title'], 
-                              fontSize=config.get('styling', 'font_sizes', 'title', default=20), 
+                              fontName=accent_font,
+                              fontSize=template_config.get('font_sizes', {}).get('title', 20), 
+                              textColor=primary_color,
                               alignment=2, 
                               spaceAfter=0))
     styles.add(ParagraphStyle(name='InvoiceNumber', 
                               parent=styles['Normal'], 
-                              fontSize=config.get('styling', 'font_sizes', 'invoice_number', default=14), 
-                              textColor=colors.gray,
+                              fontName=main_font,
+                              fontSize=template_config.get('font_sizes', {}).get('invoice_number', 14), 
+                              textColor=secondary_color,
                               alignment=2, 
                               spaceAfter=0))
     styles.add(ParagraphStyle(name='SectionHeader', 
                               parent=styles['Normal'], 
-                              fontSize=config.get('styling', 'font_sizes', 'section_header', default=10), 
-                              fontName='Helvetica-Bold',
+                              fontName=accent_font,
+                              fontSize=template_config.get('font_sizes', {}).get('section_header', 10), 
                               spaceAfter=1))
     styles.add(ParagraphStyle(name='AddressText', 
                               parent=styles['Normal'], 
-                              fontSize=config.get('styling', 'font_sizes', 'normal_text', default=9), 
+                              fontName=main_font,
+                              fontSize=template_config.get('font_sizes', {}).get('normal_text', 9), 
                               leading=10, 
                               spaceAfter=0))
     styles.add(ParagraphStyle(name='RightAligned', 
                               parent=styles['Normal'], 
+                              fontName=main_font,
                               alignment=2, 
-                              fontSize=config.get('styling', 'font_sizes', 'normal_text', default=9), 
+                              fontSize=template_config.get('font_sizes', {}).get('normal_text', 9), 
                               spaceAfter=0))
     styles.add(ParagraphStyle(name='SubItem', 
                               parent=styles['Normal'], 
-                              fontSize=config.get('styling', 'font_sizes', 'normal_text', default=9), 
-                              textColor=colors.gray,
+                              fontName=main_font,
+                              fontSize=template_config.get('font_sizes', {}).get('normal_text', 9), 
+                              textColor=secondary_color,
                               leftIndent=20))
 
     elements = []
@@ -110,16 +126,16 @@ def generate_pdf(invoice_data, output_file):
 
     table = Table(table_data, colWidths=[4*inch, 1*inch, 1*inch, 1*inch])
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('BACKGROUND', (0, 0), (-1, 0), accent_color),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('FONTNAME', (0, 0), (-1, 0), accent_font),
+        ('FONTSIZE', (0, 0), (-1, 0), template_config.get('font_sizes', {}).get('section_header', 10)),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
         ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-        ('GRID', (0, 0), (-1, 0), 1, colors.black),
-        ('LINEBELOW', (0, -1), (-1, -1), 1, colors.black),
+        ('GRID', (0, 0), (-1, 0), 1, primary_color),
+        ('LINEBELOW', (0, -1), (-1, -1), 1, primary_color),
     ]))
 
     elements.append(table)
@@ -134,7 +150,7 @@ def generate_pdf(invoice_data, output_file):
     totals_table = Table(totals_data, colWidths=[6*inch, 1*inch])
     totals_table.setStyle(TableStyle([
         ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (0, -1), (-1, -1), accent_font),
     ]))
     elements.append(totals_table)
 
