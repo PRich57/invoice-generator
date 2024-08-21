@@ -16,7 +16,7 @@ styling:
   colors:
     primary: "#000000"
     secondary: "#888888"
-    highlight: "#4A86E8"
+    highlight: "#282E40"
   fonts:
     main: "Helvetica"
     accent: "Helvetica-Bold"

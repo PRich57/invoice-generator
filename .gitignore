@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 
 # Personal configurations
-config.yaml
+*config.yaml
 
 # C extensions
 *.so

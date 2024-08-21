@@ -5,6 +5,7 @@ from modules.data_manager import load_data, save_data
 from modules.invoice import create_invoice, edit_invoice, format_invoice_number
 from modules.pdf_generator import generate_pdf
 from modules.config_manager import ConfigManager
+from modules.preview import preview_invoice
 
 @click.group()
 def cli():
@@ -15,7 +16,8 @@ def cli():
 @click.option('--output', default=None, help='Output file name (without extension).')
 @click.option('--invoice-number', prompt='Invoice Number', help='Invoice number for the invoice.')
 @click.option('--template', default='default', help='Template to use for the invoice.')
-def generate_invoice(output, invoice_number, template):
+@click.option('--preview', is_flag=True, help='Generate a preview of the invoice')
+def generate_invoice(output, invoice_number, template, preview):
     """Generate a PDF invoice and save data to JSON"""
     config_manager = ConfigManager()
     templates = config_manager.get_template('templates', default={})
@@ -31,6 +33,12 @@ def generate_invoice(output, invoice_number, template):
     
     # Create the invoice data
     invoice_data = create_invoice(data, invoice_number)
+    
+    if preview:
+        # Generate a preview (you'll need to implement this function)
+        preview_invoice(invoice_data, template)
+        if not click.confirm('Do you want to generate the final invoice?'):
+            return
     
     # Save invoice data to JSON
     json_file_path = f"data/invoices/{output}.json"
@@ -61,12 +69,32 @@ def regenerate_invoice(input, output, template):
     # Generate the PDF
     generate_pdf(invoice_data, output, template)
     click.echo(f"Invoice '{output}.pdf' regenerated successfully!")
+    
+@click.command()
+@click.argument('template_name')
+def set_default_template(template_name):
+    """Set the default template for invoice generation"""
+    config_manager = ConfigManager()
+    templates = config_manager.get_template('templates', default={})
+    
+    if template_name not in templates:
+        click.echo(f"Template '{template_name}' not found.")
+        return
+    
+    config = config_manager.config
+    config['default_template'] = template_name
+    
+    with open(config_manager.config_path, 'w') as f:
+        yaml.dump(config, f)
+    
+    click.echo(f"Default template set to '{template_name}'.")
 
 @click.command()
 @click.option('--list', 'list_templates', is_flag=True, help='List available templates')
 @click.option('--create', help='Create a new template')
 @click.option('--edit', help='Edit an existing template')
-def manage_templates(list_templates, create, edit):
+@click.option('--base', help='Base template to use when creating a new template')
+def manage_templates(list_templates, create, edit, base):
     """Manage invoice templates"""
     config_manager = ConfigManager()
     
@@ -77,32 +105,28 @@ def manage_templates(list_templates, create, edit):
             click.echo(f"- {name}")
     
     elif create:
-        new_template = {
-            'colors': {
-                'primary': click.prompt('Primary color (hex)', default='#000000'),
-                'secondary': click.prompt('Secondary color (hex)', default='#888888'),
-                'accent': click.prompt('Accent color (hex)', default='#4A86E8'),
-            },
-            'fonts': {
-                'main': click.prompt('Main font', default='Helvetica'),
-                'accent': click.prompt('Accent font', default='Helvetica-Bold'),
-            },
-            'font_sizes': {
-                'title': click.prompt('Title font size', type=int, default=20),
-                'invoice_number': click.prompt('Invoice number font size', type=int, default=14),
-                'section_header': click.prompt('Section header font size', type=int, default=10),
-                'normal_text': click.prompt('Normal text font size', type=int, default=9),
-            },
-            'layout': {
-                'page_size': click.prompt('Page size', default='A4'),
-                'margin_top': click.prompt('Top margin', type=float, default=0.3),
-                'margin_right': click.prompt('Right margin', type=float, default=0.5),
-                'margin_bottom': click.prompt('Bottom margin', type=float, default=0.5),
-                'margin_left': click.prompt('Left margin', type=float, default=0.5),
-            },
-        }
-        
         templates = config_manager.get_template('templates', default={})
+        if base and base not in templates:
+            click.echo(f"Base template '{base}' not found. Using default template.")
+            base = 'default'
+        
+        new_template = templates.get(base, templates['default']).copy() if base else templates['default'].copy()
+        
+        new_template['colors']['primary'] = click.prompt('Primary color (hex)', default=new_template['colors']['primary'])
+        new_template['colors']['secondary'] = click.prompt('Secondary color (hex)', default=new_template['colors']['secondary'])
+        new_template['colors']['accent'] = click.prompt('Accent color (hex)', default=new_template['colors']['accent'])
+        new_template['fonts']['main'] = click.prompt('Main font', default=new_template['fonts']['main'])
+        new_template['fonts']['accent'] = click.prompt('Accent font', default=new_template['fonts']['accent'])
+        new_template['font_sizes']['title'] = click.prompt('Title font size', type=int, default=new_template['font_sizes']['title'])
+        new_template['font_sizes']['invoice_number'] = click.prompt('Invoice number font size', type=int, default=new_template['font_sizes']['invoice_number'])
+        new_template['font_sizes']['section_header'] = click.prompt('Section header font size', type=int, default=new_template['font_sizes']['section_header'])
+        new_template['font_sizes']['normal_text'] = click.prompt('Normal text font size', type=int, default=new_template['font_sizes']['normal_text'])
+        new_template['layout']['page_size'] = click.prompt('Page size', default=new_template['layout']['page_size'])
+        new_template['layout']['margin_top'] = click.prompt('Top margin', type=float, default=new_template['layout']['margin_top'])
+        new_template['layout']['margin_right'] = click.prompt('Right margin', type=float, default=new_template['layout']['margin_right'])
+        new_template['layout']['margin_bottom'] = click.prompt('Bottom margin', type=float, default=new_template['layout']['margin_bottom'])
+        new_template['layout']['margin_left'] = click.prompt('Left margin', type=float, default=new_template['layout']['margin_left'])
+        
         templates[create] = new_template
         
         with open(config_manager.template_config_path, 'w') as f:
@@ -149,6 +173,7 @@ def load_invoice_from_json(file_path):
         click.echo(f"Error: Invalid JSON in file '{file_path}'.")
         exit(1)
 
+cli.add_command(set_default_template)
 cli.add_command(generate_invoice)
 cli.add_command(regenerate_invoice)
 cli.add_command(manage_templates)

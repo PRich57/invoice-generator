@@ -37,7 +37,7 @@ def generate_pdf(invoice_data, output_file, template='default'):
     # Use template configuration for colors
     primary_color = colors.HexColor(template_config.get('colors', {}).get('primary', "#000000"))
     secondary_color = colors.HexColor(template_config.get('colors', {}).get('secondary', "#888888"))
-    accent_color = colors.HexColor(template_config.get('colors', {}).get('accent', "#4A86E8"))
+    accent_color = colors.HexColor(template_config.get('colors', {}).get('accent', "#444444"))
 
     # Use template configuration for fonts
     main_font = template_config.get('fonts', {}).get('main', "Helvetica")
@@ -81,6 +81,12 @@ def generate_pdf(invoice_data, output_file, template='default'):
                               fontSize=template_config.get('font_sizes', {}).get('normal_text', 9), 
                               textColor=secondary_color,
                               leftIndent=20))
+    styles.add(ParagraphStyle(name='PaymentTerms', 
+                              parent=styles['Normal'], 
+                              fontName=accent_font,
+                              fontSize=8,
+                              textColor=secondary_color,
+                              spaceAfter=1))
 
     elements = []
 
@@ -93,6 +99,7 @@ def generate_pdf(invoice_data, output_file, template='default'):
         [Paragraph(invoice_data['bill_to_name'], styles['AddressText']), Paragraph(f"Balance Due: {config.get('invoice', 'currency', default='$')}{invoice_data['total']:.2f}", styles['RightAligned'])],
         [Paragraph(invoice_data['bill_to_address1'], styles['AddressText']), ""],
         [Paragraph(invoice_data['bill_to_address2'], styles['AddressText']), ""],
+        ["", ""],
         [Paragraph("Send To:", styles['SectionHeader']), ""],
         [Paragraph(invoice_data['send_to_name'], styles['AddressText']), ""],
         [Paragraph(invoice_data['send_to_address1'], styles['AddressText']), ""],
@@ -106,8 +113,8 @@ def generate_pdf(invoice_data, output_file, template='default'):
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('TOPPADDING', (0, 0), (-1, -1), 0),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-        ('TOPPADDING', (0, 2), (-1, 2), 8),  # Add space between invoice number and date
-        ('TOPPADDING', (0, 3), (-1, 3), 4),  # Adjust space above "Bill To:"
+        ('TOPPADDING', (0, 2), (-1, 2), 8),
+        ('TOPPADDING', (0, 3), (-1, 3), 4),
     ]))
     elements.append(header_table)
     elements.append(Spacer(1, 12))
@@ -156,6 +163,6 @@ def generate_pdf(invoice_data, output_file, template='default'):
 
     # Add payment terms
     elements.append(Spacer(1, 12))
-    elements.append(Paragraph(config.get('invoice', 'payment_terms', default='Payable by Check or Zelle'), styles['Normal']))
+    elements.append(Paragraph(config.get('invoice', 'payment_terms', default=''), styles['Normal']))
 
     doc.build(elements)

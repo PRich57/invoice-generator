@@ -1,19 +1,60 @@
-template:
-  colors:
-    primary: "#000000"
-    secondary: "#888888"
-    accent: "#4A86E8"
-  fonts:
-    main: "Helvetica"
-    accent: "Helvetica-Bold"
-  font_sizes:
-    title: 20
-    invoice_number: 14
-    section_header: 10
-    normal_text: 9
-  layout:
-    page_size: "A4"
-    margin_top: 0.3
-    margin_right: 0.5
-    margin_bottom: 0.5
-    margin_left: 0.5
+templates:
+  default:
+    colors:
+      primary: "#000000"
+      secondary: "#888888"
+      accent: "#444444"
+    fonts:
+      main: "Helvetica"
+      accent: "Helvetica-Bold"
+    font_sizes:
+      title: 20
+      invoice_number: 14
+      section_header: 10
+      normal_text: 9
+    layout:
+      page_size: "A4"
+      margin_top: 0.3
+      margin_right: 0.5
+      margin_bottom: 0.5
+      margin_left: 0.5
+
+  modern:
+    colors:
+      primary: "#2C3E50"
+      secondary: "#7F8C8D"
+      accent: "#3498DB"
+    fonts:
+      main: "Arial"
+      accent: "Arial-Bold"
+    font_sizes:
+      title: 24
+      invoice_number: 16
+      section_header: 12
+      normal_text: 10
+    layout:
+      page_size: "A4"
+      margin_top: 0.4
+      margin_right: 0.6
+      margin_bottom: 0.4
+      margin_left: 0.6
+
+  classic:
+    colors:
+      primary: "#4A4A4A"
+      secondary: "#A9A9A9"
+      accent: "#8B0000"
+    fonts:
+      main: "Times-Roman"
+      accent: "Times-Bold"
+    font_sizes:
+      title: 22
+      invoice_number: 14
+      section_header: 11
+      normal_text: 9
+    layout:
+      page_size: "LETTER"
+      margin_top: 0.5
+      margin_right: 0.5
+      margin_bottom: 0.5
+      margin_left: 0.5

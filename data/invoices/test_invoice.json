@@ -1,0 +1,21 @@
+{
+    "invoice_number": "#001",
+    "bill_to_name": "Cohen Denver Airport, LLC",
+    "bill_to_address1": "2720 S Gilpin St",
+    "bill_to_address2": "Denver, CO 80210",
+    "send_to_name": "Pete Richards",
+    "send_to_address1": "2720 S Gilpin St",
+    "send_to_address2": "Denver, CO 80210",
+    "date_of_service": "August 21, 2024",
+    "items": [
+        {
+            "description": "test",
+            "quantity": 1,
+            "amount": 300.0,
+            "sub_items": []
+        }
+    ],
+    "subtotal": 300.0,
+    "tax": 0,
+    "total": 300.0
+}

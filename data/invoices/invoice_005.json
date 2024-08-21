@@ -1,8 +1,8 @@
 {
     "invoice_number": "#005",
     "bill_to_name": "Cohen Denver Airport, LLC",
-    "bill_to_address1": "",
-    "bill_to_address2": "",
+    "bill_to_address1": "2720 S Gilpin St",
+    "bill_to_address2": "Denver, CO 80210",
     "send_to_name": "Pete Richards",
     "send_to_address1": "2720 S Gilpin St",
     "send_to_address2": "Denver, CO 80210",

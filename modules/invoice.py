@@ -1,8 +1,30 @@
 from datetime import date, datetime
 
+def get_contact_info(data, section_name, id_type, data_key):
+    use_saved = safe_input(f"Would you like to use a saved {section_name} contact? (y/n): ", str, choices=['y', 'n']) == 'y'
+    
+    if use_saved:
+        contact_id = input(f"Enter the {id_type} ID for the {section_name}: ")
+        if data_key not in data:
+            print(f"No saved {data_key} found. Please enter the details manually.")
+            use_saved = False
+        elif contact_id not in data[data_key]:
+            print(f"No saved contact found with ID {contact_id}. Please enter the details manually.")
+            use_saved = False
+        else:
+            contact = data[data_key][contact_id]
+            return contact['name'], contact.get('address1', ''), contact.get('address2', '')
+    
+    if not use_saved:
+        name = input(f'{section_name} (Name): ')
+        address1 = input(f'{section_name} (Street Address): ')
+        address2 = input(f'{section_name} (City, State, ZIP): ')
+        return name, address1, address2
+
 def create_invoice(data, invoice_number):
+    print("Loaded data:", data)  # Add this line to print the loaded data
     invoice_data = {
-        'invoice_number': format_invoice_number(invoice_number),  # Format the invoice number correctly
+        'invoice_number': format_invoice_number(invoice_number),
         'bill_to_name': '',
         'bill_to_address1': '',
         'bill_to_address2': '',
@@ -31,23 +53,6 @@ def create_invoice(data, invoice_number):
     invoice_data['total'] = calculate_totals(invoice_data['subtotal'], invoice_data['tax'])
     
     return invoice_data
-
-def get_contact_info(data, section_name, id_type, data_key):
-    use_saved = safe_input(f"Would you like to use a saved {section_name} contact? (y/n): ", str, choices=['y', 'n']) == 'y'
-    
-    if use_saved:
-        contact_id = input(f"Enter the {id_type} ID for the {section_name}: ")
-        if contact_id in data[data_key]:
-            contact = data[data_key][contact_id]
-            return contact['name'], contact.get('address1', ''), contact.get('address2', '')
-        else:
-            print(f"No saved contact found with ID {contact_id}. Please enter the details manually.")
-    
-    # Manually input details if no saved contact is used
-    name = input(f'{section_name} (Name): ')
-    address1 = input(f'{section_name} (Street Address): ')
-    address2 = input(f'{section_name} (City, State, ZIP): ')
-    return name, address1, address2
 
 def get_items():
     items = []
