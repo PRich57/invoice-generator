@@ -9,7 +9,7 @@ company:
 invoice:
   currency: "$"
   tax_rate: 0.0
-  payment_terms: " "
+  payment_terms: "Payment due within 30 days"
 
 # PDF Styling
 styling:
