@@ -5,6 +5,7 @@ __pycache__/
 
 # Personal configurations
 *config.yaml
+*company_data.json
 
 # Personal invoices
 */invoices

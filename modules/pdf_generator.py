@@ -197,6 +197,10 @@ def generate_pdf(invoice_data, output_file, template='default'):
 
     # Add payment terms
     elements.append(Spacer(1, 24))
+    elements.append(Paragraph("Notes", styles['PaymentTerms']))
+    elements.append(Paragraph(config.get('invoice', 'payment_terms', default=''), styles['Normal']))
+
+    elements.append(Spacer(1, 24))
     elements.append(Paragraph("Payment Terms:", styles['PaymentTerms']))
     elements.append(Paragraph(config.get('invoice', 'payment_terms', default=''), styles['Normal']))
 
