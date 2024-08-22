@@ -105,11 +105,12 @@ def generate_pdf(invoice_data, output_file, template='default'):
 
     # Create left column (Bill To and Send To)
     left_column = [
+        [Spacer(1, 30)],
         [Paragraph("Bill To:", styles['SectionHeader'])],
         [Paragraph(invoice_data['bill_to_name'], styles['AddressText'])],
         [Paragraph(invoice_data['bill_to_address1'], styles['AddressText'])],
         [Paragraph(invoice_data['bill_to_address2'], styles['AddressText'])],
-        [Spacer(1, 20)],
+        [Spacer(1, 10)],
         [Paragraph("Send To:", styles['SectionHeader'])],
         [Paragraph(invoice_data['send_to_name'], styles['AddressText'])],
         [Paragraph(invoice_data['send_to_address1'], styles['AddressText'])],
@@ -133,8 +134,8 @@ def generate_pdf(invoice_data, output_file, template='default'):
                    ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
                    ('LEFTPADDING', (0, 0), (0, 0), 6),
                    ('RIGHTPADDING', (1, 0), (1, 0), 6),
-                   ('TOPPADDING', (0, 0), (-1, 0), 6),
-                   ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+                   ('TOPPADDING', (0, 0), (-1, 0), 2),
+                   ('BOTTOMPADDING', (0, 0), (-1, 0), 7),
                ])]
     ]
 
@@ -169,10 +170,10 @@ def generate_pdf(invoice_data, output_file, template='default'):
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, 0), accent_font),
-        ('FONTSIZE', (0, 0), (-1, 0), template_config.get('font_sizes', {}).get('section_header', 12)),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+        ('FONTSIZE', (0, 0), (-1, 0), template_config.get('font_sizes', {}).get('table_header', 12)),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 4),
         ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-        ('GRID', (0, 0), (-1, 0), 1, primary_color),
+        ('GRID', (0, 0), (-1, 0), 1, colors.white),
         ('LINEBELOW', (0, -1), (-1, -1), 0.5, primary_color),
     ]))
 

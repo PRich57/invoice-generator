@@ -11,6 +11,7 @@ templates:
       title: 20
       invoice_number: 14
       section_header: 8
+      table_header: 10
       normal_text: 9
     layout:
       page_size: "A4"
