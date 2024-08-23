@@ -2,10 +2,10 @@ from pydantic import BaseModel, EmailStr
 
 class ContactBase(BaseModel):
     name: str
-    address1: str
+    address1: str | None = None
     address2: str | None = None
-    phone: str
-    email: EmailStr
+    phone: str | None = None
+    email: EmailStr | None = None
     type: str
 
 class ContactCreate(ContactBase):
