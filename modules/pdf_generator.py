@@ -1,8 +1,10 @@
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, LETTER, LEGAL
+from reportlab.lib.pagesizes import A4, LEGAL, LETTER
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
+                                TableStyle)
+
 from modules.config_manager import config
 
 PAGE_SIZES = {
@@ -95,7 +97,7 @@ def generate_pdf(invoice_data, output_file, template='default'):
     styles.add(ParagraphStyle(name='PaymentTerms', 
                               parent=styles['Normal'], 
                               fontName=accent_font,
-                              fontSize=template_config.get('font_sizes', {}).get('section_header', 10),
+                              fontSize=template_config.get('font_sizes', {}).get('small_text', 7),
                               textColor=secondary_color,
                               spaceBefore=10,
                               spaceAfter=1))
@@ -107,14 +109,18 @@ def generate_pdf(invoice_data, output_file, template='default'):
     left_column = [
         [Spacer(1, 30)],
         [Paragraph("Bill To:", styles['SectionHeader'])],
-        [Paragraph(invoice_data['bill_to_name'], styles['AddressText'])],
-        [Paragraph(invoice_data['bill_to_address1'], styles['AddressText'])],
-        [Paragraph(invoice_data['bill_to_address2'], styles['AddressText'])],
+        [Paragraph(invoice_data['bill_to'].get('name', ''), styles['AddressText'])],
+        [Paragraph(invoice_data['bill_to'].get('address1', ''), styles['AddressText'])],
+        [Paragraph(invoice_data['bill_to'].get('address2', ''), styles['AddressText'])],
+        [Paragraph(invoice_data['bill_to'].get('phone', ''), styles['AddressText'])],
+        [Paragraph(invoice_data['bill_to'].get('email', ''), styles['AddressText'])],
         [Spacer(1, 10)],
         [Paragraph("Send To:", styles['SectionHeader'])],
-        [Paragraph(invoice_data['send_to_name'], styles['AddressText'])],
-        [Paragraph(invoice_data['send_to_address1'], styles['AddressText'])],
-        [Paragraph(invoice_data['send_to_address2'], styles['AddressText'])]
+        [Paragraph(invoice_data['send_to'].get('name', ''), styles['AddressText'])],
+        [Paragraph(invoice_data['send_to'].get('address1', ''), styles['AddressText'])],
+        [Paragraph(invoice_data['send_to'].get('address2', ''), styles['AddressText'])],
+        [Paragraph(invoice_data['send_to'].get('phone', ''), styles['AddressText'])],
+        [Paragraph(invoice_data['send_to'].get('email', ''), styles['AddressText'])]
     ]
 
     # Create right column (Invoice details, Date, and Balance Due)
@@ -195,13 +201,12 @@ def generate_pdf(invoice_data, output_file, template='default'):
     ]))
     elements.append(totals_table)
 
-    # Add payment terms
-    elements.append(Spacer(1, 24))
-    elements.append(Paragraph("Notes", styles['PaymentTerms']))
-    elements.append(Paragraph(config.get('invoice', 'payment_terms', default=''), styles['Normal']))
-
-    elements.append(Spacer(1, 24))
-    elements.append(Paragraph("Payment Terms:", styles['PaymentTerms']))
-    elements.append(Paragraph(config.get('invoice', 'payment_terms', default=''), styles['Normal']))
+    # Add payment terms and notes
+    elements.append(Spacer(1, 15))
+    elements.append(Paragraph("Notes", styles['SectionHeader']))
+    elements.append(Paragraph(config.get('invoice', 'notes', default=''), styles['PaymentTerms']))
+    elements.append(Spacer(1, 10))
+    elements.append(Paragraph("Terms:", styles['SectionHeader']))
+    elements.append(Paragraph(config.get('invoice', 'payment_terms', default=''), styles['PaymentTerms']))
 
     doc.build(elements)

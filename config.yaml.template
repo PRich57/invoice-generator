@@ -1,14 +1,24 @@
-# Company Information
-company:
-  name: "Your Company Name"
-  address: "123 Business St, City, State, ZIP"
+# Bill To Information
+bill_to:
+  name: "Who's Being Billed"
+  address1: "123 Business St"
+  address2: "Their City, State 12345"
   phone: "(123) 456-7890"
-  email: "contact@yourcompany.com"
+  email: "contact@billedcompany.com"
+
+# Send To Information
+send_to:
+  name: "Who's Being Paid"
+  address1: "123 Your Street"
+  address2: "Your City, State 12345"
+  phone: "(123) 456-7890
+  email: "contact@yourcompany.com
 
 # Invoice Defaults
 invoice:
   currency: "$"
   tax_rate: 0.0
+  notes: "Contact me at (123) 456-7890 with any questions"
   payment_terms: "Payment due within 30 days"
 
 # PDF Styling

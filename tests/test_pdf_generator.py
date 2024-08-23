@@ -1,12 +1,14 @@
-import unittest
-from unittest.mock import patch, MagicMock, call
-import sys
 import os
+import sys
+import unittest
+from unittest.mock import MagicMock, call, patch
+
 from reportlab.lib.pagesizes import LETTER
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from modules.pdf_generator import generate_pdf
+
 
 class TestPDFGenerator(unittest.TestCase):
 
@@ -47,7 +49,7 @@ class TestPDFGenerator(unittest.TestCase):
 
         mock_simple_doc.assert_called_once()
         self.assertIn('test_output.pdf', mock_simple_doc.call_args[0][0])
-        self.assertEqual(mock_table.call_count, 3)
+        self.assertEqual(mock_table.call_count, 7)
         self.assertGreater(mock_paragraph.call_count, 0)
 
     @patch('modules.pdf_generator.SimpleDocTemplate')
@@ -70,7 +72,7 @@ class TestPDFGenerator(unittest.TestCase):
 
         generate_pdf(invoice_data, 'test_output_no_items', 'default')
 
-        self.assertEqual(mock_table.call_count, 3)  # Header, empty items table, and totals
+        self.assertEqual(mock_table.call_count, 7)  # Header, empty items table, and totals
 
     @patch('modules.pdf_generator.SimpleDocTemplate')
     @patch('modules.pdf_generator.Table')

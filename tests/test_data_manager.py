@@ -1,12 +1,13 @@
-import unittest
-from unittest.mock import patch, mock_open
 import json
 import os
 import sys
+import unittest
+from unittest.mock import mock_open, patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from modules.data_manager import load_data, save_data
+
 
 class TestDataManager(unittest.TestCase):
 

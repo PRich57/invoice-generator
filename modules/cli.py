@@ -1,11 +1,14 @@
-import click
 import json
+
+import click
 import yaml
+
+from modules.config_manager import ConfigManager
 from modules.data_manager import load_data, save_data
 from modules.invoice import create_invoice, format_invoice_number
 from modules.pdf_generator import generate_pdf
-from modules.config_manager import ConfigManager
 from modules.preview import preview_invoice
+
 
 @click.group()
 def cli():
@@ -75,18 +78,6 @@ def regenerate_invoice(input, output, template):
     # Generate the PDF
     generate_pdf(invoice_data, output, template)
     click.echo(f"Invoice '{output}.pdf' regenerated successfully using the '{template}' template!")
-
-def load_invoice_from_json(file_path):
-    """Load invoice data from a JSON file"""
-    try:
-        with open(file_path, 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        click.echo(f"Error: File '{file_path}' not found.")
-        exit(1)
-    except json.JSONDecodeError:
-        click.echo(f"Error: Invalid JSON in file '{file_path}'.")
-        exit(1)
     
 @click.command()
 @click.argument('template_name')

@@ -1,7 +1,10 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from click.testing import CliRunner
+
 from modules.cli import generate_invoice
+
 
 class TestCLI(unittest.TestCase):
 

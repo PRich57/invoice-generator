@@ -1,7 +1,10 @@
 import webbrowser
-from jinja2 import Template
 from tempfile import NamedTemporaryFile
+
+from jinja2 import Template
+
 from modules.config_manager import config
+
 
 def preview_invoice(invoice_data, template_name):
     """Generate an HTML preview of the invoice"""
