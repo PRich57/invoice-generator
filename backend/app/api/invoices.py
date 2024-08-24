@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
 
 from ..database import get_db
 from ..models.invoice import Invoice, InvoiceItem
@@ -20,7 +19,7 @@ def create_invoice(invoice: InvoiceCreate, db: Session = Depends(get_db)):
         total=invoice.total
     )
     db.add(db_invoice)
-    db.flush()  # This assigns an id to db_invoice
+    db.flush()
 
     for item in invoice.items:
         db_item = InvoiceItem(**item.dict(), invoice_id=db_invoice.id)
@@ -30,7 +29,7 @@ def create_invoice(invoice: InvoiceCreate, db: Session = Depends(get_db)):
     db.refresh(db_invoice)
     return db_invoice
 
-@router.get("/invoices/", response_model=List[InvoiceSchema])
+@router.get("/invoices/", response_model=list[InvoiceSchema])
 def read_invoices(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     invoices = db.query(Invoice).offset(skip).limit(limit).all()
     return invoices

@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
 
 from ..database import get_db
 from .. import models, schemas
@@ -15,7 +14,7 @@ def create_contact(contact: schemas.ContactCreate, db: Session = Depends(get_db)
     db.refresh(db_contact)
     return db_contact
 
-@router.get("/contacts/", response_model=List[schemas.Contact])
+@router.get("/contacts/", response_model=list[schemas.Contact])
 def read_contacts(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     contacts = db.query(models.Contact).offset(skip).limit(limit).all()
     return contacts

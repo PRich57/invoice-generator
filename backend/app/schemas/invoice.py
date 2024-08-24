@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 from datetime import date
-from typing import List
 from .contact import Contact
 
 class InvoiceItemBase(BaseModel):
@@ -27,13 +26,13 @@ class InvoiceBase(BaseModel):
     total: float
 
 class InvoiceCreate(InvoiceBase):
-    items: List[InvoiceItemCreate]
+    items: list[InvoiceItemCreate]
 
 class Invoice(InvoiceBase):
     id: int
     bill_to: Contact
     send_to: Contact
-    items: List[InvoiceItem]
+    items: list[InvoiceItem]
 
     class Config:
         from_attributes = True
