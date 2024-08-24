@@ -8,7 +8,7 @@ router = APIRouter()
 
 @router.post("/contacts/", response_model=schemas.Contact)
 def create_contact(contact: schemas.ContactCreate, db: Session = Depends(get_db)):
-    db_contact = models.Contact(**contact.dict())
+    db_contact = models.Contact(**contact.dict(exclude_unset=True))
     db.add(db_contact)
     db.commit()
     db.refresh(db_contact)

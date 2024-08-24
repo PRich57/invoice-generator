@@ -65,6 +65,28 @@ def delete_invoice(invoice_id: int, db: Session = Depends(get_db)):
     db_invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if db_invoice is None:
         raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    # Fetch related data before deletion
+    bill_to = db_invoice.bill_to
+    send_to = db_invoice.send_to
+    
+    # Create a copy of the invoice data to be returned after deletion
+    invoice_data = InvoiceSchema(
+        id=db_invoice.id,
+        invoice_number=db_invoice.invoice_number,
+        date_of_service=db_invoice.date_of_service,
+        bill_to_id=db_invoice.bill_to_id,
+        send_to_id=db_invoice.send_to_id,
+        subtotal=db_invoice.subtotal,
+        tax=db_invoice.tax,
+        total=db_invoice.total,
+        bill_to=bill_to,
+        send_to=send_to,
+        items=db_invoice.items
+    )
+    
+    # Delete invoice and related data
     db.delete(db_invoice)
     db.commit()
-    return db_invoice
+    
+    return invoice_data
