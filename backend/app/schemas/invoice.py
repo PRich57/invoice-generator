@@ -15,7 +15,7 @@ class InvoiceItem(InvoiceItemBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class InvoiceBase(BaseModel):
     invoice_number: str
@@ -36,4 +36,4 @@ class Invoice(InvoiceBase):
     items: List[InvoiceItem]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
