@@ -1,47 +1,61 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from ..database import get_db
-from .. import models, schemas
+from ..models.contact import Contact as ContactModel
+from ..schemas.contact import Contact, ContactCreate
+from ..core.exceptions import ContactNotFoundException, ContactAlreadyExistsException
 
 router = APIRouter()
 
-@router.post("/contacts/", response_model=schemas.Contact)
-def create_contact(contact: schemas.ContactCreate, db: Session = Depends(get_db)):
-    db_contact = models.Contact(**contact.dict(exclude_unset=True))
-    db.add(db_contact)
-    db.commit()
-    db.refresh(db_contact)
-    return db_contact
+@router.post("/", response_model=Contact)
+def create_contact(contact: ContactCreate, db: Session = Depends(get_db)):
+    try:
+        db_contact = ContactModel(**contact.model_dump())
+        db.add(db_contact)
+        db.commit()
+        db.refresh(db_contact)
+        return db_contact
+    except IntegrityError:
+        db.rollback()
+        raise ContactAlreadyExistsException()
 
-@router.get("/contacts/", response_model=list[schemas.Contact])
+@router.get("/", response_model=list[Contact])
 def read_contacts(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    contacts = db.query(models.Contact).offset(skip).limit(limit).all()
+    contacts = db.query(ContactModel).offset(skip).limit(limit).all()
     return contacts
 
-@router.get("/contacts/{contact_id}", response_model=schemas.Contact)
+@router.get("/{contact_id}", response_model=Contact)
 def read_contact(contact_id: int, db: Session = Depends(get_db)):
-    db_contact = db.query(models.Contact).filter(models.Contact.id == contact_id).first()
+    db_contact = db.query(ContactModel).filter(ContactModel.id == contact_id).first()
     if db_contact is None:
-        raise HTTPException(status_code=404, detail="Contact not found")
+        raise ContactNotFoundException()
     return db_contact
 
-@router.put("/contacts/{contact_id}", response_model=schemas.Contact)
-def update_contact(contact_id: int, contact: schemas.ContactCreate, db: Session = Depends(get_db)):
-    db_contact = db.query(models.Contact).filter(models.Contact.id == contact_id).first()
+@router.put("/{contact_id}", response_model=Contact)
+def update_contact(contact_id: int, contact: ContactCreate, db: Session = Depends(get_db)):
+    db_contact = db.query(ContactModel).filter(ContactModel.id == contact_id).first()
     if db_contact is None:
-        raise HTTPException(status_code=404, detail="Contact not found")
-    for key, value in contact.dict().items():
+        raise ContactNotFoundException()
+    
+    for key, value in contact.model_dump().items():
         setattr(db_contact, key, value)
-    db.commit()
-    db.refresh(db_contact)
-    return db_contact
+    
+    try:
+        db.commit()
+        db.refresh(db_contact)
+        return db_contact
+    except IntegrityError:
+        db.rollback()
+        raise ContactAlreadyExistsException()
 
-@router.delete("/contacts/{contact_id}", response_model=schemas.Contact)
+@router.delete("/{contact_id}", response_model=Contact)
 def delete_contact(contact_id: int, db: Session = Depends(get_db)):
-    db_contact = db.query(models.Contact).filter(models.Contact.id == contact_id).first()
+    db_contact = db.query(ContactModel).filter(ContactModel.id == contact_id).first()
     if db_contact is None:
-        raise HTTPException(status_code=404, detail="Contact not found")
+        raise ContactNotFoundException()
+    
     db.delete(db_contact)
     db.commit()
     return db_contact

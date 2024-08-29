@@ -6,8 +6,14 @@ class Contact(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
-    address1 = Column(String, nullable=True)
-    address2 = Column(String, nullable=True)
+    company = Column(String, nullable=True)
+    email = Column(String, index=True, nullable=True)
     phone = Column(String, nullable=True)
-    email = Column(String, nullable=True, unique=True, index=True)
+    street_address = Column(String, nullable=True)
+    address_line2 = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    state = Column(String, nullable=True)
+    postal_code = Column(String, nullable=True)
+    country = Column(String, nullable=True)
     type = Column(String)  # 'bill_to' or 'send_to'
+    notes = Column(String, nullable=True)
