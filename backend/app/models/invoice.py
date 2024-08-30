@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, String, DECIMAL, Date, ForeignKey
+from sqlalchemy import DECIMAL, Column, Date, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
+
 from ..database import Base
+
 
 class InvoiceItem(Base):
     __tablename__ = "invoice_items"
@@ -17,6 +19,7 @@ class Invoice(Base):
     __tablename__ = "invoices"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
     invoice_number = Column(String, unique=True, index=True)
     date_of_service = Column(Date)
     bill_to_id = Column(Integer, ForeignKey("contacts.id"))
@@ -25,6 +28,7 @@ class Invoice(Base):
     manual_total = Column(DECIMAL(10, 2), nullable=True)
     notes = Column(String, nullable=True)
 
+    user = relationship("User", back_populates="invoices")
     bill_to = relationship("Contact", foreign_keys=[bill_to_id])
     send_to = relationship("Contact", foreign_keys=[send_to_id])
     items = relationship("InvoiceItem", back_populates="invoice", cascade="all, delete-orphan")

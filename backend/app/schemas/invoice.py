@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field, computed_field
 from datetime import date
 from decimal import Decimal
+
+from pydantic import BaseModel, Field, computed_field
+
 
 class InvoiceItemBase(BaseModel):
     description: str = Field(..., max_length=200)
@@ -17,6 +19,7 @@ class InvoiceItemCreate(InvoiceItemBase):
 
 class InvoiceItem(InvoiceItemBase):
     id: int
+    invoice_id: int
 
     class Config:
         from_attributes = True
@@ -29,6 +32,14 @@ class InvoiceBase(BaseModel):
     tax_rate: Decimal = Field(default=Decimal('0.00'), ge=0, le=100)
     notes: str | None = Field(None, max_length=500)
     manual_total: Decimal | None = Field(None, ge=0)
+
+class InvoiceCreate(InvoiceBase):
+    items: list[InvoiceItemCreate]
+
+class Invoice(InvoiceBase):
+    id: int
+    user_id: int
+    items: list[InvoiceItem]
 
     @computed_field
     @property
@@ -46,13 +57,6 @@ class InvoiceBase(BaseModel):
         if self.manual_total is not None:
             return self.manual_total
         return (self.subtotal + self.tax).quantize(Decimal('0.01'))
-
-class InvoiceCreate(InvoiceBase):
-    items: list[InvoiceItemCreate]
-
-class Invoice(InvoiceBase):
-    id: int
-    items: list[InvoiceItem]
 
     class Config:
         from_attributes = True

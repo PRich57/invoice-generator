@@ -46,6 +46,7 @@ class ContactCreate(ContactBase):
 
 class Contact(ContactBase):
     id: int
+    user_id: int
 
     class Config:
         from_attributes = True
