@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, Response
-from sqlalchemy.exc import IntegrityError
+from fastapi import APIRouter, Body, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from ..core.deps import get_current_user
-from ..core.exceptions import (InvoiceNotFoundException,
+from ..core.exceptions import (ContactNotFoundException,
+                               InvalidContactIdException,
+                               InvalidInvoiceNumberException,
+                               InvoiceNotFoundException,
                                InvoiceNumberAlreadyExistsException,
                                TemplateNotFoundException)
 from ..database import get_db
@@ -15,14 +17,34 @@ router = APIRouter()
 
 @router.post("/", response_model=Invoice)
 def create_invoice(
-    invoice: InvoiceCreate,
+    invoice: InvoiceCreate = Body(
+        ...,
+        example={
+            "invoice_number": "#001",
+            "invoice_date": "2024-01-01",
+            "bill_to_id": 1,
+            "send_to_id": 2,
+            "tax_rate": 8.00,
+            "notes": "This is a sample invoice.",
+            "items": [
+                {
+                    "description": "Item 1", 
+                    "quantity": 2,
+                    "unit_price": 100.00,
+                    "subitems": []
+                },
+            ]
+        }
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     try:
         return invoice_service.create_invoice(db, invoice, current_user.id)
-    except IntegrityError:
-        raise InvoiceNumberAlreadyExistsException()
+    except (InvoiceNumberAlreadyExistsException, ContactNotFoundException, InvalidContactIdException, InvalidInvoiceNumberException) as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 @router.get("/", response_model=list[Invoice])
 def read_invoices(

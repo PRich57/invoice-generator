@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..core.deps import get_current_user
-from ..core.exceptions import TemplateNotFoundException
+from ..core.exceptions import (TemplateAlreadyExistsException,
+                               TemplateNotFoundException)
 from ..database import get_db
 from ..schemas.template import Template, TemplateCreate, TemplateUpdate
 from ..schemas.user import User
@@ -20,7 +21,7 @@ def create_template(
     try:
         return template_service.create_template(db, template, current_user.id)
     except IntegrityError:
-        raise HTTPException(status_code=400, detail="Template with this name already exists")
+        raise TemplateAlreadyExistsException()
 
 @router.get("/", response_model=list[Template])
 def read_templates(

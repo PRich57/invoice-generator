@@ -1,4 +1,7 @@
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+
+from backend.app.core.exceptions import TemplateAlreadyExistsException
 
 from ..models.template import Template
 from ..schemas.template import TemplateCreate, TemplateUpdate
@@ -12,10 +15,14 @@ def get_templates(db: Session, user_id: int, skip: int = 0, limit: int = 100):
 
 def create_template(db: Session, template: TemplateCreate, user_id: int):
     db_template = Template(**template.model_dump(), user_id=user_id)
-    db.add(db_template)
-    db.commit()
-    db.refresh(db_template)
-    return db_template
+    try:
+        db.add(db_template)
+        db.commit()
+        db.refresh(db_template)
+        return db_template
+    except IntegrityError:
+        db.rollback()
+        raise TemplateAlreadyExistsException()
 
 def update_template(db: Session, template_name: str, template: TemplateUpdate, user_id: int):
     db_template = get_template(db, template_name, user_id)

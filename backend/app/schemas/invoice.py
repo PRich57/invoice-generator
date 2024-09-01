@@ -1,18 +1,29 @@
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, computed_field
+from ..core.exceptions import InvalidInvoiceNumberException, InvalidContactIdException
 
+from pydantic import BaseModel, Field, computed_field, field_validator
+
+
+class InvoiceSubItemBase(BaseModel):
+    description: str = Field(..., max_length=200)
+
+class InvoiceSubItemCreate(InvoiceSubItemBase):
+    pass
+
+class InvoiceSubItem(InvoiceSubItemBase):
+    id: int
+
+    class Config:
+        from_attributes = True
 
 class InvoiceItemBase(BaseModel):
     description: str = Field(..., max_length=200)
-    quantity: Decimal = Field(..., gt=0)
-    rate: Decimal = Field(..., ge=0)
-
-    @computed_field
-    @property
-    def amount(self) -> Decimal:
-        return self.quantity * self.rate
+    quantity: Decimal = Field(default=Decimal('0.00'), gt=0)
+    unit_price: Decimal = Field(default=Decimal('0.00'), ge=0)
+    discount_percentage: Decimal = Field(default=0, ge=0, le=100)
+    subitems: list[InvoiceSubItemCreate] = []
 
 class InvoiceItemCreate(InvoiceItemBase):
     pass
@@ -20,18 +31,37 @@ class InvoiceItemCreate(InvoiceItemBase):
 class InvoiceItem(InvoiceItemBase):
     id: int
     invoice_id: int
+    subitems: list[InvoiceSubItem] = []
+    
+    @computed_field
+    @property
+    def line_total(self) -> Decimal:
+        return (self.quantity * self.unit_price * (1 - self.discount_percentage / 100)).quantize(Decimal('0.01'))
 
     class Config:
         from_attributes = True
 
 class InvoiceBase(BaseModel):
-    invoice_number: str = Field(..., max_length=50)
-    date_of_service: date
-    bill_to_id: int
-    send_to_id: int
+    invoice_number: str = Field(..., min_length=1, max_length=50, example="#001")
+    invoice_date: date
+    bill_to_id: int = Field(..., gt=0)
+    send_to_id: int = Field(..., gt=0)
     tax_rate: Decimal = Field(default=Decimal('0.00'), ge=0, le=100)
+    discount_percentage: Decimal = Field(default=0, ge=0, le=100)
     notes: str | None = Field(None, max_length=500)
-    manual_total: Decimal | None = Field(None, ge=0)
+    items: list[InvoiceItemCreate]
+    
+    @field_validator('invoice_number')
+    def validate_invoice_number(cls, value: str) -> str:
+        if value.lower() == 'string':
+            raise InvalidInvoiceNumberException()
+        return value.strip()
+    
+    @field_validator('bill_to_id', 'send_to_id')
+    def validate_contact_ids(cls, value: int, field: str) -> int:
+        if value <= 0:
+            raise InvalidContactIdException(field.name)
+        return value
 
 class InvoiceCreate(InvoiceBase):
     items: list[InvoiceItemCreate]
@@ -44,19 +74,17 @@ class Invoice(InvoiceBase):
     @computed_field
     @property
     def subtotal(self) -> Decimal:
-        return sum(item.amount for item in self.items)
+        return sum(item.line_total for item in self.items).quantize(Decimal('0.01'))
 
     @computed_field
     @property
     def tax(self) -> Decimal:
-        return (self.subtotal * self.tax_rate / 100).quantize(Decimal('0.01'))
+        return (self.subtotal * (1 - self.discount_percentage / 100) * self.tax_rate / 100).quantize(Decimal('0.01'))
 
     @computed_field
     @property
     def total(self) -> Decimal:
-        if self.manual_total is not None:
-            return self.manual_total
-        return (self.subtotal + self.tax).quantize(Decimal('0.01'))
+        return (self.subtotal * (1 - self.discount_percentage / 100) + self.tax).quantize(Decimal('0.01'))
 
     class Config:
         from_attributes = True
