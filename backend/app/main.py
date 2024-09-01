@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from .api import (auth_router, contacts_router, invoices_router,
                   templates_router)
@@ -18,6 +19,14 @@ invoice.Base.metadata.create_all(bind=engine)
 template.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.exception_handler(ContactNotFoundException)
 async def contact_not_found_exception_handler(request: Request, exc: ContactNotFoundException):

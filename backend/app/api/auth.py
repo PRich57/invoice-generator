@@ -12,6 +12,11 @@ from ..services import user_service
 
 router = APIRouter()
 
+@router.options("/register")
+@router.options("/token")
+async def auth_options():
+    return {"message": "OK"}
+
 @router.post("/register", response_model=User)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = user_service.get_user_by_email(db, email=user.email)

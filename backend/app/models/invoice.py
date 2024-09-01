@@ -1,4 +1,5 @@
 from decimal import Decimal
+
 from sqlalchemy import DECIMAL, Column, Date, ForeignKey, Integer, String
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship

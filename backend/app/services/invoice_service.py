@@ -138,7 +138,7 @@ def regenerate_invoice(invoice: Invoice, template: Template) -> bytes:
         items_data.append([
             item.description,
             str(item.quantity),
-            f"${item.unit_price:.2f}",
+            f"${abs(item.unit_price):.2f}",
             f"{item.discount_percentage}%",
             f"${item.line_total:.2f}"
         ])

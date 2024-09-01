@@ -20,7 +20,7 @@ class InvoiceSubItem(InvoiceSubItemBase):
 
 class InvoiceItemBase(BaseModel):
     description: str = Field(..., max_length=200)
-    quantity: Decimal = Field(default=Decimal('0.00'), gt=0)
+    quantity: Decimal = Field(...)
     unit_price: Decimal = Field(default=Decimal('0.00'), ge=0)
     discount_percentage: Decimal = Field(default=0, ge=0, le=100)
     subitems: list[InvoiceSubItemCreate] = []
