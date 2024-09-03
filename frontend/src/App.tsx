@@ -1,50 +1,31 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { AppBar, Toolbar, Typography, Button, Container, CssBaseline } from '@mui/material';
-import Login from './components/Login';
-import Register from './components/Register';
-import Dashboard from './components/Dashboard';
-
-const darkTheme = createTheme({
-    palette: {
-        mode: 'dark',
-        primary: {
-            main: '#90caf9',
-        },
-        secondary: {
-            main: '#f48fb1',
-        },
-        background: {
-            default: '#303030',
-            paper: '#424242',
-        },
-    },
-});
+import React, { Suspense } from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsV3';
+import CssBaseline from '@mui/material/CssBaseline';
+import CircularProgress from '@mui/material/CircularProgress';
+import theme from './styles/theme';
+import routes from './constants/routes';
+import Layout from './layouts/MainLayout';
 
 const App: React.FC = () => {
     return (
-        <ThemeProvider theme={darkTheme}>
-            <CssBaseline />
-            <Router>
-                <AppBar position="static">
-                    <Toolbar>
-                        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                            Invoice Generator
-                        </Typography>
-                        <Button color="inherit" component={Link} to="/login">Login</Button>
-                        <Button color="inherit" component={Link} to="/register">Register</Button>
-                    </Toolbar>
-                </AppBar>
-                <Container component="main" sx={{ mt: 4 }}>
-                    <Routes>
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/register" element={<Register />} />
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/" element={<Login />} />
-                    </Routes>
-                </Container>
-            </Router>
+        <ThemeProvider theme={theme}>
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <CssBaseline />
+                <Router>
+                    <Layout>
+                        <Suspense fallback={<CircularProgress />}>
+                            <Routes>
+                                {routes.map((route) => (
+                                    <Route key={route.path} path={route.path} element={<route.component />} />
+                                ))}
+                            </Routes>
+                        </Suspense>
+                    </Layout>
+                </Router>
+            </LocalizationProvider>
         </ThemeProvider>
     );
 }

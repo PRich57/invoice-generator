@@ -12,9 +12,8 @@ const Login: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const data = await login(email, password);
-            localStorage.setItem('token', data.access_token);
-            navigate('/dashboard');
+            await login(email, password);
+            navigate('/invoices');
         } catch (err) {
             setError('Invalid email or password');
             console.error(err);
