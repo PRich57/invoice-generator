@@ -1,9 +1,13 @@
 import axios from 'axios';
-
-const API_URL = 'http://localhost:8000/api/v1';
+import { API_BASE_URL, API_ENDPOINTS } from '../constants/apiEndpoints';
+import { Invoice, InvoiceCreate, InvoiceUpdate, Contact, ContactCreate, ContactUpdate, Template, TemplateCreate, TemplateUpdate } from '../types';
 
 const api = axios.create({
-    baseURL: API_URL,
+    baseURL: API_BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    withCredentials: true,
 });
 
 export const login = async (email: string, password: string) => {
@@ -11,41 +15,37 @@ export const login = async (email: string, password: string) => {
     formData.append('username', email);
     formData.append('password', password);
 
-    const response = await api.post('/auth/token', formData, {
+    const response = await api.post(API_ENDPOINTS.LOGIN, formData, {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
     });
 
-    // Store token in localStorage
-    if (response.data.access_token) {
-        localStorage.setItem('token', response.data.access_token);
-        api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
-    }
-
-    return response.data;
+    return response;
 };
 
 export const register = async (email: string, password: string) => {
-    const response = await api.post('/auth/register', { email, password });
+    const response = await api.post(API_ENDPOINTS.REGISTER, { email, password });
     return response.data;
 };
 
-api.defaults.headers.common['Content-Type'] = 'application/json';
+export const getInvoices = () => api.get<Invoice[]>(API_ENDPOINTS.INVOICES);
+export const getInvoice = (id: number) => api.get<Invoice>(`${API_ENDPOINTS.INVOICES}/${id}`);
+export const createInvoice = (data: InvoiceCreate) => api.post<Invoice>(API_ENDPOINTS.INVOICES, data);
+export const updateInvoice = (id: number, data: InvoiceUpdate) => api.put<Invoice>(`${API_ENDPOINTS.INVOICES}/${id}`, data);
+export const deleteInvoice = (id: number) => api.delete(`${API_ENDPOINTS.INVOICES}/${id}`);
 
-// Contact API endpoints
-export const getContacts = () => api.get('/contacts');
-export const getContact = (id: number) => api.get(`/contacts/${id}`);
-export const createContact = (data: any) => api.post('/contacts', data);
-export const updateContact = (id: number, data: any) => api.put(`/contacts/${id}`, data);
-export const deleteContact = (id: number) => api.delete(`/contacts/${id}`);
+export const getContacts = () => api.get<Contact[]>(API_ENDPOINTS.CONTACTS);
+export const getContact = (id: number) => api.get<Contact>(`${API_ENDPOINTS.CONTACTS}/${id}`);
+export const createContact = (data: ContactCreate) => api.post<Contact>(API_ENDPOINTS.CONTACTS, data);
+export const updateContact = (id: number, data: ContactUpdate) => api.put<Contact>(`${API_ENDPOINTS.CONTACTS}/${id}`, data);
+export const deleteContact = (id: number) => api.delete(`${API_ENDPOINTS.CONTACTS}/${id}`);
 
-// Invoice API endpoints
-export const getInvoices = () => api.get('/invoices');
-export const getInvoice = (id: number) => api.get(`/invoices/${id}`);
-export const createInvoice = (data: any) => api.post('/invoices', data);
-export const updateInvoice = (id: number, data: any) => api.put(`/invoices/${id}`, data);
-export const deleteInvoice = (id: number) => api.delete(`/invoices/${id}`);
+export const getTemplates = () => api.get<Template[]>(API_ENDPOINTS.TEMPLATES);
+export const getTemplate = (id: number) => api.get<Template>(`${API_ENDPOINTS.TEMPLATES}/${id}`);
+export const createTemplate = (data: TemplateCreate) => api.post<Template>(API_ENDPOINTS.TEMPLATES, data);
+export const updateTemplate = (id: number, data: TemplateUpdate) => api.put<Template>(`${API_ENDPOINTS.TEMPLATES}/${id}`, data);
+export const deleteTemplate = (id: number) => api.delete(`${API_ENDPOINTS.TEMPLATES}/${id}`);
 
 // Add a request interceptor to include the token in subsequent requests
 api.interceptors.request.use(

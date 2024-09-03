@@ -1,30 +1,65 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import api, { login as apiLogin } from '../services/api';
 
 interface AuthContextType {
-    token: string | null;
-    setToken: (token: string | null) => void;
     isAuthenticated: boolean;
+    token: string | null;
+    login: (email: string, password: string) => Promise<void>;
+    logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [token, setToken] = useState<string | null>(null);
 
-    const contextValue: AuthContextType = {
-        token,
-        setToken: (newToken) => {
-            setToken(newToken);
-            if (newToken) {
-                localStorage.setItem('token', newToken);
-            } else {
-                localStorage.removeItem('token');
-            }
-        },
-        isAuthenticated: !!token,
+    useEffect(() => {
+        checkAuthStatus();
+    }, []);
+
+    const checkAuthStatus = async () => {
+        const storedToken = localStorage.getItem('token');
+        if (storedToken) {
+            setToken(storedToken);
+            setIsAuthenticated(true);
+        }
     };
 
-    return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
+    const login = async (email: string, password: string) => {
+        try {
+            const response = await apiLogin(email, password);
+            const newToken = response.data.access_token;
+            if (newToken) {
+                setToken(newToken);
+                localStorage.setItem('token', newToken);
+                setIsAuthenticated(true);
+            } else {
+                throw new Error('No access token received');
+            }
+        } catch (error) {
+            console.error('Login failed:', error);
+            throw error;
+        }
+    };
+
+    const logout = async () => {
+        try {
+            await api.post('/auth/logout');
+        } catch (error) {
+            console.error('Logout failed:', error);
+        } finally {
+            setToken(null);
+            localStorage.removeItem('token');
+            setIsAuthenticated(false);
+        }
+    };
+
+    return (
+        <AuthContext.Provider value={{ isAuthenticated, token, login, logout }}>
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
 export const useAuth = () => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios, { AxiosRequestConfig } from 'axios';
 import { useAuth } from './useAuth';
 
@@ -6,6 +6,7 @@ interface UseFetchResult<T> {
     data: T | null;
     isLoading: boolean;
     error: string | null;
+    refetch: () => void;
 }
 
 export const useFetch = <T>(url: string, options?: AxiosRequestConfig): UseFetchResult<T> => {
@@ -14,26 +15,32 @@ export const useFetch = <T>(url: string, options?: AxiosRequestConfig): UseFetch
     const [error, setError] = useState<string | null>(null);
     const { token } = useAuth();
 
+    const fetchData = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            const response = await axios(url, {
+                ...options,
+                headers: {
+                    ...options?.headers,
+                    Authorization: token ? `Bearer ${token}` : undefined,
+                },
+            });
+            setData(response.data);
+        } catch (error) {
+            setError('An error occurred while fetching data');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [url, token, options]);
+
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await axios(url, {
-                    ...options,
-                    headers: {
-                        ...options?.headers,
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                setData(response.data);
-            } catch (error) {
-                setError('An error occurred while fetching data');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchData();
-    }, [url, token]);
+    }, [fetchData]);
 
-    return { data, isLoading, error };
+    const refetch = useCallback(() => {
+        fetchData();
+    }, [fetchData]);
+
+    return { data, isLoading, error, refetch };
 };
