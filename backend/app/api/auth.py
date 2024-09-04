@@ -44,7 +44,7 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
         httponly=True,
         expires=access_token_expires,
         samesite='lax',
-        secure=settings.PRODUCTION
+        secure=settings.PRODUCTION # Set to True for HTTPS only cookies
     )
     
     return {"access_token": access_token, "token_type": "bearer"}

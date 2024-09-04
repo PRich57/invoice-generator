@@ -2,14 +2,16 @@ import React from 'react';
 import { AppBar, Toolbar, Typography, Drawer, List, ListItemButton, ListItemIcon, ListItemText, IconButton, Box } from '@mui/material';
 import { Menu as MenuIcon, Dashboard as DashboardIcon, Receipt as InvoicesIcon, Person as ContactsIcon, Description as TemplatesIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 const drawerWidth = 240;
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
+    const handleLogout = async () => {
+        await logout();
         navigate('/login');
     };
 

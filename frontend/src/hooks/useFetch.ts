@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios, { AxiosRequestConfig } from 'axios';
 import { useAuth } from './useAuth';
+import { API_BASE_URL } from '../constants/apiEndpoints';
 
 interface UseFetchResult<T> {
     data: T | null;
@@ -9,30 +10,31 @@ interface UseFetchResult<T> {
     refetch: () => void;
 }
 
-export const useFetch = <T>(url: string, options?: AxiosRequestConfig): UseFetchResult<T> => {
+export const useFetch = <T>(endpoint: string, options?: AxiosRequestConfig): UseFetchResult<T> => {
     const [data, setData] = useState<T | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const { token } = useAuth();
+    const { isAuthenticated } = useAuth();
 
     const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
             setError(null);
-            const response = await axios(url, {
+            const response = await axios(`${API_BASE_URL}${endpoint}`, {
                 ...options,
                 headers: {
                     ...options?.headers,
-                    Authorization: token ? `Bearer ${token}` : undefined,
+                    ...(isAuthenticated ? { Authorization: `Bearer ${localStorage.getItem('token')}` } : {}),
                 },
             });
             setData(response.data);
         } catch (error) {
             setError('An error occurred while fetching data');
+            console.error('Fetch error:', error);
         } finally {
             setIsLoading(false);
         }
-    }, [url, token, options]);
+    }, [endpoint, isAuthenticated, options]);
 
     useEffect(() => {
         fetchData();

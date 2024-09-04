@@ -1,42 +1,51 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import api, { login as apiLogin } from '../services/api';
+import { User } from '../types';
+import * as api from '../services/api';
 
 interface AuthContextType {
     isAuthenticated: boolean;
-    token: string | null;
+    user: User | null;
     login: (email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
+    loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-    const [token, setToken] = useState<string | null>(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
         checkAuthStatus();
     }, []);
 
     const checkAuthStatus = async () => {
-        const storedToken = localStorage.getItem('token');
-        if (storedToken) {
-            setToken(storedToken);
-            setIsAuthenticated(true);
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                // You might want to implement a /me endpoint to get user details
+                // const response = await api.getCurrentUser();
+                // setUser(response.data);
+                setIsAuthenticated(true);
+            } catch (error) {
+                console.error('Failed to verify token:', error);
+                localStorage.removeItem('token');
+            }
         }
+        setLoading(false);
     };
 
     const login = async (email: string, password: string) => {
         try {
-            const response = await apiLogin(email, password);
-            const newToken = response.data.access_token;
-            if (newToken) {
-                setToken(newToken);
-                localStorage.setItem('token', newToken);
-                setIsAuthenticated(true);
-            } else {
-                throw new Error('No access token received');
-            }
+            const response = await api.login(email, password);
+            const { access_token } = response.data;
+            localStorage.setItem('token', access_token);
+            setIsAuthenticated(true);
+            // Fetch user details after successful login
+            // const userResponse = await api.getCurrentUser();
+            // setUser(userResponse.data);
         } catch (error) {
             console.error('Login failed:', error);
             throw error;
@@ -45,18 +54,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const logout = async () => {
         try {
-            await api.post('/auth/logout');
+            await api.logout();
         } catch (error) {
             console.error('Logout failed:', error);
         } finally {
-            setToken(null);
             localStorage.removeItem('token');
             setIsAuthenticated(false);
+            setUser(null);
         }
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, token, login, logout }}>
+        <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );

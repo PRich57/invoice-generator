@@ -1,19 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { Template } from '../types';
-import { getTemplates, deleteTemplate } from '../services/api';
+import { deleteTemplate } from '../services/api';
+import { useFetch } from '../hooks/useFetch';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import ConfirmationDialog from '../components/common/ConfirmationDialogue';
-import { useFetch } from '../hooks/useFetch';
 
 const TemplatesList: React.FC = () => {
     const navigate = useNavigate();
     const { data: templates, isLoading, error, refetch } = useFetch<Template[]>('/templates');
-    const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
-    const [templateToDelete, setTemplateToDelete] = React.useState<number | null>(null);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [templateToDelete, setTemplateToDelete] = useState<number | null>(null);
 
     const handleEdit = (id: number) => {
         navigate(`/templates/edit/${id}`);
@@ -57,6 +57,8 @@ const TemplatesList: React.FC = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell>Name</TableCell>
+                            <TableCell>Font Family</TableCell>
+                            <TableCell>Font Size</TableCell>
                             <TableCell>Actions</TableCell>
                         </TableRow>
                     </TableHead>
@@ -64,6 +66,8 @@ const TemplatesList: React.FC = () => {
                         {templates?.map((template) => (
                             <TableRow key={template.id}>
                                 <TableCell>{template.name}</TableCell>
+                                <TableCell>{template.font_family}</TableCell>
+                                <TableCell>{template.font_size}</TableCell>
                                 <TableCell>
                                     <Button startIcon={<EditIcon />} onClick={() => handleEdit(template.id)}>
                                         Edit
