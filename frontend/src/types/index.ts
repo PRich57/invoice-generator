@@ -44,6 +44,7 @@ export interface InvoiceSubItem {
 export interface Invoice {
     id: number;
     user_id: number;
+    template_id: number;
     invoice_number: string;
     invoice_date: string;
     bill_to_id: number;
@@ -54,10 +55,10 @@ export interface Invoice {
     items: InvoiceItem[];
     subtotal: number;
     tax: number;
-    total: number;
+    total: string;
 }
 
-export interface InvoiceCreate extends Pick<Invoice, 'invoice_number' | 'invoice_date' | 'bill_to_id' | 'send_to_id' | 'tax_rate' | 'discount_percentage' | 'notes' | 'items'> {}
+export interface InvoiceCreate extends Pick<Invoice, 'invoice_number' | 'template_id' | 'invoice_date' | 'bill_to_id' | 'send_to_id' | 'tax_rate' | 'discount_percentage' | 'notes' | 'items'> {}
 
 export interface InvoiceUpdate extends Partial<InvoiceCreate> {
     id: number;
@@ -86,12 +87,29 @@ export interface Template {
     id: number;
     user_id: number;
     name: string;
-    content: string;
-    font_family: string;
-    font_size: number;
-    primary_color: string;
-    secondary_color: string;
-    logo_url?: string;
+    colors: {
+        primary: string;
+        secondary: string;
+        accent: string;
+    };
+    fonts: {
+        main: string;
+        accent: string;
+    };
+    font_sizes: {
+        title: number;
+        invoice_number: number;
+        section_header: number;
+        table_header: number;
+        normal_text: number;
+    };
+    layout: {
+        page_size: string;
+        margin_top: number;
+        margin_right: number;
+        margin_bottom: number;
+        margin_left: number;
+    };
     custom_css?: string;
 }
 
@@ -109,4 +127,12 @@ export interface ApiResponse<T> {
 export interface ApiError {
     message: string;
     errors?: Record<string, string[]>;
+}
+
+export interface AuthContextType {
+    isAuthenticated: boolean;
+    user: User | null;
+    login: (email: string, password: string) => Promise<void>;
+    logout: () => Promise<void>;
+    loading: boolean;
 }

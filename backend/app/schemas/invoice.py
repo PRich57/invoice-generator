@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from ..core.exceptions import InvalidInvoiceNumberException, InvalidContactIdException
+from ..core.exceptions import InvalidInvoiceNumberException, InvalidContactIdException, TemplateNotFoundException
 
 from pydantic import BaseModel, Field, computed_field, field_validator
 
@@ -50,6 +50,7 @@ class InvoiceBase(BaseModel):
     discount_percentage: Decimal = Field(default=0, ge=0, le=100)
     notes: str | None = Field(None, max_length=500)
     items: list[InvoiceItemCreate]
+    template_id: int = Field(..., gt=0)
     
     @field_validator('invoice_number')
     def validate_invoice_number(cls, value: str) -> str:
@@ -61,6 +62,12 @@ class InvoiceBase(BaseModel):
     def validate_contact_ids(cls, value: int, field: str) -> int:
         if value <= 0:
             raise InvalidContactIdException(field.name)
+        return value
+    
+    @field_validator('template_id')
+    def validate_template_id(cls, value: int , field: str) -> int:
+        if value <= 0:
+            raise TemplateNotFoundException(field.name)
         return value
 
 class InvoiceCreate(InvoiceBase):

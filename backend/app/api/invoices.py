@@ -11,7 +11,7 @@ from ..core.exceptions import (ContactNotFoundException,
 from ..database import get_db
 from ..schemas.invoice import Invoice, InvoiceCreate
 from ..schemas.user import User
-from ..services import invoice_service, template_service
+from ..services import invoice_service, template_service, pdf_service
 
 router = APIRouter()
 
@@ -41,7 +41,7 @@ def create_invoice(
 ):
     try:
         return invoice_service.create_invoice(db, invoice, current_user.id)
-    except (InvoiceNumberAlreadyExistsException, ContactNotFoundException, InvalidContactIdException, InvalidInvoiceNumberException) as e:
+    except (InvoiceNumberAlreadyExistsException, ContactNotFoundException, InvalidContactIdException, InvalidInvoiceNumberException, TemplateNotFoundException) as e:
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
@@ -89,6 +89,27 @@ def delete_invoice(
     if db_invoice is None:
         raise InvoiceNotFoundException()
     return db_invoice
+
+@router.get("/{invoice_id}/pdf")
+def generate_invoice_pdf(
+    invoice_id: int,
+    template_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    invoice = invoice_service.get_invoice(db, invoice_id, current_user.id)
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    template = template_service.get_template(db, template_id, current_user.id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    pdf_content = pdf_service.generate_pdf(invoice, template)
+    
+    return Response(content=pdf_content, media_type="application/pdf", headers={
+        "Content-Disposition": f"attachment; filename=invoice_{invoice_id}.pdf"
+    })
 
 @router.post("/{invoice_id}/regenerate")
 def regenerate_invoice(

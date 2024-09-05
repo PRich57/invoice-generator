@@ -2,12 +2,11 @@ from pydantic import BaseModel, Field
 
 class TemplateBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    content: dict
-    font_family: str = Field(..., max_length=50)
-    font_size: int = Field(..., gt=0)
-    primary_color: str = Field(..., pattern=r'^#[0-9A-Fa-f]{6}$')
-    secondary_color: str = Field(..., pattern=r'^#[0-9A-Fa-f]{6}$')
-    logo_url: str | None = Field(None, max_length=255)
+    is_default: bool = Field(default=False)
+    colors: dict
+    fonts: dict
+    font_sizes: dict
+    layout: dict
     custom_css: str | None = Field(None, max_length=1000)
 
 class TemplateCreate(TemplateBase):
@@ -18,7 +17,7 @@ class TemplateUpdate(TemplateBase):
 
 class Template(TemplateBase):
     id: int
-    user_id: int
+    user_id: int | None = None
 
     class Config:
         from_attributes = True

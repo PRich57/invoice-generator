@@ -31,7 +31,4 @@ def authenticate_user(db: Session, email: str, password: str):
     return user
 
 def is_active(user: User) -> bool:
-    return True  # You can add more complex logic here if needed
-
-def is_superuser(user: User) -> bool:
-    return False  # You can add superuser logic if needed
+    return True

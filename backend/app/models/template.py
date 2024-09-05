@@ -1,4 +1,4 @@
-from sqlalchemy import JSON, Column, ForeignKey, Integer, String
+from sqlalchemy import JSON, Column, ForeignKey, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 
 from ..database import Base
@@ -8,14 +8,13 @@ class Template(Base):
     __tablename__ = "templates"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
     name = Column(String, unique=True, index=True)
-    content = Column(JSON)
-    font_family = Column(String)
-    font_size = Column(Integer)
-    primary_color = Column(String)
-    secondary_color = Column(String)
-    logo_url = Column(String, nullable=True)
+    is_default = Column(Boolean, default=False, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    colors = Column(JSON)
+    fonts = Column(JSON)
+    font_sizes = Column(JSON)
+    layout = Column(JSON)
     custom_css = Column(String, nullable=True)
 
     user = relationship("User", back_populates="templates")

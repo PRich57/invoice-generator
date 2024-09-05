@@ -1,6 +1,6 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { API_BASE_URL, API_ENDPOINTS } from '../constants/apiEndpoints';
-import { Invoice, InvoiceCreate, Contact, ContactCreate, ContactUpdate, Template, TemplateCreate, TemplateUpdate } from '../types';
+import { User, Invoice, InvoiceCreate, Contact, ContactCreate, ContactUpdate, Template, TemplateCreate, TemplateUpdate } from '../types';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -54,6 +54,13 @@ export const createTemplate = (data: TemplateCreate) => api.post<Template>(API_E
 export const updateTemplate = (id: number, data: TemplateUpdate) => api.put<Template>(`${API_ENDPOINTS.TEMPLATES}/${id}`, data);
 export const deleteTemplate = (id: number) => api.delete(`${API_ENDPOINTS.TEMPLATES}/${id}`);
 
+// PDF Generation
+export const generateInvoicePDF = (invoiceId: number, templateId: number) => 
+    api.get(`${API_ENDPOINTS.INVOICES}/${invoiceId}/pdf?template_id=${templateId}`, { responseType: 'blob' });
+
+// Get current authenticated user
+export const getCurrentUser = () => api.get<User>(`${API_BASE_URL}/auth/me`);
+
 // Add a request interceptor to include the token in subsequent requests
 api.interceptors.request.use(
     (config) => {
@@ -64,6 +71,46 @@ api.interceptors.request.use(
         return config;
     },
     (error) => {
+        return Promise.reject(error);
+    }
+);
+
+api.interceptors.response.use(
+    (response: AxiosResponse) => {
+        return response;
+    },
+    async (error: AxiosError) => {
+        const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+
+            try {
+                const refreshToken = localStorage.getItem('refresh_token');
+                const response = await axios.post(`${API_BASE_URL}/auth/token/refresh`, { refresh_token: refreshToken });
+
+                const { access_token, refresh_token } = response.data;
+                localStorage.setItem('token', access_token);
+                localStorage.setItem('refresh_token', refresh_token);
+
+                api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+
+                if (!originalRequest.headers) {
+                    originalRequest.headers = {};
+                }
+                
+                originalRequest.headers['Authorization'] = `Bearer ${access_token}`;
+
+                return api(originalRequest);
+            } catch (refreshError) {
+                console.error('Token refresh failed:', refreshError);
+                localStorage.removeItem('token');
+                localStorage.removeItem('refresh_token');
+                window.location.href = '/login'; // Redirect to login
+                return Promise.reject(refreshError);
+            }
+        }
+
         return Promise.reject(error);
     }
 );

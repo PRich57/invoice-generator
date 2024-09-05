@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon, Visibility as ViewIcon, Add as AddIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Delete as DeleteIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
 import { Invoice } from '../types';
-import { getInvoices, deleteInvoice } from '../services/api';
+import { getInvoices, deleteInvoice, generateInvoicePDF } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import ConfirmationDialog from '../components/common/ConfirmationDialogue';
-import { format } from 'date-fns';
+import { formatCurrency } from '../utils/currencyFormatter';
 
 const InvoicesList: React.FC = () => {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -33,10 +33,6 @@ const InvoicesList: React.FC = () => {
         }
     };
 
-    const handleView = (id: number) => {
-        navigate(`/invoices/${id}`);
-    };
-
     const handleEdit = (id: number) => {
         navigate(`/invoices/edit/${id}`);
     };
@@ -58,6 +54,22 @@ const InvoicesList: React.FC = () => {
         setDeleteConfirmOpen(false);
     };
 
+    const handleDownloadPDF = async (invoice: Invoice) => {
+        try {
+            const response = await generateInvoicePDF(invoice.id, invoice.template_id);
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `invoice_${invoice.invoice_number}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+        } catch (err) {
+            setError('Failed to download PDF. Please try again.');
+        }
+    };
+
     if (loading) return <LoadingSpinner />;
     if (error) return <ErrorMessage message={error} />;
 
@@ -68,7 +80,6 @@ const InvoicesList: React.FC = () => {
                 <Button
                     variant="contained"
                     color="primary"
-                    startIcon={<AddIcon />}
                     onClick={() => navigate('/invoices/new')}
                 >
                     Create New Invoice
@@ -89,18 +100,18 @@ const InvoicesList: React.FC = () => {
                         {invoices.map((invoice) => (
                             <TableRow key={invoice.id}>
                                 <TableCell>{invoice.invoice_number}</TableCell>
-                                <TableCell>{format(new Date(invoice.invoice_date), 'yyyy-MM-dd')}</TableCell>
+                                <TableCell>{new Date(invoice.invoice_date).toLocaleDateString()}</TableCell>
                                 <TableCell>{invoice.bill_to_id}</TableCell>
-                                <TableCell>${invoice.total.toFixed(2)}</TableCell>
+                                <TableCell>{formatCurrency(invoice.total)}</TableCell>
                                 <TableCell>
-                                    <Button startIcon={<ViewIcon />} onClick={() => handleView(invoice.id)}>
-                                        View
-                                    </Button>
                                     <Button startIcon={<EditIcon />} onClick={() => handleEdit(invoice.id)}>
                                         Edit
                                     </Button>
                                     <Button startIcon={<DeleteIcon />} onClick={() => handleDeleteClick(invoice.id)}>
                                         Delete
+                                    </Button>
+                                    <Button startIcon={<PdfIcon />} onClick={() => handleDownloadPDF(invoice)}>
+                                        Download PDF
                                     </Button>
                                 </TableCell>
                             </TableRow>

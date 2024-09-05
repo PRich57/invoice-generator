@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { TextField, Button, Typography, Box, MenuItem, IconButton, TextFieldProps } from '@mui/material';
+import { TextField, Button, Typography, Box, MenuItem, IconButton, TextFieldProps, Select, FormControl, InputLabel } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { Add as AddIcon, Remove as RemoveIcon } from '@mui/icons-material';
 import { useFormik, FieldArray, FormikProvider } from 'formik';
-import { InvoiceCreate, Contact, InvoiceItem, InvoiceSubItem } from '../types';
-import { createInvoice, getInvoice, updateInvoice } from '../services/api';
+import { InvoiceCreate, Contact, InvoiceItem, InvoiceSubItem, Template } from '../types';
+import { createInvoice, getInvoice, updateInvoice, generateInvoicePDF, getTemplates } from '../services/api';
 import ErrorMessage from '../components/common/ErrorMessage';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useContacts } from '../hooks/useContacts';
@@ -16,12 +16,13 @@ import { InvoiceItemFields } from '../components/invoices/InvoiceItemFields';
 
 const InvoiceForm: React.FC = () => {
     const [loading, setLoading] = useState(false);
+    const [templates, setTemplates] = useState<Template[]>([]);
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
     const { contacts, error: contactsError, loading: contactsLoading } = useContacts();
     const { error, setError, handleError } = useErrorHandler();
 
-    const initialValues: InvoiceCreate = useMemo(() => ({
+    const initialValues: InvoiceCreate & { template_id: number } = useMemo(() => ({
         invoice_number: '',
         invoice_date: formatDateForAPI(new Date()),
         bill_to_id: 0,
@@ -37,19 +38,27 @@ const InvoiceForm: React.FC = () => {
             discount_percentage: 0,
             subitems: []
         }],
+        template_id: 0,
     }), []);
 
-    const formik = useFormik<InvoiceCreate>({
+    const formik = useFormik<InvoiceCreate & { template_id: number }>({
         initialValues,
         validationSchema: invoiceValidationSchema,
         onSubmit: async (values) => {
             setLoading(true);
             try {
+                let invoiceId;
                 if (id) {
                     await updateInvoice(parseInt(id), values);
+                    invoiceId = parseInt(id);
                 } else {
-                    await createInvoice(values);
+                    const response = await createInvoice(values);
+                    invoiceId = response.data.id;
                 }
+
+                // Generate PDF after creating/updating the invoice
+                await generateAndDownloadPDF(invoiceId, values.template_id);
+
                 navigate('/invoices');
             } catch (err) {
                 handleError(err);
@@ -59,22 +68,35 @@ const InvoiceForm: React.FC = () => {
         },
     });
 
-    useEffect(() => {
-        if (id) {
-            const fetchInvoice = async () => {
-                setLoading(true);
-                try {
-                    const response = await getInvoice(parseInt(id));
-                    formik.setValues(response.data);
-                } catch (err) {
-                    handleError(err);
-                } finally {
-                    setLoading(false);
-                }
-            };
-            fetchInvoice();
+    const generateAndDownloadPDF = async (invoiceId: number, templateId: number) => {
+        try {
+            const response = await generateInvoicePDF(invoiceId, templateId);
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `invoice_${invoiceId}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+        } catch (err) {
+            handleError(err);
         }
-    }, [id, handleError]);
+    };
+
+    useEffect(() => {
+        const fetchTemplates = async () => {
+            try {
+                const response = await getTemplates();
+                setTemplates(response.data);
+            } catch (err) {
+                handleError(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchTemplates();
+    }, [handleError]);
 
     if (loading || contactsLoading) return <LoadingSpinner />;
     if (error || contactsError) return <ErrorMessage message={error || contactsError || 'An error occurred'} />;
@@ -207,8 +229,26 @@ const InvoiceForm: React.FC = () => {
                     helperText={formik.touched.notes && formik.errors.notes}
                 />
 
+                <FormControl fullWidth margin="normal">
+                    <InputLabel id="template-select-label">Template</InputLabel>
+                    <Select
+                        labelId="template-select-label"
+                        id="template_id"
+                        name="template_id"
+                        value={formik.values.template_id}
+                        onChange={formik.handleChange}
+                        error={formik.touched.template_id && Boolean(formik.errors.template_id)}
+                    >
+                        {templates.map((template) => (
+                            <MenuItem key={template.id} value={template.id}>
+                                {template.name}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+
                 <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
-                    Save Invoice
+                    {id ? 'Update Invoice and Generate PDF' : 'Create Invoice and Generate PDF'}
                 </Button>
             </Box>
         </FormikProvider>

@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.app.services import template_service
+
 from .api import (auth_router, contacts_router, invoices_router,
                   templates_router)
 from .core.exceptions import (ContactAlreadyExistsException,
@@ -9,7 +11,7 @@ from .core.exceptions import (ContactAlreadyExistsException,
                               InvoiceNotFoundException,
                               InvoiceNumberAlreadyExistsException,
                               TemplateNotFoundException)
-from .database import engine
+from .database import SessionLocal, engine
 from .models import contact, invoice, template, user
 
 # Create tables
@@ -62,6 +64,12 @@ async def template_not_found_exception_handler(request: Request, exc: TemplateNo
         status_code=exc.status_code,
         content={"message": exc.detail},
     )
+    
+@app.on_event("startup")
+async def startup():
+    db = SessionLocal()
+    template_service.create_default_templates(db)
+    db.close()
 
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(contacts_router, prefix="/api/v1/contacts", tags=["contacts"])

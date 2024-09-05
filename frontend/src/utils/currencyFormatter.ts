@@ -1,6 +1,9 @@
-export const formatCurrency = (amount: number, currency: string = 'USD'): string => {
-    return new Intl.NumberFormat('en-US', {
+export const formatCurrency = (value: string | number): string => {
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    return numValue.toLocaleString('en-US', {
         style: 'currency',
-        currency: currency,
-    }).format(amount);
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 };

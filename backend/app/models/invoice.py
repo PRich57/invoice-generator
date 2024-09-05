@@ -45,11 +45,13 @@ class Invoice(Base):
     tax_rate = Column(DECIMAL(5, 2))
     discount_percentage = Column(DECIMAL(5, 2), nullable=True, default=0)
     notes = Column(String, nullable=True)
+    template_id = Column(Integer, ForeignKey("templates.id"), nullable=False)
 
     user = relationship("User", back_populates="invoices")
     bill_to = relationship("Contact", foreign_keys=[bill_to_id])
     send_to = relationship("Contact", foreign_keys=[send_to_id])
     items = relationship("InvoiceItem", back_populates="invoice", cascade="all, delete-orphan")
+    template = relationship("Template")
     
     @hybrid_property
     def subtotal(self):

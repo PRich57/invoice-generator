@@ -1,5 +1,4 @@
 import logging
-from decimal import Decimal
 from io import BytesIO
 
 from reportlab.lib import colors
@@ -10,9 +9,8 @@ from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
 from sqlalchemy.orm import Session
 
 from ..core.exceptions import (BadRequestException, ContactNotFoundException,
-                               InvalidContactIdException,
                                InvalidInvoiceNumberException,
-                               InvoiceNumberAlreadyExistsException)
+                               InvoiceNumberAlreadyExistsException, TemplateNotFoundException)
 from ..models.contact import Contact
 from ..models.invoice import Invoice, InvoiceItem, InvoiceSubItem
 from ..models.template import Template
@@ -41,7 +39,7 @@ def create_invoice(db: Session, invoice: InvoiceCreate, user_id: int):
     
     if invoice.invoice_number.lower() == 'string':
         logger.error(f"Invalid invoice number: {invoice.invoice_number}")
-        raise BadRequestException("Invalid invoice number. Please provide a proper invoice number.")
+        raise InvalidInvoiceNumberException("Invalid invoice number. Please provide a proper invoice number.")
     
     # Check if invoice number exists for the same bill_to contact
     existing_invoice = db.query(Invoice).filter(
@@ -55,6 +53,14 @@ def create_invoice(db: Session, invoice: InvoiceCreate, user_id: int):
     if existing_invoice:
         logger.debug(f"Invoice number {invoice.invoice_number} already exists for this bill_to contact")
         raise InvoiceNumberAlreadyExistsException()
+    
+    template = db.query(Template).filter(
+        (Template.id == invoice.template_id) & 
+        ((Template.user_id == user_id) | (Template.is_default == True))
+    ).first()
+    
+    if not template:
+        raise TemplateNotFoundException()
     
     all_user_invoices = db.query(Invoice).filter(Invoice.user_id == user_id).all()
     logger.debug(f"All invoices for user {user_id}: {[inv.invoice_number for inv in all_user_invoices]}")
@@ -90,6 +96,11 @@ def update_invoice(db: Session, invoice_id: int, invoice: InvoiceCreate, user_id
     db_invoice = get_invoice(db, invoice_id, user_id)
     if db_invoice is None:
         return None
+    
+    if invoice.template_id is not None:
+        template = db.query(Template).filter(Template.id == invoice.template_id, Template.user_id == user_id).first()
+        if not template:
+            raise TemplateNotFoundException()
 
     for key, value in invoice.model_dump(exclude={'items'}).items():
         setattr(db_invoice, key, value)

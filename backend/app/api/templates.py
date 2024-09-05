@@ -33,36 +33,36 @@ def read_templates(
     templates = template_service.get_templates(db, current_user.id, skip=skip, limit=limit)
     return templates
 
-@router.get("/{template_name}", response_model=Template)
+@router.get("/{template_id}", response_model=Template)
 def read_template(
-    template_name: str,
+    template_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_template = template_service.get_template(db, template_name, current_user.id)
+    db_template = template_service.get_template(db, template_id, current_user.id)
     if db_template is None:
         raise TemplateNotFoundException()
     return db_template
 
-@router.put("/{template_name}", response_model=Template)
+@router.put("/{template_id}", response_model=Template)
 def update_template(
-    template_name: str,
+    template_id: int,
     template: TemplateUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_template = template_service.update_template(db, template_name, template, current_user.id)
+    db_template = template_service.update_template(db, template_id, template, current_user.id)
     if db_template is None:
         raise TemplateNotFoundException()
     return db_template
 
-@router.delete("/{template_name}", response_model=Template)
+@router.delete("/{template_id}", response_model=Template)
 def delete_template(
-    template_name: str,
+    template_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_template = template_service.delete_template(db, template_name, current_user.id)
+    db_template = template_service.delete_template(db, template_id, current_user.id)
     if db_template is None:
         raise TemplateNotFoundException()
     return db_template
