@@ -79,91 +79,12 @@ DEFAULT_TEMPLATES = {
 }
 
 def create_default_templates(db: Session):
-    default_templates = [
-        {
-            "name": "Default",
+    for name, config in DEFAULT_TEMPLATES.items():
+        template_data = {
+            "name": name.capitalize(),
             "is_default": True,
-            "colors": {
-                "primary": "#000000",
-                "secondary": "#555555",
-                "accent": "#444444"
-            },
-            "fonts": {
-                "main": "Helvetica",
-                "accent": "Helvetica-Bold"
-            },
-            "font_sizes": {
-                "title": 20,
-                "invoice_number": 14,
-                "section_header": 8,
-                "table_header": 10,
-                "normal_text": 9
-            },
-            "layout": {
-                "page_size": "A4",
-                "margin_top": 0.3,
-                "margin_right": 0.5,
-                "margin_bottom": 0.5,
-                "margin_left": 0.5
-            }
-        },
-        {
-            "name": "Modern",
-            "is_default": True,
-            "colors": {
-                "primary": "#2C3E50",
-                "secondary": "#7F8C8D",
-                "accent": "#3498DB"
-            },
-            "fonts": {
-                "main": "Helvetica",
-                "accent": "Helvetica-Bold"
-            },
-            "font_sizes": {
-                "title": 24,
-                "invoice_number": 16,
-                "section_header": 12,
-                "table_header": 14,
-                "normal_text": 10
-            },
-            "layout": {
-                "page_size": "A4",
-                "margin_top": 0.4,
-                "margin_right": 0.6,
-                "margin_bottom": 0.4,
-                "margin_left": 0.6
-            }
-        },
-        {
-            "name": "Classic",
-            "is_default": True,
-            "colors": {
-                "primary": "#4A4A4A",
-                "secondary": "#A9A9A9",
-                "accent": "#8B0000"
-            },
-            "fonts": {
-                "main": "Times-Roman",
-                "accent": "Times-Bold"
-            },
-            "font_sizes": {
-                "title": 22,
-                "invoice_number": 14,
-                "section_header": 11,
-                "table_header": 12,
-                "normal_text": 9
-            },
-            "layout": {
-                "page_size": "LETTER",
-                "margin_top": 0.5,
-                "margin_right": 0.5,
-                "margin_bottom": 0.5,
-                "margin_left": 0.5
-            }
+            **config
         }
-    ]
-    
-    for template_data in default_templates:
         db_template = db.query(Template).filter(Template.name == template_data["name"]).first()
         if not db_template:
             db_template = Template(**template_data)
@@ -177,6 +98,26 @@ def create_template(db: Session, template: TemplateCreate, user_id: int):
     db.commit()
     db.refresh(db_template)
     return db_template
+
+def copy_template(db: Session, template_id: int, user_id: int):
+    template = get_template(db, template_id)
+    if template is None:
+        return None
+    
+    new_template = Template(
+        name=f"Copy of {template.name}",
+        is_default=False,
+        user_id=user_id,
+        colors=template.colors,
+        fonts=template.fonts,
+        font_sizes=template.font_sizes,
+        layout=template.layout,
+        custom_css=template.custom_css
+    )
+    db.add(new_template)
+    db.commit()
+    db.refresh(new_template)
+    return new_template
 
 def get_template(db: Session, template_id: int, user_id: int | None = None):
     query = db.query(Template).filter(Template.id == template_id)
@@ -218,10 +159,10 @@ def delete_template(db: Session, template_id: int, user_id: int):
 
 def get_or_create_default_templates(db: Session, user_id: int):
     existing_templates = get_templates(db, user_id)
-    existing_template_names = {t.name for t in existing_templates}
+    existing_template_names = {t.name.lower() for t in existing_templates}
     
     for name, config in DEFAULT_TEMPLATES.items():
         if name not in existing_template_names:
-            create_template(db, TemplateCreate(name=name, **config), user_id)
+            create_template(db, TemplateCreate(name=name.capitalize(), **config), user_id)
     
     return get_templates(db, user_id)
