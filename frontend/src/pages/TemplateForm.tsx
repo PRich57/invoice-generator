@@ -38,13 +38,13 @@ const validationSchema = Yup.object().shape({
 const DEFAULT_TEMPLATES = {
     default: {
         colors: {
-            primary: "#000000",
+            primary: "#333333",
             secondary: "#555555",
             accent: "#444444"
         },
         fonts: {
-            main: "Helvetica",
-            accent: "Helvetica-Bold"
+            main: "Arial",
+            accent: "Arial-Bold"
         },
         font_sizes: {
             title: 20,

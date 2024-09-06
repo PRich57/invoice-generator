@@ -33,6 +33,9 @@ export const logout = async (): Promise<void> => {
     await api.post(API_ENDPOINTS.LOGOUT);
 };
 
+// Get current authenticated user
+export const getCurrentUser = () => api.get<User>(`${API_BASE_URL}/auth/me`);
+
 // Invoices
 export const getInvoices = () => api.get<Invoice[]>(API_ENDPOINTS.INVOICES);
 export const getInvoice = (id: number) => api.get<Invoice>(`${API_ENDPOINTS.INVOICES}/${id}`);
@@ -58,8 +61,13 @@ export const deleteTemplate = (id: number) => api.delete(`${API_ENDPOINTS.TEMPLA
 export const generateInvoicePDF = (invoiceId: number, templateId: number) => 
     api.get(`${API_ENDPOINTS.INVOICES}/${invoiceId}/pdf?template_id=${templateId}`, { responseType: 'blob' });
 
-// Get current authenticated user
-export const getCurrentUser = () => api.get<User>(`${API_BASE_URL}/auth/me`);
+// Preview invoice
+export const previewInvoice = (data: InvoiceCreate) => 
+    axios.post<Invoice>(`${API_ENDPOINTS.INVOICES}/preview`, data);
+
+// Customize template
+export const customizeTemplate = (templateId: number, templateData: TemplateUpdate) =>
+    api.put<Template>(`${API_ENDPOINTS.TEMPLATES}/${templateId}/customize`, templateData);
 
 // Add a request interceptor to include the token in subsequent requests
 api.interceptors.request.use(

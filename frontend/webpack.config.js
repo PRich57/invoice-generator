@@ -1,5 +1,7 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const webpack = require('webpack');
 
 module.exports = {
     entry: './src/index.tsx',
@@ -9,7 +11,7 @@ module.exports = {
         publicPath: '/'
     },
     resolve: {
-        extensions: ['.tsx', '.ts', '.js']
+        extensions: ['.tsx', '.ts', '.js', '.mjs']
     },
     module: {
         rules: [
@@ -21,6 +23,40 @@ module.exports = {
             {
                 test: /\.css$/,
                 use: ['style-loader', 'css-loader']
+            },
+            {
+                test: /\.mjs$/,
+                include: /node_modules/,
+                type: 'javascript/auto'
+            },
+            {
+                test: /\.pdf$/,
+                use: 'url-loader'
+            },
+            {
+                test: /pdf\.worker\.mjs$/,
+                type: 'asset/resource',
+                generator: {
+                    filename: 'pdf.worker.mjs'
+                }
+            },
+            {
+                test: /pdf\.worker\.min\.js/,
+                type: 'asset/resource',
+                generator: {
+                    filename: 'pdf.worker.min.js'
+                }
+            },
+            {
+                test: /pdf\.worker\.(min\.)?js/,
+                use: [
+                    {
+                        loader: 'file-loader',
+                        options: {
+                            name: '[name].[ext]',
+                        },
+                    },
+                ],
             }
         ]
     },
@@ -30,6 +66,9 @@ module.exports = {
     plugins: [
         new HtmlWebpackPlugin({
             template: './public/index.html'
+        }),
+        new webpack.DefinePlugin({
+            'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
         })
     ]
 };

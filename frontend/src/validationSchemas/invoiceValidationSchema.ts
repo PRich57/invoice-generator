@@ -21,4 +21,5 @@ export const invoiceValidationSchema = Yup.object().shape({
             ),
         })
     ).min(1, 'At least one item is required'),
+    template_id: Yup.number().required('Template is required'),
 });

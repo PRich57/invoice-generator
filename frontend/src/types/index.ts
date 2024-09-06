@@ -34,6 +34,16 @@ export interface InvoiceItem {
     unit_price: number;
     discount_percentage: number;
     subitems: InvoiceSubItem[];
+    line_total: number;
+}
+
+export interface InvoiceItemCreate {
+    description: string;
+    quantity: number;
+    unit_price: number;
+    discount_percentage: number;
+    subitems: InvoiceSubItemCreate[];
+    line_total: number;
 }
 
 export interface InvoiceSubItem {
@@ -41,10 +51,13 @@ export interface InvoiceSubItem {
     description: string;
 }
 
+export interface InvoiceSubItemCreate {
+    description: string;
+}
+
 export interface Invoice {
     id: number;
     user_id: number;
-    template_id: number;
     invoice_number: string;
     invoice_date: string;
     bill_to_id: number;
@@ -53,15 +66,33 @@ export interface Invoice {
     discount_percentage: number;
     notes?: string;
     items: InvoiceItem[];
+    template_id: number;
     subtotal: number;
     tax: number;
-    total: string;
+    total: number;
 }
 
-export interface InvoiceCreate extends Pick<Invoice, 'invoice_number' | 'template_id' | 'invoice_date' | 'bill_to_id' | 'send_to_id' | 'tax_rate' | 'discount_percentage' | 'notes' | 'items'> {}
+export interface InvoiceCreate {
+    invoice_number: string;
+    invoice_date: string;
+    bill_to_id: number;
+    send_to_id: number;
+    tax_rate: number;
+    discount_percentage: number;
+    notes?: string;
+    items: InvoiceItemCreate[];
+    template_id: number;
+}
 
 export interface InvoiceUpdate extends Partial<InvoiceCreate> {
     id: number;
+}
+
+export interface InvoicePreviewProps {
+    invoice: Partial<Invoice | InvoiceCreate>;
+    template: Template;
+    billToContact?: Contact | null;
+    sendToContact?: Contact | null;
 }
 
 export type InvoiceFormErrors = {
