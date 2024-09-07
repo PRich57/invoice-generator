@@ -8,6 +8,8 @@ from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
                                 TableStyle)
 from sqlalchemy.orm import Session
 
+from backend.app.services import pdf_service
+
 from ..core.exceptions import (BadRequestException, ContactNotFoundException,
                                InvalidInvoiceNumberException,
                                InvoiceNumberAlreadyExistsException, TemplateNotFoundException)
@@ -26,71 +28,26 @@ def get_invoices(db: Session, user_id: int, skip: int = 0, limit: int = 100):
     return db.query(Invoice).filter(Invoice.user_id == user_id).offset(skip).limit(limit).all()
 
 def create_invoice(db: Session, invoice: InvoiceCreate, user_id: int):
-    logger.debug(f"Creating invoice: {invoice.invoice_number} for user_id: {user_id}")
-    
-    # Check if contact exists
-    bill_to_contact = db.query(Contact).filter(Contact.id == invoice.bill_to_id, Contact.user_id == user_id).first()
-    send_to_contact = db.query(Contact).filter(Contact.id == invoice.send_to_id, Contact.user_id == user_id).first()
-    
-    if not bill_to_contact:
-        raise ContactNotFoundException("Bill to", invoice.bill_to_id)
-    if not send_to_contact:
-        raise ContactNotFoundException("Send to", invoice.send_to_id)
-    
-    if invoice.invoice_number.lower() == 'string':
-        logger.error(f"Invalid invoice number: {invoice.invoice_number}")
-        raise InvalidInvoiceNumberException("Invalid invoice number. Please provide a proper invoice number.")
-    
-    # Check if invoice number exists for the same bill_to contact
-    existing_invoice = db.query(Invoice).filter(
-        Invoice.invoice_number == invoice.invoice_number,
-        Invoice.bill_to_id == invoice.bill_to_id,
-        Invoice.user_id == user_id
-    ).first()
-    
-    logger.debug(f"Existing invoice: {existing_invoice}")
-    
-    if existing_invoice:
-        logger.debug(f"Invoice number {invoice.invoice_number} already exists for this bill_to contact")
-        raise InvoiceNumberAlreadyExistsException()
-    
-    template = db.query(Template).filter(
-        (Template.id == invoice.template_id) & 
-        ((Template.user_id == user_id) | (Template.is_default == True))
-    ).first()
-    
-    if not template:
-        raise TemplateNotFoundException()
-    
-    all_user_invoices = db.query(Invoice).filter(Invoice.user_id == user_id).all()
-    logger.debug(f"All invoices for user {user_id}: {[inv.invoice_number for inv in all_user_invoices]}")
-    
-    try:
-        db_invoice = Invoice(**invoice.model_dump(exclude={'items'}), user_id=user_id)
-        db.add(db_invoice)
-        db.flush()
+    db_invoice = Invoice(
+        **invoice.model_dump(exclude={'items'}),
+        user_id=user_id,
+        template_id=invoice.template_id
+    )
+    db.add(db_invoice)
+    db.flush()
 
-        for item in invoice.items:
-            db_item = InvoiceItem(
-                invoice_id=db_invoice.id,
-                description=item.description,
-                quantity=item.quantity,
-                unit_price=item.unit_price,
-                discount_percentage=item.discount_percentage,
-            )
-            db.add(db_item)
-            
-            for subitem in item.subitems:
-                db_subitem = InvoiceSubItem(**subitem.model_dump(), invoice_item_id=db_item.id)
-                db.add(db_subitem)
+    for item in invoice.items:
+        db_item = InvoiceItem(**item.model_dump(), invoice_id=db_invoice.id)
+        db.add(db_item)
 
-        db.commit()
-        db.refresh(db_invoice)
-        return db_invoice
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error creating invoice: {str(e)}")
-        raise BadRequestException(f"Error creating invoice: {str(e)}")
+    db.commit()
+    db.refresh(db_invoice)
+    return db_invoice
+    
+def preview_invoice(invoice_data: InvoiceCreate, template: Template) -> bytes:
+    # Use the existing PDF generation logic without saving to the database
+    pdf_content = pdf_service.generate_pdf(invoice_data, template)
+    return pdf_content
 
 def update_invoice(db: Session, invoice_id: int, invoice: InvoiceCreate, user_id: int):
     db_invoice = get_invoice(db, invoice_id, user_id)

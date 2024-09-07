@@ -56,6 +56,25 @@ def update_template(
         raise TemplateNotFoundException()
     return db_template
 
+@router.put("/{template_id}/customize", response_model=Template)
+def customize_template(
+    template_id: int,
+    template_update: TemplateUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    db_template = template_service.get_template(db, template_id, current_user.id)
+    if db_template is None:
+        raise TemplateNotFoundException()
+    
+    if db_template.is_default:
+        # Create a new custom template based on the default one
+        new_template = template_service.copy_template(db, template_id, current_user.id)
+        db_template = new_template
+    
+    updated_template = template_service.update_template(db, db_template.id, template_update, current_user.id)
+    return updated_template
+
 @router.delete("/{template_id}", response_model=Template)
 def delete_template(
     template_id: int,

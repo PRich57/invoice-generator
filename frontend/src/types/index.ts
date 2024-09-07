@@ -43,7 +43,6 @@ export interface InvoiceItemCreate {
     unit_price: number;
     discount_percentage: number;
     subitems: InvoiceSubItemCreate[];
-    line_total: number;
 }
 
 export interface InvoiceSubItem {
@@ -89,7 +88,7 @@ export interface InvoiceUpdate extends Partial<InvoiceCreate> {
 }
 
 export interface InvoicePreviewProps {
-    invoice: Partial<Invoice | InvoiceCreate>;
+    invoice: Partial<Invoice> | InvoiceCreate;
     template: Template;
     billToContact?: Contact | null;
     sendToContact?: Contact | null;

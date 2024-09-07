@@ -30,19 +30,8 @@ const StyledTableCell = styled(TableCell, {
     wordBreak: 'break-word',
 }));
 
-const calculateInvoiceTotals = (invoice: Partial<Invoice | InvoiceCreate>) => {
-    const subtotal = invoice.items?.reduce((acc, item) => 
-        acc + (item.quantity || 0) * (item.unit_price || 0), 0
-    ) || 0;
-    
-    const tax = subtotal * (invoice.tax_rate || 0) / 100;
-    const total = subtotal + tax;
-
-    return { subtotal, tax, total };
-};
-
 const ContactInfo: React.FC<{ contact?: Contact | null; label: string; template: Template }> = ({ contact, label, template }) => (
-    <Box>
+    <Box mb={2}>
         <Typography variant="h6" style={{
             color: template.colors.secondary,
             fontFamily: template.fonts.main,
@@ -54,9 +43,10 @@ const ContactInfo: React.FC<{ contact?: Contact | null; label: string; template:
             <>
                 <Typography>{contact.name}</Typography>
                 {contact.street_address && <Typography>{contact.street_address}</Typography>}
-                {(contact.city || contact.state || contact.postal_code) && (
+                {contact.city && <Typography>{contact.city}</Typography>}
+                {(contact.state || contact.postal_code) && (
                     <Typography>
-                        {contact.city}{contact.city && ','} {contact.state} {contact.postal_code}
+                        {contact.state} {contact.postal_code}
                     </Typography>
                 )}
             </>
@@ -64,28 +54,67 @@ const ContactInfo: React.FC<{ contact?: Contact | null; label: string; template:
     </Box>
 );
 
+const calculateLineTotal = (item: InvoiceItem | InvoiceItemCreate): number => {
+    return item.quantity * item.unit_price * (1 - item.discount_percentage / 100);
+};
+
+const calculateSubtotal = (items: (InvoiceItem | InvoiceItemCreate)[]): number => {
+    return items.reduce((sum, item) => sum + calculateLineTotal(item), 0);
+};
+
+const calculateTax = (subtotal: number, taxRate: number, discount_percentage: number): number => {
+    return (subtotal * (1 - (discount_percentage / 100))) * (taxRate / 100);
+};
+
+const calculateTotal = (subtotal: number, tax: number, discount_percentage: number): number => {
+    return (subtotal * (1 - (discount_percentage / 100))) + tax;
+};
+
+const isFullInvoice = (invoice: Partial<Invoice> | InvoiceCreate): invoice is Invoice =>
+    'id' in invoice && 'subtotal' in invoice && 'tax' in invoice && 'total' in invoice;
+
 const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, billToContact, sendToContact }) => {
-    const isFullInvoice = (inv: Partial<Invoice | InvoiceCreate>): inv is Invoice => 
-        'subtotal' in inv && 'tax' in inv && 'total' in inv;
+    const subtotal = calculateSubtotal(invoice.items || []);
+    const tax = calculateTax(subtotal, invoice.tax_rate || 0, invoice.discount_percentage || 0);
+    const total = calculateTotal(subtotal, tax, invoice.discount_percentage || 0);
 
     return (
         <PreviewContainer className="invoice-preview">
             <Typography variant="h4" style={{
                 color: template.colors.primary,
-                fontFamily: template.fonts.accent,
+                fontFamily: template.fonts.main,
                 fontSize: `${template.font_sizes.title}px`,
+                marginBottom: '0',
+                textAlign: 'right',
             }}>
-                Invoice #{invoice.invoice_number || 'N/A'}
+                Invoice 
             </Typography>
-
-            <Box display="flex" justifyContent="space-between" mt={4}>
-                <ContactInfo contact={billToContact} label="Bill To" template={template} />
-                <ContactInfo contact={sendToContact} label="Send To" template={template} />
+            <Typography variant="h4" style={{
+                color: template.colors.primary,
+                fontFamily: template.fonts.main,
+                fontSize: `${template.font_sizes.invoice_number}px`,
+                marginBottom: '1rem',
+                textAlign: 'right',
+            }}>
+                #{invoice.invoice_number || ''}
+            </Typography>
+            <Box display="flex" flexDirection={"column"} justifyContent="space-between" mb={0}>
+                <Box>
+                    <ContactInfo contact={billToContact} label="Bill To" template={template} />
+                </Box>
+                <Box>
+                    <ContactInfo contact={sendToContact} label="Send To" template={template} />
+                </Box>
             </Box>
 
-            <Box display="flex" justifyContent="flex-end" mt={2}>
-                <Typography>Date: {invoice.invoice_date || 'N/A'}</Typography>
-            </Box>
+
+            <Typography style={{
+                fontFamily: template.fonts.main,
+                fontSize: `${template.font_sizes.normal_text}px`,
+                marginBottom: '1rem',
+            }}>
+                Date: {invoice.invoice_date}
+            </Typography>
 
             <Table style={{ marginTop: '2rem' }}>
                 <TableHead>
@@ -97,25 +126,27 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, bill
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {(invoice.items || []).map((item: Partial<InvoiceItem | InvoiceItemCreate>, index) => (
+                    {invoice.items?.map((item, index) => (
                         <React.Fragment key={index}>
-                            <TableRow style={{ marginBottom: "0", paddingBottom: '0' }}>
-                                <StyledTableCell template={template} style={{ border: "none", marginBottom: '0' }}>
+                            <TableRow>
+                                <StyledTableCell template={template} style={{ border: "none" }}>
                                     {item.description}
-                                    {item.discount_percentage && item.discount_percentage > 0 && ` (${item.discount_percentage}% Discount)`}
+                                    {item.discount_percentage > 0 && ` (${item.discount_percentage}% Discount)`}
                                 </StyledTableCell>
-                                <StyledTableCell template={template} align="right" style={{ border: "none" }}>{item.quantity || 0}</StyledTableCell>
+                                <StyledTableCell template={template} align="right" style={{ border: "none" }}>{item.quantity}</StyledTableCell>
                                 <StyledTableCell template={template} align="right" style={{ border: "none" }}>
-                                    ${(item.unit_price || 0).toFixed(2)}
+                                    ${item.unit_price}
                                 </StyledTableCell>
                                 <StyledTableCell template={template} align="right" style={{ border: "none" }}>
-                                    ${(item.line_total || 0).toFixed(2)}
+                                    ${isFullInvoice(invoice)
+                                        ? (item as InvoiceItem).line_total.toFixed(2)
+                                        : (calculateLineTotal(item)).toFixed(2)}
                                 </StyledTableCell>
                             </TableRow>
                             {item.subitems && item.subitems.length > 0 && (
-                                <TableRow style={{ marginTop: '0', paddingTop: '0' }}>
+                                <TableRow>
                                     <StyledTableCell template={template} colSpan={4} style={{ paddingLeft: '3em', border: "none", marginTop: '0' }}>
-                                        <ul style={{ margin: 0, paddingLeft: '1em', color: template.colors.secondary }}>
+                                        <ul style={{ margin: 0, paddingLeft: '.5em', color: template.colors.secondary }}>
                                             {item.subitems.map((subitem, subIndex) => (
                                                 <li key={subIndex}>{subitem.description}</li>
                                             ))}
@@ -130,21 +161,17 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, bill
 
             <Box display="flex" justifyContent="flex-end" mt={4}>
                 <Box>
-                    {isFullInvoice(invoice) ? (
                         <>
-                            <Typography>Subtotal: ${invoice.subtotal.toFixed(2)}</Typography>
-                            <Typography>Tax ({invoice.tax_rate || 0}%): ${invoice.tax.toFixed(2)}</Typography>
+                            <Typography>Subtotal: ${subtotal.toFixed(2)}</Typography>
+                            <Typography>Tax ({invoice.tax_rate || 0}%): ${tax.toFixed(2)}</Typography>
                             <Typography variant="h6" style={{
                                 color: template.colors.primary,
                                 fontFamily: template.fonts.accent,
                                 fontSize: `${template.font_sizes.normal_text}px`,
                             }}>
-                                Total: ${invoice.total.toFixed(2)}
+                                Total: ${total.toFixed(2)}
                             </Typography>
                         </>
-                    ) : (
-                        <Typography>Totals will be calculated when the invoice is saved.</Typography>
-                    )}
                 </Box>
             </Box>
 

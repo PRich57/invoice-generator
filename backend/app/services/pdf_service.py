@@ -3,10 +3,10 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
-from ..models.invoice import Invoice as InvoiceModel
+from ..schemas.invoice import InvoiceCreate
 from ..models.template import Template as TemplateModel
 
-def generate_pdf(invoice: InvoiceModel, template: TemplateModel) -> bytes:
+def generate_pdf(invoice_data: InvoiceCreate, template: TemplateModel) -> bytes:
     buffer = BytesIO()
     page_size = A4 if template.layout['page_size'].upper() == 'A4' else letter
     doc = SimpleDocTemplate(buffer, pagesize=page_size,
@@ -24,14 +24,14 @@ def generate_pdf(invoice: InvoiceModel, template: TemplateModel) -> bytes:
     elements = []
 
     # Add invoice header
-    elements.append(Paragraph(f"Invoice #{invoice.invoice_number}", styles['CustomTitle']))
+    elements.append(Paragraph(f"Invoice #{invoice_data.invoice_number}", styles['CustomTitle']))
     elements.append(Spacer(1, 12))
 
     # Add invoice details
     data = [
-        ["Date:", invoice.invoice_date.strftime("%Y-%m-%d")],
-        ["Bill To:", invoice.bill_to.name],
-        ["Send To:", invoice.send_to.name],
+        ["Date:", invoice_data.invoice_date.strftime("%Y-%m-%d")],
+        ["Bill To:", f"ID: {invoice_data.bill_to_id}"],
+        ["Send To:", f"ID: {invoice_data.send_to_id}"],
     ]
     table = Table(data)
     table.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'LEFT'),
@@ -43,7 +43,7 @@ def generate_pdf(invoice: InvoiceModel, template: TemplateModel) -> bytes:
 
     # Add invoice items
     items_data = [["Description", "Quantity", "Rate", "Amount"]]
-    for item in invoice.items:
+    for item in invoice_data.items:
         items_data.append([
             item.description,
             str(item.quantity),
@@ -71,10 +71,14 @@ def generate_pdf(invoice: InvoiceModel, template: TemplateModel) -> bytes:
     elements.append(Spacer(1, 12))
 
     # Add totals
+    subtotal = sum(item.quantity * item.unit_price for item in invoice_data.items)
+    tax = subtotal * (invoice_data.tax_rate / 100)
+    total = subtotal + tax
+
     totals_data = [
-        ["Subtotal:", f"${invoice.subtotal:.2f}"],
-        ["Tax:", f"${invoice.tax:.2f}"],
-        ["Total:", f"${invoice.total:.2f}"]
+        ["Subtotal:", f"${subtotal:.2f}"],
+        ["Tax:", f"${tax:.2f}"],
+        ["Total:", f"${total:.2f}"]
     ]
     totals_table = Table(totals_data)
     totals_table.setStyle(TableStyle([

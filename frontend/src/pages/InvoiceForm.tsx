@@ -49,7 +49,6 @@ const InvoiceForm: React.FC = () => {
             unit_price: 0,
             discount_percentage: 0,
             subitems: [],
-            line_total: 0,
         }],
         template_id: 0,
     };

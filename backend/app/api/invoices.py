@@ -45,6 +45,27 @@ def create_invoice(
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+    
+@router.post("/preview", response_model=Invoice)
+async def preview_invoice(
+    invoice: InvoiceCreate,
+    template_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    print(f"Received preview request: {invoice.model_dump()}")  # Log the received data
+    print(f"Template ID: {template_id}")
+
+    template = template_service.get_template(db, template_id, current_user.id)
+    if not template:
+        raise TemplateNotFoundException()
+    
+    try:
+        pdf_content = invoice_service.preview_invoice(invoice, template)
+        return Response(content=pdf_content, media_type="application/pdf")
+    except Exception as e:
+        print(f"Error generating PDF: {str(e)}")  # Log any errors
+        raise HTTPException(status_code=500, detail=f"Error generating PDF: {str(e)}")
 
 @router.get("/", response_model=list[Invoice])
 def read_invoices(

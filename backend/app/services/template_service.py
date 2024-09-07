@@ -1,4 +1,6 @@
 from sqlalchemy.orm import Session
+
+from backend.app.core.exceptions import TemplateNotFoundException
 from ..models.template import Template
 from ..schemas.template import TemplateCreate, TemplateUpdate
 
@@ -7,18 +9,18 @@ DEFAULT_TEMPLATES = {
         "colors": {
             "primary": "#000000",
             "secondary": "#555555",
-            "accent": "#444444"
+            "accent": "#888888"
         },
         "fonts": {
-            "main": "Helvetica",
-            "accent": "Helvetica-Bold"
+            "main": "Arial",
+            "accent": "Arial-Bold"
         },
         "font_sizes": {
-            "title": 20,
-            "invoice_number": 14,
-            "section_header": 8,
-            "table_header": 10,
-            "normal_text": 9
+            "title": 26,
+            "invoice_number": 20,
+            "section_header": 16,
+            "table_header": 14,
+            "normal_text": 12
         },
         "layout": {
             "page_size": "A4",
@@ -42,6 +44,7 @@ DEFAULT_TEMPLATES = {
             "title": 24,
             "invoice_number": 16,
             "section_header": 12,
+            "table_header": 12,
             "normal_text": 10
         },
         "layout": {
@@ -64,8 +67,9 @@ DEFAULT_TEMPLATES = {
         },
         "font_sizes": {
             "title": 22,
-            "invoice_number": 14,
-            "section_header": 11,
+            "invoice_number": 16,
+            "section_header": 12,
+            "table_header": 12,
             "normal_text": 9
         },
         "layout": {
@@ -142,10 +146,11 @@ def update_template(db: Session, template_id: int, template: TemplateUpdate, use
             # If it's a default template, create a copy for the user
             db_template = copy_template(db, template_id, user_id)
             if db_template is None:
-                return None
+                raise TemplateNotFoundException()
         
-        for key, value in template.dict(exclude_unset=True).items():
+        for key, value in template.model_dump(exclude_unset=True).items():
             setattr(db_template, key, value)
+            
         db.commit()
         db.refresh(db_template)
     return db_template
