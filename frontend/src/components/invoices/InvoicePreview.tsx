@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { Fragment, useEffect } from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableHead, TableRow, styled } from '@mui/material';
 import { Template, InvoiceItem, Contact, InvoicePreviewProps, InvoiceItemCreate, Invoice, InvoiceCreate } from '../../types';
+import { createDynamicStyle } from '../../styles/dynamicPrint';
 
 
 const PreviewContainer = styled(Box)(({ theme }) => ({
@@ -83,9 +84,19 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, bill
     const discount_percentage = invoice.discount_percentage || 0;
     const discount_amount = calculateDiscountAmount(subtotal, discount_percentage);
 
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.textContent = createDynamicStyle(template);
+        document.head.appendChild(style);
+
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, [template]);
+
     return (
         <PreviewContainer className="invoice-preview">
-            <Typography variant="h4" style={{
+            <Typography className="invoice-title" variant="h4" style={{
                 color: template.colors.primary,
                 fontFamily: template.fonts.accent,
                 fontSize: `${template.font_sizes.title}px`,
@@ -94,7 +105,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, bill
             }}>
                 Invoice
             </Typography>
-            <Typography variant="h4" style={{
+            <Typography className="invoice-subtitle" variant="h4" style={{
                 color: template.colors.primary,
                 fontFamily: template.fonts.main,
                 fontSize: `${template.font_sizes.invoice_number}px`,
@@ -132,8 +143,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, bill
                 </TableHead>
                 <TableBody>
                     {invoice.items?.map((item, index) => (
-                        <React.Fragment key={index}>
-                            <TableRow>
+                        <Fragment key={index}>
+                            <TableRow className="invoice-item">
                                 <StyledTableCell template={template} style={{ border: "none" }}>
                                     {item.description}
                                     {item.discount_percentage > 0 && ` (${item.discount_percentage}% Discount)`}
@@ -149,7 +160,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, bill
                                 </StyledTableCell>
                             </TableRow>
                             {item.subitems && item.subitems.length > 0 && (
-                                <TableRow>
+                                <TableRow className="invoice-subitem">
                                     <StyledTableCell template={template} colSpan={4} style={{ paddingLeft: '3em', border: "none", marginTop: '0' }}>
                                         <ul style={{ margin: 0, paddingLeft: '.5em', color: template.colors.secondary }}>
                                             {item.subitems.map((subitem, subIndex) => (
@@ -159,7 +170,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, bill
                                     </StyledTableCell>
                                 </TableRow>
                             )}
-                        </React.Fragment>
+                        </Fragment>
                     ))}
                 </TableBody>
             </Table>
@@ -175,18 +186,18 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, bill
                         }}>Subtotal: ${subtotal.toFixed(2)}</Typography>
                         {discount_percentage > 0 && (
                             <>
-                            <Typography variant="h6" align="right" style={{
-                                padding: '0 16px',
-                                color: template.colors.primary,
-                                fontFamily: template.fonts.main,
-                                fontSize: `${template.font_sizes.normal_text}px`,
-                            }}>Discount ({discount_percentage}%): -${discount_amount.toFixed(2)}</Typography>
-                            <Typography variant="h6" align="right" style={{
-                                padding: '0 16px',
-                                color: template.colors.accent,
-                                fontFamily: template.fonts.main,
-                                fontSize: `${template.font_sizes.normal_text}px`,
-                            }}>Discounted Subtotal: ${(subtotal - discount_amount).toFixed(2)}</Typography>
+                                <Typography variant="h6" align="right" style={{
+                                    padding: '0 16px',
+                                    color: template.colors.primary,
+                                    fontFamily: template.fonts.main,
+                                    fontSize: `${template.font_sizes.normal_text}px`,
+                                }}>Discount ({discount_percentage}%): -${discount_amount.toFixed(2)}</Typography>
+                                <Typography variant="h6" align="right" style={{
+                                    padding: '0 16px',
+                                    color: template.colors.accent,
+                                    fontFamily: template.fonts.main,
+                                    fontSize: `${template.font_sizes.normal_text}px`,
+                                }}>Discounted Subtotal: ${(subtotal - discount_amount).toFixed(2)}</Typography>
                             </>
                         )}
                         <Typography variant="h6" align="right" style={{

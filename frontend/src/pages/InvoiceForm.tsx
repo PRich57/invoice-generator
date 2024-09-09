@@ -14,7 +14,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useFormik, FieldArray, FormikProvider } from 'formik';
 import { InvoiceCreate, Template, InvoiceItemCreate, Contact } from '../types';
-import { createInvoice, updateInvoice, getTemplates, getInvoice, getContact } from '../services/api';
+import { createInvoice, updateInvoice, getTemplates, getInvoice, getContact, generateInvoicePDF, previewInvoicePDF } from '../services/api';
 import ErrorMessage from '../components/common/ErrorMessage';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useContacts } from '../hooks/useContacts';
@@ -22,6 +22,8 @@ import { useErrorHandler } from '../hooks/useErrorHandler';
 import { invoiceValidationSchema } from '../validationSchemas/invoiceValidationSchema';
 import InvoicePreview from '../components/invoices/InvoicePreview';
 import { formatDateForAPI } from '../utils/dateFormatter';
+import { InvoiceItemFields } from '../components/invoices/InvoiceItemFields';
+import { createDynamicStyle } from '../styles/dynamicPrint';
 
 const InvoiceForm: React.FC = () => {
     const [loading, setLoading] = useState(false);
@@ -53,7 +55,7 @@ const InvoiceForm: React.FC = () => {
         template_id: 0,
     };
 
-    const formik = useFormik<InvoiceCreate>({
+    const formik = useFormik<InvoiceCreate & { id?: number }>({
         initialValues,
         validationSchema: invoiceValidationSchema,
         onSubmit: async (values) => {
@@ -136,13 +138,30 @@ const InvoiceForm: React.FC = () => {
         formik.setFieldValue('template_id', templateId);
     };
 
-    const handlePrintToPDF = () => {
-        window.print();
+    const handlePrintToPDF = async () => {
+        if (!selectedTemplate) return;
+        
+        try {
+            let pdfContent: Blob;
+            if (formik.values.id) {
+                // Existing invoice
+                const response = await generateInvoicePDF(formik.values.id, selectedTemplate.id);
+                pdfContent = new Blob([response.data], { type: 'application/pdf' });
+            } else {
+                // New invoice
+                const response = await previewInvoicePDF(formik.values, selectedTemplate.id);
+                pdfContent = new Blob([response.data], { type: 'application/pdf' });
+            }
+            const url = window.URL.createObjectURL(pdfContent);
+            window.open(url);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            // Handle error (show error message to user)
+        }
     };
-
+    
     if (loading || contactsLoading) return <LoadingSpinner />;
     if (error || contactsError) return <ErrorMessage message={error || contactsError || 'An error occurred'} />;
-
 
     return (
         <FormikProvider value={formik}>
@@ -216,72 +235,8 @@ const InvoiceForm: React.FC = () => {
                         <FieldArray name="items">
                             {({ push, remove }) => (
                                 <>
-                                    {formik.values.items.map((item: InvoiceItemCreate, index: number) => (
-                                        <Box key={index} sx={{ mb: 2 }}>
-                                            <Box display="flex" flexWrap="wrap" gap={2}>
-                                                <Box flex="1 1 100%">
-                                                    <TextField
-                                                        fullWidth
-                                                        name={`items.${index}.description`}
-                                                        label="Description"
-                                                        value={item.description}
-                                                        onChange={formik.handleChange}
-                                                    />
-                                                </Box>
-                                                <Box flex="1 1 30%">
-                                                    <TextField
-                                                        fullWidth
-                                                        name={`items.${index}.quantity`}
-                                                        label="Quantity"
-                                                        type="number"
-                                                        value={item.quantity}
-                                                        onChange={formik.handleChange}
-                                                    />
-                                                </Box>
-                                                <Box flex="1 1 30%">
-                                                    <TextField
-                                                        fullWidth
-                                                        name={`items.${index}.unit_price`}
-                                                        label="Unit Price"
-                                                        type="number"
-                                                        value={item.unit_price}
-                                                        onChange={formik.handleChange}
-                                                    />
-                                                </Box>
-                                                <Box flex="1 1 30%">
-                                                    <TextField
-                                                        fullWidth
-                                                        name={`items.${index}.discount_percentage`}
-                                                        label="Discount (%)"
-                                                        type="number"
-                                                        value={item.discount_percentage}
-                                                        onChange={formik.handleChange}
-                                                    />
-                                                </Box>
-                                            </Box>
-                                            <FieldArray name={`items.${index}.subitems`}>
-                                                {({ push: pushSubitem, remove: removeSubitem }) => (
-                                                    <>
-                                                        {item.subitems.map((subitem, subIndex) => (
-                                                            <Box key={subIndex} display="flex" alignItems="center" mt={1}>
-                                                                <TextField
-                                                                    fullWidth
-                                                                    name={`items.${index}.subitems.${subIndex}.description`}
-                                                                    label="Subitem Description"
-                                                                    value={subitem.description}
-                                                                    onChange={formik.handleChange}
-                                                                />
-                                                                <Button onClick={() => removeSubitem(subIndex)}>Remove</Button>
-                                                            </Box>
-                                                        ))}
-                                                        <Button onClick={() => pushSubitem({ description: '' })}>Add Subitem</Button>
-                                                    </>
-                                                )}
-                                            </FieldArray>
-                                            <Button onClick={() => remove(index)} color="secondary">
-                                                Remove Item
-                                            </Button>
-                                        </Box>
+                                    {formik.values.items.map((item, index) => (
+                                        <InvoiceItemFields key={index} index={index} />
                                     ))}
                                     <Button
                                         onClick={() => push({ description: '', quantity: 1, unit_price: 0, discount_percentage: 0, subitems: [] })}

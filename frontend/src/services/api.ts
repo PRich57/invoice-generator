@@ -62,8 +62,8 @@ export const generateInvoicePDF = (invoiceId: number, templateId: number) =>
     api.get(`${API_ENDPOINTS.INVOICES}/${invoiceId}/pdf?template_id=${templateId}`, { responseType: 'blob' });
 
 // Preview invoice
-export const previewInvoice = (data: InvoiceCreate) => 
-    axios.post<Invoice>(`${API_ENDPOINTS.INVOICES}/preview`, data);
+export const previewInvoicePDF = (invoice: InvoiceCreate, templateId: number) => 
+    api.post(`${API_ENDPOINTS.INVOICES}/preview-pdf?template_id=${templateId}`, invoice, { responseType: 'blob' });
 
 // Customize template
 export const customizeTemplate = (templateId: number, templateData: TemplateUpdate) =>

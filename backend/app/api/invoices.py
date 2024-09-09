@@ -12,6 +12,9 @@ from ..database import get_db
 from ..schemas.invoice import Invoice, InvoiceCreate
 from ..schemas.user import User
 from ..services import invoice_service, template_service, pdf_service
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -39,33 +42,31 @@ def create_invoice(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    
+    logger.info(f"Received invoice creation request: {invoice.model_dump()}")
     try:
         return invoice_service.create_invoice(db, invoice, current_user.id)
     except (InvoiceNumberAlreadyExistsException, ContactNotFoundException, InvalidContactIdException, InvalidInvoiceNumberException, TemplateNotFoundException) as e:
+        logger.error(f"Error creating invoice: {str(e)}")
         raise e
     except Exception as e:
+        logger.error(f"Error creating invoice: {str(e)}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
     
-@router.post("/preview", response_model=Invoice)
-async def preview_invoice(
+@router.post("/preview-pdf")
+async def preview_invoice_pdf(
     invoice: InvoiceCreate,
     template_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    print(f"Received preview request: {invoice.model_dump()}")  # Log the received data
-    print(f"Template ID: {template_id}")
-
     template = template_service.get_template(db, template_id, current_user.id)
     if not template:
         raise TemplateNotFoundException()
     
-    try:
-        pdf_content = invoice_service.preview_invoice(invoice, template)
-        return Response(content=pdf_content, media_type="application/pdf")
-    except Exception as e:
-        print(f"Error generating PDF: {str(e)}")  # Log any errors
-        raise HTTPException(status_code=500, detail=f"Error generating PDF: {str(e)}")
+    pdf_content = invoice_service.generate_preview_pdf(invoice, template)
+    
+    return Response(content=pdf_content, media_type="application/pdf")
 
 @router.get("/", response_model=list[Invoice])
 def read_invoices(
@@ -118,15 +119,7 @@ def generate_invoice_pdf(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    invoice = invoice_service.get_invoice(db, invoice_id, current_user.id)
-    if not invoice:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-    
-    template = template_service.get_template(db, template_id, current_user.id)
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
-    
-    pdf_content = pdf_service.generate_pdf(invoice, template)
+    pdf_content = invoice_service.generate_invoice_pdf(db, invoice_id, template_id, current_user.id)
     
     return Response(content=pdf_content, media_type="application/pdf", headers={
         "Content-Disposition": f"attachment; filename=invoice_{invoice_id}.pdf"

@@ -8,15 +8,16 @@ from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
                                 TableStyle)
 from sqlalchemy.orm import Session
 
-from backend.app.services import pdf_service
+from backend.app.services import pdf_service, template_service
 
 from ..core.exceptions import (BadRequestException, ContactNotFoundException,
-                               InvalidInvoiceNumberException,
+                               InvalidInvoiceNumberException, InvoiceNotFoundException,
                                InvoiceNumberAlreadyExistsException, TemplateNotFoundException)
 from ..models.contact import Contact
 from ..models.invoice import Invoice, InvoiceItem, InvoiceSubItem
 from ..models.template import Template
 from ..schemas.invoice import InvoiceCreate
+from .pdf_generator import generate_pdf
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -27,28 +28,59 @@ def get_invoice(db: Session, invoice_id: int, user_id: int):
 def get_invoices(db: Session, user_id: int, skip: int = 0, limit: int = 100):
     return db.query(Invoice).filter(Invoice.user_id == user_id).offset(skip).limit(limit).all()
 
-def create_invoice(db: Session, invoice: InvoiceCreate, user_id: int):
-    db_invoice = Invoice(
-        **invoice.model_dump(exclude={'items'}),
-        user_id=user_id,
-        template_id=invoice.template_id
-    )
-    db.add(db_invoice)
-    db.flush()
-
-    for item in invoice.items:
-        db_item = InvoiceItem(**item.model_dump(), invoice_id=db_invoice.id)
-        db.add(db_item)
-
-    db.commit()
-    db.refresh(db_invoice)
-    return db_invoice
+def generate_invoice_pdf(db: Session, invoice_id: int, template_id: int, user_id: int) -> bytes:
+    invoice = get_invoice(db, invoice_id, user_id)
+    if not invoice:
+        raise InvoiceNotFoundException()
     
-def preview_invoice(invoice_data: InvoiceCreate, template: Template) -> bytes:
-    # Use the existing PDF generation logic without saving to the database
-    pdf_content = pdf_service.generate_pdf(invoice_data, template)
-    return pdf_content
+    template = template_service.get_template(db, template_id, user_id)
+    if not template:
+        raise TemplateNotFoundException()
+    
+    return generate_pdf(invoice, template)
 
+def create_invoice(db: Session, invoice: InvoiceCreate, user_id: int):
+    logger.info(f"Creating invoice with data: {invoice.model_dump()}")
+    try:
+
+        invoice_data = invoice.model_dump(exclude={'items', 'template_id'})
+        db_invoice = Invoice(
+            **invoice_data,
+            user_id=user_id,
+            template_id=invoice.template_id  
+        )
+        db.add(db_invoice)
+        db.flush()  
+
+        for item in invoice.items:
+            db_item = InvoiceItem(
+                **item.model_dump(exclude={'subitems'}),
+                invoice_id=db_invoice.id
+            )
+            db.add(db_item)
+            db.flush()
+
+            for subitem in item.subitems:
+                db_subitem = InvoiceSubItem(**subitem.model_dump(), invoice_item_id=db_item.id)
+                db.add(db_subitem)
+
+        db.commit()
+        db.refresh(db_invoice)
+        return db_invoice
+    except Exception as e:
+        logger.error(f"Error creating invoice: {str(e)}", exc_info=True)
+        db.rollback()
+        raise
+    
+def generate_preview_pdf(invoice: InvoiceCreate, template: Template) -> bytes:
+    # Convert InvoiceCreate to Invoice
+    preview_invoice = Invoice(
+        id=0,  # Use a dummy ID
+        user_id=0,  # Use a dummy user ID
+        **invoice.dict(exclude={'items'}),
+        items=[InvoiceItem(**item.dict()) for item in invoice.items]
+    )
+    return generate_pdf(preview_invoice, template)
 def update_invoice(db: Session, invoice_id: int, invoice: InvoiceCreate, user_id: int):
     db_invoice = get_invoice(db, invoice_id, user_id)
     if db_invoice is None:

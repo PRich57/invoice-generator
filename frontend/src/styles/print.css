@@ -12,10 +12,24 @@
         top: 0;
         width: 100%;
     }
-    .invoice-notes {
+
+    .invoice-item {
+        page-break-inside: avoid;
+    }
+
+    body {
+        font-size: 12pt;
+    }
+    h1 {
+        font-size: 18pt;
+    }
+    h2 {
+        font-size: 16pt;
+    }
+
+    .invoice-footer {
         position: fixed;
         bottom: 0;
-        left: 0;
-        right: 0;
+        width: 100%;
     }
 }
