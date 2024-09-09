@@ -1,7 +1,6 @@
 import React from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableHead, TableRow, styled } from '@mui/material';
 import { Template, InvoiceItem, Contact, InvoicePreviewProps, InvoiceItemCreate, Invoice, InvoiceCreate } from '../../types';
-import { BorderAll } from '@mui/icons-material';
 
 
 const PreviewContainer = styled(Box)(({ theme }) => ({
@@ -33,7 +32,7 @@ const StyledTableCell = styled(TableCell, {
 const ContactInfo: React.FC<{ contact?: Contact | null; label: string; template: Template }> = ({ contact, label, template }) => (
     <Box mb={2}>
         <Typography variant="h6" style={{
-            color: template.colors.secondary,
+            color: template.colors.primary,
             fontFamily: template.fonts.main,
             fontSize: `${template.font_sizes.section_header}px`,
         }}>
@@ -58,7 +57,7 @@ const calculateLineTotal = (item: InvoiceItem | InvoiceItemCreate): number => {
     return item.quantity * item.unit_price * (1 - item.discount_percentage / 100);
 };
 
-const calculateSubtotal = (items: (InvoiceItem | InvoiceItemCreate)[]): number => {
+const calculateSubtotal = (items: (InvoiceItem | InvoiceItemCreate)[], discount_percentage: number): number => {
     return items.reduce((sum, item) => sum + calculateLineTotal(item), 0);
 };
 
@@ -70,24 +69,30 @@ const calculateTotal = (subtotal: number, tax: number, discount_percentage: numb
     return (subtotal * (1 - (discount_percentage / 100))) + tax;
 };
 
+const calculateDiscountAmount = (subtotal: number, discount_percentage: number): number => {
+    return subtotal * (discount_percentage / 100);
+};
+
 const isFullInvoice = (invoice: Partial<Invoice> | InvoiceCreate): invoice is Invoice =>
     'id' in invoice && 'subtotal' in invoice && 'tax' in invoice && 'total' in invoice;
 
 const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, billToContact, sendToContact }) => {
-    const subtotal = calculateSubtotal(invoice.items || []);
+    const subtotal = calculateSubtotal(invoice.items || [], invoice.discount_percentage || 0);
     const tax = calculateTax(subtotal, invoice.tax_rate || 0, invoice.discount_percentage || 0);
     const total = calculateTotal(subtotal, tax, invoice.discount_percentage || 0);
+    const discount_percentage = invoice.discount_percentage || 0;
+    const discount_amount = calculateDiscountAmount(subtotal, discount_percentage);
 
     return (
         <PreviewContainer className="invoice-preview">
             <Typography variant="h4" style={{
                 color: template.colors.primary,
-                fontFamily: template.fonts.main,
+                fontFamily: template.fonts.accent,
                 fontSize: `${template.font_sizes.title}px`,
                 marginBottom: '0',
                 textAlign: 'right',
             }}>
-                Invoice 
+                Invoice
             </Typography>
             <Typography variant="h4" style={{
                 color: template.colors.primary,
@@ -161,17 +166,44 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, bill
 
             <Box display="flex" justifyContent="flex-end" mt={4}>
                 <Box>
-                        <>
-                            <Typography>Subtotal: ${subtotal.toFixed(2)}</Typography>
-                            <Typography>Tax ({invoice.tax_rate || 0}%): ${tax.toFixed(2)}</Typography>
-                            <Typography variant="h6" style={{
+                    <>
+                        <Typography variant="h6" align="right" style={{
+                            padding: '0 16px',
+                            color: template.colors.primary,
+                            fontFamily: template.fonts.main,
+                            fontSize: `${template.font_sizes.normal_text}px`,
+                        }}>Subtotal: ${subtotal.toFixed(2)}</Typography>
+                        {discount_percentage > 0 && (
+                            <>
+                            <Typography variant="h6" align="right" style={{
+                                padding: '0 16px',
                                 color: template.colors.primary,
-                                fontFamily: template.fonts.accent,
+                                fontFamily: template.fonts.main,
                                 fontSize: `${template.font_sizes.normal_text}px`,
-                            }}>
-                                Total: ${total.toFixed(2)}
-                            </Typography>
-                        </>
+                            }}>Discount ({discount_percentage}%): -${discount_amount.toFixed(2)}</Typography>
+                            <Typography variant="h6" align="right" style={{
+                                padding: '0 16px',
+                                color: template.colors.accent,
+                                fontFamily: template.fonts.main,
+                                fontSize: `${template.font_sizes.normal_text}px`,
+                            }}>Discounted Subtotal: ${(subtotal - discount_amount).toFixed(2)}</Typography>
+                            </>
+                        )}
+                        <Typography variant="h6" align="right" style={{
+                            padding: '16px',
+                            color: template.colors.primary,
+                            fontFamily: template.fonts.main,
+                            fontSize: `${template.font_sizes.normal_text}px`,
+                        }}>Tax ({invoice.tax_rate || 0}%): ${tax.toFixed(2)}</Typography>
+                        <Typography variant="h6" align="right" style={{
+                            padding: '0 16px',
+                            color: template.colors.primary,
+                            fontFamily: template.fonts.main,
+                            fontSize: `${template.font_sizes.normal_text}px`,
+                        }}>
+                            Total: ${total.toFixed(2)}
+                        </Typography>
+                    </>
                 </Box>
             </Box>
 
