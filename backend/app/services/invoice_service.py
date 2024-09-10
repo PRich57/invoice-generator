@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal
 from io import BytesIO
 
 from reportlab.lib import colors
@@ -11,8 +12,10 @@ from sqlalchemy.orm import Session
 from backend.app.services import pdf_service, template_service
 
 from ..core.exceptions import (BadRequestException, ContactNotFoundException,
-                               InvalidInvoiceNumberException, InvoiceNotFoundException,
-                               InvoiceNumberAlreadyExistsException, TemplateNotFoundException)
+                               InvalidInvoiceNumberException,
+                               InvoiceNotFoundException,
+                               InvoiceNumberAlreadyExistsException,
+                               TemplateNotFoundException)
 from ..models.contact import Contact
 from ..models.invoice import Invoice, InvoiceItem, InvoiceSubItem
 from ..models.template import Template
@@ -72,15 +75,48 @@ def create_invoice(db: Session, invoice: InvoiceCreate, user_id: int):
         db.rollback()
         raise
     
-def generate_preview_pdf(invoice: InvoiceCreate, template: Template) -> bytes:
+
+
+def generate_preview_pdf(db: Session, invoice: InvoiceCreate, template: Template) -> bytes:
     # Convert InvoiceCreate to Invoice
     preview_invoice = Invoice(
         id=0,  # Use a dummy ID
         user_id=0,  # Use a dummy user ID
-        **invoice.dict(exclude={'items'}),
-        items=[InvoiceItem(**item.dict()) for item in invoice.items]
+        invoice_number=invoice.invoice_number,
+        invoice_date=invoice.invoice_date,
+        bill_to_id=invoice.bill_to_id,
+        send_to_id=invoice.send_to_id,
+        tax_rate=Decimal(invoice.tax_rate),
+        discount_percentage=Decimal(invoice.discount_percentage),
+        notes=invoice.notes,
+        template_id=template.id
     )
+    
+    # Fetch and set bill_to and send_to contacts
+    preview_invoice.bill_to = db.query(Contact).get(invoice.bill_to_id)
+    preview_invoice.send_to = db.query(Contact).get(invoice.send_to_id)
+    
+    # Create InvoiceItem instances with subitems
+    preview_invoice.items = [
+        InvoiceItem(
+            id=0,  # Use a dummy ID
+            invoice_id=0,  # Use a dummy invoice_id
+            description=item.description,
+            quantity=Decimal(item.quantity),
+            unit_price=Decimal(item.unit_price),
+            discount_percentage=Decimal(item.discount_percentage),
+            subitems=[
+                InvoiceSubItem(
+                    id=0,  # Use a dummy ID
+                    invoice_item_id=0,  # Use a dummy invoice_item_id
+                    description=subitem.description
+                ) for subitem in item.subitems
+            ]
+        ) for item in invoice.items
+    ]
+    
     return generate_pdf(preview_invoice, template)
+
 def update_invoice(db: Session, invoice_id: int, invoice: InvoiceCreate, user_id: int):
     db_invoice = get_invoice(db, invoice_id, user_id)
     if db_invoice is None:

@@ -155,8 +155,8 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, bill
                                 </StyledTableCell>
                                 <StyledTableCell template={template} align="right" style={{ border: "none" }}>
                                     ${isFullInvoice(invoice)
-                                        ? (item as InvoiceItem).line_total.toFixed(2)
-                                        : (calculateLineTotal(item)).toFixed(2)}
+                                        ? (item as InvoiceItem).line_total
+                                        : (calculateLineTotal(item))}
                                 </StyledTableCell>
                             </TableRow>
                             {item.subitems && item.subitems.length > 0 && (

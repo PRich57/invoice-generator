@@ -6,6 +6,7 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from ..schemas.invoice import Invoice
 from ..models.template import Template
+from datetime import datetime
 
 def generate_pdf(invoice: Invoice, template: Template) -> bytes:
     buffer = BytesIO()
@@ -20,6 +21,8 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
     )
 
     styles = getSampleStyleSheet()
+    
+    formatted_date = invoice.invoice_date.strftime('%B %d, %Y') if invoice.invoice_date else ''
 
     # Use template configuration for colors
     primary_color = colors.HexColor(template.colors['primary'])
@@ -38,7 +41,7 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
         fontSize=template.font_sizes['title'],
         textColor=primary_color,
         alignment=2,
-        spaceAfter=0
+        spaceAfter=2
     ))
     styles.add(ParagraphStyle(
         name='InvoiceNumber',
@@ -74,7 +77,7 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
         fontName=main_font,
         alignment=2,
         fontSize=template.font_sizes['normal_text'],
-        spaceAfter=0
+        spaceAfter=2
     ))
     styles.add(ParagraphStyle(
         name='BalanceDue',
@@ -86,7 +89,14 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
         spaceAfter=0
     ))
     styles.add(ParagraphStyle(
-        name='SubItem',
+        name='ItemDescription',
+        parent=styles['Normal'],
+        fontName=main_font,
+        fontSize=template.font_sizes['normal_text'],
+        textColor=primary_color,
+    ))
+    styles.add(ParagraphStyle(
+        name='SubItemDescription',
         parent=styles['Normal'],
         fontName=main_font,
         fontSize=template.font_sizes['normal_text'] - 2,
@@ -111,29 +121,29 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
         [Paragraph("Bill To:", styles['SectionHeader'])],
         [Paragraph(invoice.bill_to.name, styles['AddressText'])],
         [Paragraph(invoice.bill_to.street_address or '', styles['AddressText'])],
-        [Paragraph(f"{invoice.bill_to.city or ''}, {invoice.bill_to.state or ''} {invoice.bill_to.postal_code or ''}", styles['AddressText'])],
-        [Paragraph(invoice.bill_to.phone or '', styles['AddressText'])],
-        [Paragraph(invoice.bill_to.email or '', styles['AddressText'])],
+        [Paragraph(f"{invoice.bill_to.city or ''} {invoice.bill_to.state or ''} {invoice.bill_to.postal_code or ''}", styles['AddressText'])],
+        # [Paragraph(invoice.bill_to.phone or '', styles['AddressText'])],
+        # [Paragraph(invoice.bill_to.email or '', styles['AddressText'])],
         [Spacer(1, 10)],
         [Paragraph("Send To:", styles['SectionHeader'])],
         [Paragraph(invoice.send_to.name, styles['AddressText'])],
         [Paragraph(invoice.send_to.street_address or '', styles['AddressText'])],
-        [Paragraph(f"{invoice.send_to.city or ''}, {invoice.send_to.state or ''} {invoice.send_to.postal_code or ''}", styles['AddressText'])],
-        [Paragraph(invoice.send_to.phone or '', styles['AddressText'])],
-        [Paragraph(invoice.send_to.email or '', styles['AddressText'])]
+        [Paragraph(f"{invoice.send_to.city or ''} {invoice.send_to.state or ''} {invoice.send_to.postal_code or ''}", styles['AddressText'])],
+        # [Paragraph(invoice.send_to.phone or '', styles['AddressText'])],
+        # [Paragraph(invoice.send_to.email or '', styles['AddressText'])]
     ]
 
     # Create right column (Invoice details, Date, and Balance Due)
     right_column = [
         [Paragraph("INVOICE", styles['InvoiceTitle'])],
-        [Paragraph(invoice.invoice_number, styles['InvoiceNumber'])],
+        [Paragraph(f"#{invoice.invoice_number}", styles['InvoiceNumber'])],
         [Spacer(1, 20)],
-        [Table([[Paragraph("Date:", styles['RightAligned']), Paragraph(invoice.invoice_date.strftime("%Y-%m-%d"), styles['RightAligned'])]], 
-               colWidths=[1.5*inch, 2*inch],
+        [Table([[Paragraph("Date:", styles['RightAligned']), Paragraph(formatted_date, styles['RightAligned'])]], 
+               colWidths=[1.5*inch, 1.75*inch],
                style=[('ALIGN', (0, 0), (-1, -1), 'RIGHT')])],
         [Spacer(1, 10)],
         [Table([[Paragraph("Balance Due:", styles['BalanceDue']), Paragraph(f"${invoice.total:.2f}", styles['BalanceDue'])]], 
-               colWidths=[1.5*inch, 2*inch],
+               colWidths=[1.5*inch, 1.75*inch],
                style=[
                    ('BACKGROUND', (0, 0), (-1, 0), "#cccccc"),
                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
@@ -158,41 +168,60 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
     elements.append(Spacer(1, 24))
 
     # Items table
-    table_data = [['Item', 'Quantity', 'Rate', 'Amount']]
+    items_data = [['Item', 'Unit Price', 'Quantity', 'Total']]
     for item in invoice.items:
-        table_data.append([
-            Paragraph(item.description, styles['Normal']),
-            str(item.quantity),
+        description = item.description
+        if item.discount_percentage > 0:
+            description += f" ({item.discount_percentage}% Discount)"
+        items_data.append([
+            Paragraph(description, styles['ItemDescription']),
             f"${item.unit_price:.2f}",
+            str(item.quantity),
             f"${item.line_total:.2f}"
         ])
-        for sub_item in item.subitems:
-            table_data.append([Paragraph(f"• {sub_item.description}", styles['SubItem']), '', '', ''])
-
-    table = Table(table_data, colWidths=[4*inch, 1*inch, 1*inch, 1*inch])
-    table.setStyle(TableStyle([
+        # Add subitems
+        for subitem in item.subitems:
+            items_data.append([
+                Paragraph(f"• {subitem.description}", styles['SubItemDescription']),
+                '', '', ''
+            ])
+            
+    col_widths = [4*inch, 1*inch, 1*inch, 1*inch]
+    items_table = Table(items_data, colWidths=col_widths)
+    items_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), accent_color),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, 0), accent_font),
         ('FONTSIZE', (0, 0), (-1, 0), template.font_sizes['table_header']),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
         ('BACKGROUND', (0, 1), (-1, -1), colors.white),
         ('GRID', (0, 0), (-1, 0), 1, colors.white),
         ('LINEBELOW', (0, -1), (-1, -1), 0.5, primary_color),
+        ('TOPPADDING', (0, 1), (-1, -1), 1),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 1),
     ]))
 
-    elements.append(table)
-    elements.append(Spacer(1, 24))
+    elements.append(items_table)
+    elements.append(Spacer(1, 12))
 
     # Totals
     totals_data = [
         ['', 'Subtotal:', f"${invoice.subtotal:.2f}"],
-        ['', f"Discount ({invoice.discount_percentage}%):", f"${invoice.subtotal * (invoice.discount_percentage / 100):.2f}"],
+    ]
+    
+    if invoice.discount_percentage > 0:
+        totals_data.extend([
+            ['', f"Discount ({invoice.discount_percentage}%):", f"-${invoice.discount_amount:.2f}"],
+            ['', 'Discounted Subtotal:', f"${invoice.discounted_subtotal:.2f}"],
+        ])
+    
+    totals_data.extend([
         ['', f"Tax ({invoice.tax_rate}%):", f"${invoice.tax:.2f}"],
         ['', 'Total:', f"${invoice.total:.2f}"]
-    ]
+    ])
+    
     totals_table = Table(totals_data, colWidths=[4*inch, 2*inch, 1*inch])
     totals_table.setStyle(TableStyle([
         ('ALIGN', (1, 0), (2, -1), 'RIGHT'),

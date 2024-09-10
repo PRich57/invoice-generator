@@ -64,7 +64,7 @@ async def preview_invoice_pdf(
     if not template:
         raise TemplateNotFoundException()
     
-    pdf_content = invoice_service.generate_preview_pdf(invoice, template)
+    pdf_content = invoice_service.generate_preview_pdf(db, invoice, template)
     
     return Response(content=pdf_content, media_type="application/pdf")
 

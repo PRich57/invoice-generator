@@ -22,7 +22,7 @@ class InvoiceItem(Base):
 
     @hybrid_property
     def line_total(self):
-        return (self.quantity * self.unit_price * (1 - self.discount_percentage / 100)).quantize(Decimal('0.01'))
+        return self.quantity * self.unit_price * (1 - self.discount_percentage / 100)
     
 class InvoiceSubItem(Base):
     __tablename__ = "invoice_subitems"
@@ -58,9 +58,17 @@ class Invoice(Base):
         return sum(item.line_total for item in self.items)
     
     @hybrid_property
+    def discount_amount(self):
+        return self.subtotal * (self.discount_percentage / 100)
+    
+    @hybrid_property
+    def discounted_subtotal(self):
+        return self.subtotal - self.discount_amount
+    
+    @hybrid_property
     def tax(self):
-        return (self.subtotal * (1 - self.discount_percentage / 100) * self.tax_rate / 100).quantize(Decimal('0.01'))
+        return self.discounted_subtotal * (self.tax_rate / 100)
     
     @hybrid_property
     def total(self):
-        return (self.subtotal * (1 - self.discount_percentage / 100) + self.tax).quantize(Decimal('0.01'))
+        return self.discounted_subtotal + self.tax

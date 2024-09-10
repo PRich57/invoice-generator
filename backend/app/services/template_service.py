@@ -13,7 +13,7 @@ DEFAULT_TEMPLATES = {
         },
         "fonts": {
             "main": "Arial",
-            "accent": "Arial-Bold"
+            "accent": "Arial"
         },
         "font_sizes": {
             "title": 26,
@@ -38,7 +38,7 @@ DEFAULT_TEMPLATES = {
         },
         "fonts": {
             "main": "Helvetica",
-            "accent": "Helvetica-Bold"
+            "accent": "Helvetica"
         },
         "font_sizes": {
             "title": 24,
@@ -63,7 +63,7 @@ DEFAULT_TEMPLATES = {
         },
         "fonts": {
             "main": "Times-Roman",
-            "accent": "Times-Bold"
+            "accent": "Times"
         },
         "font_sizes": {
             "title": 22,

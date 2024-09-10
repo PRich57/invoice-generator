@@ -1,29 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { 
-    TextField, 
-    Button, 
-    Typography, 
-    Box, 
-    MenuItem, 
-    FormControl, 
-    InputLabel, 
-    Select, 
+import {
+    TextField,
+    Button,
+    Typography,
+    Box,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Select,
     SelectChangeEvent,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useFormik, FieldArray, FormikProvider } from 'formik';
-import { InvoiceCreate, Template, InvoiceItemCreate, Contact } from '../types';
-import { createInvoice, updateInvoice, getTemplates, getInvoice, getContact, generateInvoicePDF, previewInvoicePDF } from '../services/api';
+import { InvoiceCreate, Template, Contact } from '../types';
+import { createInvoice, updateInvoice, getTemplates, getInvoice, getContact, previewInvoicePDF } from '../services/api';
 import ErrorMessage from '../components/common/ErrorMessage';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useContacts } from '../hooks/useContacts';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import { invoiceValidationSchema } from '../validationSchemas/invoiceValidationSchema';
 import InvoicePreview from '../components/invoices/InvoicePreview';
-import { formatDateForAPI } from '../utils/dateFormatter';
+import { formatDateForAPI, formatDateForDisplay } from '../utils/dateFormatter';
 import { InvoiceItemFields } from '../components/invoices/InvoiceItemFields';
-import { createDynamicStyle } from '../styles/dynamicPrint';
+import { parseISO } from 'date-fns';
 
 const InvoiceForm: React.FC = () => {
     const [loading, setLoading] = useState(false);
@@ -138,14 +138,25 @@ const InvoiceForm: React.FC = () => {
         formik.setFieldValue('template_id', templateId);
     };
 
+    const handleDateChange = (date: Date | null) => {
+        if (date) {
+            formik.setFieldValue('invoice_date', formatDateForAPI(date));
+        }
+    };
+
     const handlePrintToPDF = async () => {
         if (!selectedTemplate) return;
         
         try {
+            setIsSubmitting(true);
             let pdfContent: Blob;
-            if (formik.values.id) {
-                // Existing invoice
-                const response = await generateInvoicePDF(formik.values.id, selectedTemplate.id);
+            if (id) {
+                // Existing invoice - use current form values
+                const updatedInvoice = {
+                    ...formik.values,
+                    id: parseInt(id)
+                };
+                const response = await previewInvoicePDF(updatedInvoice, selectedTemplate.id);
                 pdfContent = new Blob([response.data], { type: 'application/pdf' });
             } else {
                 // New invoice
@@ -155,11 +166,12 @@ const InvoiceForm: React.FC = () => {
             const url = window.URL.createObjectURL(pdfContent);
             window.open(url);
         } catch (error) {
-            console.error('Error generating PDF:', error);
-            // Handle error (show error message to user)
+            handleError(error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
-    
+
     if (loading || contactsLoading) return <LoadingSpinner />;
     if (error || contactsError) return <ErrorMessage message={error || contactsError || 'An error occurred'} />;
 
@@ -186,8 +198,9 @@ const InvoiceForm: React.FC = () => {
                             <Box flex="1 1 45%">
                                 <DatePicker
                                     label="Invoice Date"
-                                    value={formik.values.invoice_date ? new Date(formik.values.invoice_date) : null}
-                                    onChange={(date) => formik.setFieldValue('invoice_date', date ? formatDateForAPI(date) : null)}
+                                    value={formik.values.invoice_date ? parseISO(formik.values.invoice_date) : null}
+                                    onChange={handleDateChange}
+                                    slotProps={{ textField: { fullWidth: true } }}
                                 />
                             </Box>
                             <Box flex="1 1 45%">
@@ -315,8 +328,13 @@ const InvoiceForm: React.FC = () => {
                             >
                                 {isSubmitting ? 'Saving...' : (id ? 'Update Invoice' : 'Create Invoice')}
                             </Button>
-                            <Button onClick={handlePrintToPDF} variant="outlined" color="secondary">
-                                Print to PDF
+                            <Button
+                                onClick={handlePrintToPDF}
+                                variant="outlined"
+                                color="secondary"
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? 'Generating PDF...' : 'Generate PDF'}
                             </Button>
                         </Box>
                     </Box>
