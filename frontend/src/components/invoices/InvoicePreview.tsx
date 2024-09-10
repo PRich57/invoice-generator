@@ -3,7 +3,6 @@ import { Box, Typography, Table, TableBody, TableCell, TableHead, TableRow, styl
 import { Template, InvoiceItem, Contact, InvoicePreviewProps, InvoiceItemCreate, Invoice, InvoiceCreate } from '../../types';
 import { createDynamicStyle } from '../../styles/dynamicPrint';
 
-
 const PreviewContainer = styled(Box)(({ theme }) => ({
     width: '210mm',
     minHeight: '297mm',

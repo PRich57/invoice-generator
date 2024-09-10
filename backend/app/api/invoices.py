@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Body, Depends, HTTPException, Response
+from datetime import date
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
 from ..core.deps import get_current_user
@@ -11,7 +12,7 @@ from ..core.exceptions import (ContactNotFoundException,
 from ..database import get_db
 from ..schemas.invoice import Invoice, InvoiceCreate
 from ..schemas.user import User
-from ..services import invoice_service, template_service, pdf_service
+from ..services import invoice_service, template_service
 import logging
 
 logger = logging.getLogger(__name__)
@@ -72,10 +73,25 @@ async def preview_invoice_pdf(
 def read_invoices(
     skip: int = 0,
     limit: int = 100,
+    sort_by: str | None = Query(None, enum=['invoice_number', 'bill_to_name', 'send_to_name', 'date', 'total']),
+    sort_order: str = Query('asc', enum=['asc', 'desc']),
+    invoice_number: str | None = None,
+    bill_to_name: str | None = None,
+    send_to_name: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    total_min: float | None = None,
+    total_max: float | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    invoices = invoice_service.get_invoices(db, current_user.id, skip=skip, limit=limit)
+    invoices = invoice_service.get_invoices(
+        db, current_user.id, skip=skip, limit=limit,
+        sort_by=sort_by, sort_order=sort_order,
+        invoice_number=invoice_number, bill_to_name=bill_to_name,
+        send_to_name=send_to_name, date_from=date_from, date_to=date_to,
+        total_min=total_min, total_max=total_max
+    )
     return invoices
 
 @router.get("/{invoice_id}", response_model=Invoice)
@@ -142,3 +158,13 @@ def regenerate_invoice(
 
     pdf = invoice_service.regenerate_invoice(db_invoice, template)
     return Response(content=pdf, media_type="application/pdf")
+
+@router.get("/grouped", response_model=dict)
+def read_grouped_invoices(
+    group_by: list[str] = Query(..., enum=['bill_to', 'send_to', 'month', 'year']),
+    date_from: date | None = None,
+    date_to: date | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return invoice_service.get_grouped_invoices(db, current_user.id, group_by, date_from, date_to)

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { TextField, Button, Typography, Box, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { TextField, Button, Typography, Box } from '@mui/material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { ContactCreate, ContactUpdate } from '../types';
+import { ContactCreate } from '../types';
 import { createContact, getContact, updateContact } from '../services/api';
 import ErrorMessage from '../components/common/ErrorMessage';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -19,7 +19,6 @@ const validationSchema = Yup.object().shape({
     state: Yup.string(),
     postal_code: Yup.string(),
     country: Yup.string(),
-    type: Yup.string().oneOf(['bill_to', 'send_to']).required('Contact type is required'),
     notes: Yup.string(),
 });
 
@@ -35,13 +34,10 @@ const ContactForm: React.FC = () => {
         email: '',
         phone: '',
         street_address: '',
-        address_line2: '',
         city: '',
         state: '',
         postal_code: '',
         country: '',
-        type: 'bill_to',
-        notes: '',
     };
 
     const formik = useFormik<ContactCreate>({
@@ -200,20 +196,6 @@ const ContactForm: React.FC = () => {
                 error={formik.touched.country && Boolean(formik.errors.country)}
                 helperText={formik.touched.country && formik.errors.country}
             />
-
-            <FormControl fullWidth margin="normal">
-                <InputLabel id="contact-type-label">Contact Type</InputLabel>
-                <Select
-                    labelId="contact-type-label"
-                    name="type"
-                    value={formik.values.type}
-                    onChange={formik.handleChange}
-                    error={formik.touched.type && Boolean(formik.errors.type)}
-                >
-                    <MenuItem value="bill_to">Bill To</MenuItem>
-                    <MenuItem value="send_to">Send To</MenuItem>
-                </Select>
-            </FormControl>
 
             <TextField
                 fullWidth

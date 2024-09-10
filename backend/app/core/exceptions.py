@@ -36,3 +36,8 @@ class TemplateAlreadyExistsException(HTTPException):
 class BadRequestException(HTTPException):
     def __init__(self, detail: str):
         super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+        
+async def global_exception_handler(request, exc):
+    if isinstance(exc, HTTPException):
+        return {"detail": exc.detail, "status_code": exc.status_code}
+    return {"detail": "An unexpected error occurred", "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR}

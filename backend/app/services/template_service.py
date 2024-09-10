@@ -1,26 +1,32 @@
+import logging
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
-from backend.app.core.exceptions import TemplateNotFoundException
+from backend.app.core.exceptions import TemplateNotFoundException, TemplateAlreadyExistsException
 from ..models.template import Template
 from ..schemas.template import TemplateCreate, TemplateUpdate
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_TEMPLATES = {
     "default": {
         "colors": {
             "primary": "#000000",
             "secondary": "#555555",
-            "accent": "#888888"
+            "accent": "#888888",
+            "text": "#000000",
+            "background": "#FFFFFF"
         },
         "fonts": {
-            "main": "Arial",
-            "accent": "Arial"
+            "main": "Helvetica",
+            "accent": "Helvetica-Bold"
         },
         "font_sizes": {
-            "title": 26,
-            "invoice_number": 20,
-            "section_header": 16,
-            "table_header": 14,
-            "normal_text": 12
+            "title": 20,
+            "invoice_number": 14,
+            "section_header": 8,
+            "table_header": 10,
+            "normal_text": 9
         },
         "layout": {
             "page_size": "A4",
@@ -38,14 +44,14 @@ DEFAULT_TEMPLATES = {
         },
         "fonts": {
             "main": "Helvetica",
-            "accent": "Helvetica"
+            "accent": "Helvetica-Bold"
         },
         "font_sizes": {
-            "title": 24,
-            "invoice_number": 16,
-            "section_header": 12,
-            "table_header": 12,
-            "normal_text": 10
+            "title": 20,
+            "invoice_number": 14,
+            "section_header": 8,
+            "table_header": 10,
+            "normal_text": 9
         },
         "layout": {
             "page_size": "A4",
@@ -63,13 +69,13 @@ DEFAULT_TEMPLATES = {
         },
         "fonts": {
             "main": "Times-Roman",
-            "accent": "Times"
+            "accent": "Times-Bold"
         },
         "font_sizes": {
-            "title": 22,
-            "invoice_number": 16,
-            "section_header": 12,
-            "table_header": 12,
+            "title": 20,
+            "invoice_number": 14,
+            "section_header": 8,
+            "table_header": 10,
             "normal_text": 9
         },
         "layout": {
@@ -94,19 +100,85 @@ def create_default_templates(db: Session):
             db_template = Template(**template_data)
             db.add(db_template)
     
-    db.commit()
+    try:
+        db.commit()
+        logger.info("Default templates created successfully")
+    except IntegrityError:
+        db.rollback()
+        logger.error("Error creating default templates")
+        raise
 
 def create_template(db: Session, template: TemplateCreate, user_id: int):
-    db_template = Template(**template.model_dump(), user_id=user_id)
-    db.add(db_template)
+    try:
+        db_template = Template(**template.model_dump(), user_id=user_id)
+        db.add(db_template)
+        db.commit()
+        db.refresh(db_template)
+        logger.info(f"Template created: id={db_template.id}, user_id={user_id}")
+        return db_template
+    except IntegrityError:
+        db.rollback()
+        logger.error(f"Template creation failed: name already exists, user_id={user_id}")
+        raise TemplateAlreadyExistsException()
+
+def get_template(db: Session, template_id: int, user_id: int | None = None) -> Template | None:
+    query = db.query(Template).filter(Template.id == template_id)
+    if user_id is not None:
+        query = query.filter((Template.user_id == user_id) | (Template.is_default == True))
+    else:
+        query = query.filter(Template.is_default == True)
+    return query.first()
+
+def get_templates(db: Session, user_id: int | None = None, skip: int = 0, limit: int = 100) -> list[Template]:
+    query = db.query(Template)
+    if user_id:
+        query = query.filter((Template.user_id == user_id) | (Template.is_default == True))
+    else:
+        query = query.filter(Template.is_default == True)
+    return query.offset(skip).limit(limit).all()
+
+def update_template(db: Session, template_id: int, template: TemplateUpdate, user_id: int) -> Template:
+    db_template = get_template(db, template_id, user_id)
+    if not db_template:
+        logger.error(f"Template update failed: template not found, id={template_id}, user_id={user_id}")
+        raise TemplateNotFoundException()
+    
+    if db_template.is_default:
+        db_template = copy_template(db, template_id, user_id)
+    
+    for key, value in template.model_dump(exclude_unset=True).items():
+        setattr(db_template, key, value)
+    
+    try:
+        db.commit()
+        db.refresh(db_template)
+        logger.info(f"Template updated: id={template_id}, user_id={user_id}")
+        return db_template
+    except IntegrityError:
+        db.rollback()
+        logger.error(f"Template update failed: integrity error, id={template_id}, user_id={user_id}")
+        raise TemplateAlreadyExistsException()
+
+def delete_template(db: Session, template_id: int, user_id: int) -> Template:
+    db_template = get_template(db, template_id, user_id)
+    if not db_template:
+        logger.error(f"Template deletion failed: template not found, id={template_id}, user_id={user_id}")
+        raise TemplateNotFoundException()
+    
+    if db_template.is_default:
+        logger.error(f"Template deletion failed: cannot delete default template, id={template_id}, user_id={user_id}")
+        raise ValueError("Cannot delete default template")
+    
+    db.delete(db_template)
     db.commit()
-    db.refresh(db_template)
+    logger.info(f"Template deleted: id={template_id}, user_id={user_id}")
     return db_template
 
-def copy_template(db: Session, template_id: int, user_id: int):
+def copy_template(db: Session, template_id: int, user_id: int) -> Template:
     template = get_template(db, template_id)
-    if template is None:
-        return None
+    if not template:
+        logger.error(f"Template copy failed: template not found, id={template_id}")
+        raise TemplateNotFoundException()
     
     new_template = Template(
         name=f"Copy of {template.name}",
@@ -121,46 +193,8 @@ def copy_template(db: Session, template_id: int, user_id: int):
     db.add(new_template)
     db.commit()
     db.refresh(new_template)
+    logger.info(f"Template copied: original_id={template_id}, new_id={new_template.id}, user_id={user_id}")
     return new_template
-
-def get_template(db: Session, template_id: int, user_id: int | None = None):
-    query = db.query(Template).filter(Template.id == template_id)
-    if user_id is not None:
-        query = query.filter((Template.user_id == user_id) | (Template.is_default == True))
-    else:
-        query = query.filter(Template.is_default == True)
-    return query.first()
-
-def get_templates(db: Session, user_id: int | None = None, skip: int = 0, limit: int = 100):
-    query = db.query(Template)
-    if user_id:
-        query = query.filter((Template.user_id == user_id) | (Template.is_default == True))
-    else:
-        query = query.filter(Template.is_default == True)
-    return query.offset(skip).limit(limit).all()
-
-def update_template(db: Session, template_id: int, template: TemplateUpdate, user_id: int):
-    db_template = get_template(db, template_id, user_id)
-    if db_template:
-        if db_template.is_default:
-            # If it's a default template, create a copy for the user
-            db_template = copy_template(db, template_id, user_id)
-            if db_template is None:
-                raise TemplateNotFoundException()
-        
-        for key, value in template.model_dump(exclude_unset=True).items():
-            setattr(db_template, key, value)
-            
-        db.commit()
-        db.refresh(db_template)
-    return db_template
-
-def delete_template(db: Session, template_id: int, user_id: int):
-    db_template = get_template(db, template_id, user_id)
-    if db_template and not db_template.is_default:
-        db.delete(db_template)
-        db.commit()
-    return db_template
 
 def get_or_create_default_templates(db: Session, user_id: int):
     existing_templates = get_templates(db, user_id)

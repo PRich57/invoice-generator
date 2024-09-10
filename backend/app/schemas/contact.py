@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 import re
 
@@ -28,7 +29,6 @@ class ContactBase(BaseModel):
     state: str | None = Field(None, max_length=100)
     postal_code: str | None = Field(None, max_length=20)
     country: str | None = Field(None, max_length=100)
-    type: str = Field(..., pattern=r'^(bill_to|send_to)$')
     notes: str | None = Field(None, max_length=500)
 
     @field_validator('email')
@@ -47,6 +47,7 @@ class ContactCreate(ContactBase):
 class Contact(ContactBase):
     id: int
     user_id: int
+    created_at: datetime
 
     class Config:
         from_attributes = True

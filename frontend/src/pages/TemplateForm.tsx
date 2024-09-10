@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { TextField, Button, Typography, Box, CircularProgress, Select, MenuItem, InputLabel, FormControl, SelectChangeEvent } from '@mui/material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { TemplateCreate, Template } from '../types';
+import { TemplateCreate } from '../types';
 import { createTemplate, getTemplate, updateTemplate } from '../services/api';
 import ErrorMessage from '../components/common/ErrorMessage';
+import { SketchPicker } from 'react-color';
 
 const validationSchema = Yup.object().shape({
     name: Yup.string().required('Template name is required'),
@@ -35,84 +36,6 @@ const validationSchema = Yup.object().shape({
     custom_css: Yup.string(),
 });
 
-const DEFAULT_TEMPLATES = {
-    default: {
-        colors: {
-            primary: "#333333",
-            secondary: "#555555",
-            accent: "#444444"
-        },
-        fonts: {
-            main: "Arial",
-            accent: "Arial-Bold"
-        },
-        font_sizes: {
-            title: 20,
-            invoice_number: 14,
-            section_header: 8,
-            table_header: 10,
-            normal_text: 9
-        },
-        layout: {
-            page_size: "A4",
-            margin_top: 0.3,
-            margin_right: 0.5,
-            margin_bottom: 0.5,
-            margin_left: 0.5
-        }
-    },
-    modern: {
-        colors: {
-            primary: "#2C3E50",
-            secondary: "#7F8C8D",
-            accent: "#3498DB"
-        },
-        fonts: {
-            main: "Helvetica",
-            accent: "Helvetica-Bold"
-        },
-        font_sizes: {
-            title: 24,
-            invoice_number: 16,
-            section_header: 12,
-            table_header: 14,
-            normal_text: 10
-        },
-        layout: {
-            page_size: "A4",
-            margin_top: 0.4,
-            margin_right: 0.6,
-            margin_bottom: 0.4,
-            margin_left: 0.6
-        }
-    },
-    classic: {
-        colors: {
-            primary: "#4A4A4A",
-            secondary: "#A9A9A9",
-            accent: "#8B0000"
-        },
-        fonts: {
-            main: "Times New Roman",
-            accent: "Times-Bold"
-        },
-        font_sizes: {
-            title: 22,
-            invoice_number: 14,
-            section_header: 11,
-            table_header: 12,
-            normal_text: 9
-        },
-        layout: {
-            page_size: "LETTER",
-            margin_top: 0.5,
-            margin_right: 0.5,
-            margin_bottom: 0.5,
-            margin_left: 0.5,
-        }
-    },    
-};
-
 const TemplateForm: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -125,6 +48,8 @@ const TemplateForm: React.FC = () => {
             primary: '#000000',
             secondary: '#555555',
             accent: '#444444',
+            text: '#000000',
+            background: '#FFFFFF',
         },
         fonts: {
             main: 'Helvetica',
@@ -146,6 +71,14 @@ const TemplateForm: React.FC = () => {
         },
         custom_css: '',
     };
+
+    const [colorPickerOpen, setColorPickerOpen] = React.useState({
+        primary: false,
+        secondary: false,
+        accent: false,
+        text: false,
+        background: false,
+    });
 
     const formik = useFormik<TemplateCreate>({
         initialValues,
@@ -185,16 +118,30 @@ const TemplateForm: React.FC = () => {
         }
     }, [id]);
 
-    const handleBaseTemplateChange = (event: SelectChangeEvent<unknown>) => {
-        const templateName = event.target.value as keyof typeof DEFAULT_TEMPLATES;
-        if (DEFAULT_TEMPLATES[templateName]) {
-            formik.setValues({
-                ...formik.values,
-                ...DEFAULT_TEMPLATES[templateName],
-                name: `Custom ${templateName}`,
-            });
-        }
+    const handleColorChange = (color: string, field: keyof typeof formik.values.colors) => {
+        formik.setFieldValue(`colors.${field}`, color);
     };
+
+    const colorPickerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (colorPickerRef.current && !colorPickerRef.current.contains(event.target as Node)) {
+                setColorPickerOpen({
+                    primary: false,
+                    secondary: false,
+                    accent: false,
+                    text: false,
+                    background: false,
+                });
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     if (loading) return <CircularProgress />;
 
@@ -204,19 +151,6 @@ const TemplateForm: React.FC = () => {
                 {id ? 'Edit Template' : 'Create New Template'}
             </Typography>
             {error && <ErrorMessage message={error} />}
-
-            <FormControl fullWidth margin="normal">
-                <InputLabel id="base-template-label">Base Template</InputLabel>
-                <Select
-                    labelId="base-template-label"
-                    id="base-template"
-                    onChange={handleBaseTemplateChange}
-                >
-                    <MenuItem value="default">Default</MenuItem>
-                    <MenuItem value="modern">Modern</MenuItem>
-                    <MenuItem value="classic">Classic</MenuItem>
-                </Select>
-            </FormControl>
 
             <TextField
                 fullWidth
@@ -230,36 +164,32 @@ const TemplateForm: React.FC = () => {
             />
 
             {/* Colors */}
-            <TextField
-                fullWidth
-                margin="normal"
-                name="colors.primary"
-                label="Primary Color"
-                value={formik.values.colors.primary}
-                onChange={formik.handleChange}
-                error={formik.touched.colors?.primary && Boolean(formik.errors.colors?.primary)}
-                helperText={formik.touched.colors?.primary && formik.errors.colors?.primary}
-            />
-            <TextField
-                fullWidth
-                margin="normal"
-                name="colors.secondary"
-                label="Secondary Color"
-                value={formik.values.colors.secondary}
-                onChange={formik.handleChange}
-                error={formik.touched.colors?.secondary && Boolean(formik.errors.colors?.secondary)}
-                helperText={formik.touched.colors?.secondary && formik.errors.colors?.secondary}
-            />
-            <TextField
-                fullWidth
-                margin="normal"
-                name="colors.accent"
-                label="Accent Color"
-                value={formik.values.colors.accent}
-                onChange={formik.handleChange}
-                error={formik.touched.colors?.accent && Boolean(formik.errors.colors?.accent)}
-                helperText={formik.touched.colors?.accent && formik.errors.colors?.accent}
-            />
+            {Object.entries(formik.values.colors).map(([key, value]) => (
+                <Box key={key} sx={{ mb: 2 }}>
+                    <Typography>{key.charAt(0).toUpperCase() + key.slice(1)} Color</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <TextField
+                            fullWidth
+                            name={`colors.${key}`}
+                            value={value}
+                            onChange={formik.handleChange}
+                            error={formik.touched.colors?.[key as keyof typeof formik.values.colors] && Boolean(formik.errors.colors?.[key as keyof typeof formik.values.colors])}
+                            helperText={formik.touched.colors?.[key as keyof typeof formik.values.colors] && formik.errors.colors?.[key as keyof typeof formik.values.colors]}
+                        />
+                        <Button onClick={() => setColorPickerOpen(prev => ({ ...prev, [key]: !prev[key as keyof typeof colorPickerOpen] }))}>
+                            Pick Color
+                        </Button>
+                    </Box>
+                    {colorPickerOpen[key as keyof typeof colorPickerOpen] && (
+                        <Box sx={{ position: 'absolute', zIndex: 2 }} ref={colorPickerRef}>
+                            <SketchPicker
+                                color={value}
+                                onChange={(color) => handleColorChange(color.hex, key as keyof typeof formik.values.colors)}
+                            />
+                        </Box>
+                    )}
+                </Box>
+            ))}
 
             {/* Fonts */}
             <TextField
@@ -310,6 +240,7 @@ const TemplateForm: React.FC = () => {
                 error={formik.touched.layout?.page_size && Boolean(formik.errors.layout?.page_size)}
                 helperText={formik.touched.layout?.page_size && formik.errors.layout?.page_size}
             />
+
             {Object.entries(formik.values.layout).filter(([key]) => key !== 'page_size').map(([key, value]) => (
                 <TextField
                     key={key}

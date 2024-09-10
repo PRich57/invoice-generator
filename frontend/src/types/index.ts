@@ -17,7 +17,6 @@ export interface Contact {
     state?: string;
     postal_code?: string;
     country?: string;
-    type: 'bill_to' | 'send_to';
     notes?: string;
 }
 
@@ -121,6 +120,8 @@ export interface Template {
         primary: string;
         secondary: string;
         accent: string;
+        text: string;
+        background: string;
     };
     fonts: {
         main: string;

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -25,12 +25,28 @@ def create_contact(
 
 @router.get("/", response_model=list[Contact])
 def read_contacts(
-    skip: int = 0,
-    limit: int = 100,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+    name: str | None = None,
+    email: str | None = None,
+    sort_by: str | None = Query(None, enum=['name', 'email', 'created_at']),
+    sort_order: str | None = Query('asc', enum=['asc', 'desc']),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    contacts = contact_service.get_contacts(db, current_user.id, skip=skip, limit=limit)
+    """
+    Retrieve contacts with pagination, filtering, and sorting.
+    """
+    contacts = contact_service.get_contacts(
+        db, 
+        current_user.id, 
+        skip=skip, 
+        limit=limit, 
+        name=name, 
+        email=email, 
+        sort_by=sort_by, 
+        sort_order=sort_order
+    )
     return contacts
 
 @router.get("/{contact_id}", response_model=Contact)
