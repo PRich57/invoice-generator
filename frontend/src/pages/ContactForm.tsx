@@ -1,84 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React from 'react';
 import { TextField, Button, Typography, Box } from '@mui/material';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { ContactCreate } from '../types';
-import { createContact, getContact, updateContact } from '../services/api';
+import { useContactForm } from '../hooks/useContactForm';
 import ErrorMessage from '../components/common/ErrorMessage';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-
-const validationSchema = Yup.object().shape({
-    name: Yup.string().required('Name is required'),
-    company: Yup.string(),
-    email: Yup.string().email('Invalid email'),
-    phone: Yup.string(),
-    street_address: Yup.string(),
-    address_line2: Yup.string(),
-    city: Yup.string(),
-    state: Yup.string(),
-    postal_code: Yup.string(),
-    country: Yup.string(),
-    notes: Yup.string(),
-});
+import { useParams } from 'react-router-dom';
 
 const ContactForm: React.FC = () => {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const navigate = useNavigate();
+    const { formik, isLoading, error, isSubmitting } = useContactForm();
     const { id } = useParams<{ id: string }>();
-
-    const initialValues: ContactCreate = {
-        name: '',
-        company: '',
-        email: '',
-        phone: '',
-        street_address: '',
-        city: '',
-        state: '',
-        postal_code: '',
-        country: '',
-    };
-
-    const formik = useFormik<ContactCreate>({
-        initialValues,
-        validationSchema,
-        onSubmit: async (values) => {
-            setLoading(true);
-            setError(null);
-            try {
-                if (id) {
-                    await updateContact(parseInt(id), { ...values, id: parseInt(id) });
-                } else {
-                    await createContact(values);
-                }
-                navigate('/contacts');
-            } catch (err) {
-                setError('Failed to save contact. Please try again.');
-            } finally {
-                setLoading(false);
-            }
-        },
-    });
-
-    useEffect(() => {
-        if (id) {
-            const fetchContact = async () => {
-                setLoading(true);
-                try {
-                    const response = await getContact(parseInt(id));
-                    formik.setValues(response.data);
-                } catch (err) {
-                    setError('Failed to fetch contact. Please try again.');
-                } finally {
-                    setLoading(false);
-                }
-            };
-            fetchContact();
-        }
-    }, [id]);
-
-    if (loading) return <LoadingSpinner />;
+    
+    if (isLoading) return <LoadingSpinner />;
 
     return (
         <Box component="form" onSubmit={formik.handleSubmit} sx={{ maxWidth: 600, margin: 'auto' }}>
@@ -210,8 +141,8 @@ const ContactForm: React.FC = () => {
                 helperText={formik.touched.notes && formik.errors.notes}
             />
 
-            <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
-                Save Contact
+            <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }} disabled={isSubmitting}>
+                {isSubmitting? 'Submitting...' : (id ? 'Update Contact' : 'Create Contact')}
             </Button>
         </Box>
     );

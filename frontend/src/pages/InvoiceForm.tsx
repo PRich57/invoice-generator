@@ -1,135 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import {
-    TextField,
-    Button,
-    Typography,
-    Box,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    Select,
-    SelectChangeEvent,
-} from '@mui/material';
+import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { TextField, Button, Typography, Box, MenuItem, FormControl, InputLabel, Select, SelectChangeEvent } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { useFormik, FieldArray, FormikProvider } from 'formik';
-import { InvoiceCreate, Template, Contact } from '../types';
-import { createInvoice, updateInvoice, getTemplates, getInvoice, getContact, previewInvoicePDF } from '../services/api';
+import { FormikProvider, FieldArray } from 'formik';
+import { useInvoiceForm } from '../hooks/useInvoiceForm';
+import { useTemplates } from '../hooks/useTemplates';
+import { usePDFGeneration } from '../hooks/usePDFGeneration';
+import { useContacts } from '../hooks/useContacts';
 import ErrorMessage from '../components/common/ErrorMessage';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { useContacts } from '../hooks/useContacts';
-import { useErrorHandler } from '../hooks/useErrorHandler';
-import { invoiceValidationSchema } from '../validationSchemas/invoiceValidationSchema';
 import InvoicePreview from '../components/invoices/InvoicePreview';
-import { formatDateForAPI, formatDateForDisplay } from '../utils/dateFormatter';
+import { formatDateForAPI } from '../utils/dateFormatter';
 import { InvoiceItemFields } from '../components/invoices/InvoiceItemFields';
 import { parseISO } from 'date-fns';
+import { Contact } from '../types';
 
 const InvoiceForm: React.FC = () => {
-    const [loading, setLoading] = useState(false);
-    const [templates, setTemplates] = useState<Template[]>([]);
-    const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { id } = useParams<{ id: string }>();
+    const { formik, isLoading, error, isSubmitting } = useInvoiceForm(id);
     const [billToContact, setBillToContact] = useState<Contact | null>(null);
     const [sendToContact, setSendToContact] = useState<Contact | null>(null);
-    const navigate = useNavigate();
-    const { id } = useParams<{ id: string }>();
+    const { templates, selectedTemplate, setSelectedTemplate } = useTemplates();
+    const { handlePrintToPDF, isSubmitting: isPDFGenerating } = usePDFGeneration();
     const { contacts, error: contactsError, loading: contactsLoading } = useContacts();
-    const { error, setError, handleError } = useErrorHandler();
-
-    const initialValues: InvoiceCreate = {
-        invoice_number: '',
-        invoice_date: formatDateForAPI(new Date()),
-        bill_to_id: 0,
-        send_to_id: 0,
-        tax_rate: 0,
-        discount_percentage: 0,
-        notes: '',
-        items: [{
-            description: '',
-            quantity: 1,
-            unit_price: 0,
-            discount_percentage: 0,
-            subitems: [],
-        }],
-        template_id: 0,
-    };
-
-    const formik = useFormik<InvoiceCreate & { id?: number }>({
-        initialValues,
-        validationSchema: invoiceValidationSchema,
-        onSubmit: async (values) => {
-            setIsSubmitting(true);
-            try {
-                if (id) {
-                    await updateInvoice(parseInt(id), values);
-                } else {
-                    await createInvoice(values);
-                }
-                navigate('/invoices');
-            } catch (err) {
-                handleError(err);
-            } finally {
-                setIsSubmitting(false);
-            }
-        },
-    });
-
-    useEffect(() => {
-        const fetchTemplates = async () => {
-            try {
-                const response = await getTemplates();
-                setTemplates(response.data);
-                if (response.data.length > 0) {
-                    setSelectedTemplate(response.data[0]);
-                    formik.setFieldValue('template_id', response.data[0].id);
-                }
-            } catch (err) {
-                handleError(err);
-            }
-        };
-
-        const fetchInvoice = async () => {
-            if (id) {
-                try {
-                    setLoading(true);
-                    const response = await getInvoice(parseInt(id));
-                    formik.setValues(response.data);
-                    setSelectedTemplate(templates.find(t => t.id === response.data.template_id) || null);
-                } catch (err) {
-                    handleError(err);
-                } finally {
-                    setLoading(false);
-                }
-            }
-        };
-
-        fetchTemplates();
-        fetchInvoice();
-    }, [id]);
-
-    useEffect(() => {
-        if (contacts.length > 0 && formik.values.bill_to_id === 0 && formik.values.send_to_id === 0) {
-            formik.setFieldValue('bill_to_id', contacts[0].id);
-            formik.setFieldValue('send_to_id', contacts[0].id);
-        }
-    }, [contacts]);
-
-    useEffect(() => {
-        const fetchContact = async (contactId: number, setContact: React.Dispatch<React.SetStateAction<Contact | null>>) => {
-            if (contactId) {
-                try {
-                    const response = await getContact(contactId);
-                    setContact(response.data);
-                } catch (err) {
-                    handleError(err);
-                }
-            }
-        };
-
-        fetchContact(formik.values.bill_to_id, setBillToContact);
-        fetchContact(formik.values.send_to_id, setSendToContact);
-    }, [formik.values.bill_to_id, formik.values.send_to_id]);
 
     const handleTemplateChange = (event: SelectChangeEvent<number>) => {
         const templateId = event.target.value as number;
@@ -144,35 +37,7 @@ const InvoiceForm: React.FC = () => {
         }
     };
 
-    const handlePrintToPDF = async () => {
-        if (!selectedTemplate) return;
-        
-        try {
-            setIsSubmitting(true);
-            let pdfContent: Blob;
-            if (id) {
-                // Existing invoice - use current form values
-                const updatedInvoice = {
-                    ...formik.values,
-                    id: parseInt(id)
-                };
-                const response = await previewInvoicePDF(updatedInvoice, selectedTemplate.id);
-                pdfContent = new Blob([response.data], { type: 'application/pdf' });
-            } else {
-                // New invoice
-                const response = await previewInvoicePDF(formik.values, selectedTemplate.id);
-                pdfContent = new Blob([response.data], { type: 'application/pdf' });
-            }
-            const url = window.URL.createObjectURL(pdfContent);
-            window.open(url);
-        } catch (error) {
-            handleError(error);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    if (loading || contactsLoading) return <LoadingSpinner />;
+    if (isLoading) return <LoadingSpinner />;
     if (error || contactsError) return <ErrorMessage message={error || contactsError || 'An error occurred'} />;
 
     return (
@@ -324,17 +189,17 @@ const InvoiceForm: React.FC = () => {
                                 variant="contained"
                                 color="primary"
                                 sx={{ mr: 2 }}
-                                disabled={isSubmitting}
+                                disabled={isSubmitting || isPDFGenerating}
                             >
                                 {isSubmitting ? 'Saving...' : (id ? 'Update Invoice' : 'Create Invoice')}
                             </Button>
                             <Button
-                                onClick={handlePrintToPDF}
+                                onClick={() => handlePrintToPDF(formik.values, selectedTemplate, id)}
                                 variant="outlined"
                                 color="secondary"
-                                disabled={isSubmitting}
+                                disabled={isSubmitting || isPDFGenerating}
                             >
-                                {isSubmitting ? 'Generating PDF...' : 'Generate PDF'}
+                                {isPDFGenerating ? 'Generating PDF...' : 'PDF Preview'}
                             </Button>
                         </Box>
                     </Box>

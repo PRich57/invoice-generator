@@ -53,16 +53,21 @@ export const deleteContact = (id: number) => api.delete(`${API_ENDPOINTS.CONTACT
 // Templates
 export const getTemplates = () => api.get<Template[]>(API_ENDPOINTS.TEMPLATES);
 export const getTemplate = (id: number) => api.get<Template>(`${API_ENDPOINTS.TEMPLATES}/${id}`);
-export const createTemplate = (data: TemplateCreate) => api.post<Template>(API_ENDPOINTS.TEMPLATES, data);
+export const createTemplate = async (data: TemplateCreate) => {
+    console.log('Attempting to create template:', data);
+    const response = await api.post<Template>(API_ENDPOINTS.TEMPLATES, data);
+    console.log('Template created successfully:', response.data);
+    return response.data;
+};
 export const updateTemplate = (id: number, data: TemplateUpdate) => api.put<Template>(`${API_ENDPOINTS.TEMPLATES}/${id}`, data);
 export const deleteTemplate = (id: number) => api.delete(`${API_ENDPOINTS.TEMPLATES}/${id}`);
 
 // PDF Generation
-export const generateInvoicePDF = (invoiceId: number, templateId: number) => 
+export const generateInvoicePDF = (invoiceId: number, templateId: number) =>
     api.get(`${API_ENDPOINTS.INVOICES}/${invoiceId}/pdf?template_id=${templateId}`, { responseType: 'blob' });
 
 // Preview invoice
-export const previewInvoicePDF = (invoice: InvoiceCreate, templateId: number) => 
+export const previewInvoicePDF = (invoice: InvoiceCreate, templateId: number) =>
     api.post(`${API_ENDPOINTS.INVOICES}/preview-pdf?template_id=${templateId}`, invoice, { responseType: 'blob' });
 
 // Customize template
@@ -106,7 +111,7 @@ api.interceptors.response.use(
                 if (!originalRequest.headers) {
                     originalRequest.headers = {};
                 }
-                
+
                 originalRequest.headers['Authorization'] = `Bearer ${access_token}`;
 
                 return api(originalRequest);

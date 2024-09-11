@@ -1,7 +1,6 @@
-import React, { Fragment, useEffect } from 'react';
+import React, { Fragment } from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableHead, TableRow, styled } from '@mui/material';
 import { Template, InvoiceItem, Contact, InvoicePreviewProps, InvoiceItemCreate, Invoice, InvoiceCreate } from '../../types';
-import { createDynamicStyle } from '../../styles/dynamicPrint';
 
 const PreviewContainer = styled(Box)(({ theme }) => ({
     width: '210mm',
@@ -83,15 +82,6 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, bill
     const discount_percentage = invoice.discount_percentage || 0;
     const discount_amount = calculateDiscountAmount(subtotal, discount_percentage);
 
-    useEffect(() => {
-        const style = document.createElement('style');
-        style.textContent = createDynamicStyle(template);
-        document.head.appendChild(style);
-
-        return () => {
-            document.head.removeChild(style);
-        };
-    }, [template]);
 
     return (
         <PreviewContainer className="invoice-preview">
