@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import { InvoiceCreate, Invoice } from '../types';
@@ -10,8 +10,8 @@ import { API_ENDPOINTS } from '../constants/apiEndpoints';
 
 export const useInvoiceForm = (id?: string) => {
     const navigate = useNavigate();
-    const { handleError } = useErrorHandler();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { handleError } = useErrorHandler();
 
     const initialValues: InvoiceCreate = {
         invoice_number: '',
@@ -34,6 +34,12 @@ export const useInvoiceForm = (id?: string) => {
     const { data, isLoading, error, refetch } = useFetch<Invoice | null>(
         id ? `${API_ENDPOINTS.INVOICES}/${id}` : null
     );
+
+    useEffect(() => {
+        if (id) {
+            refetch();
+        }
+    }, [id, refetch]);
 
     const { fetchData: submitForm } = useFetch<Invoice>(
         API_ENDPOINTS.INVOICES,

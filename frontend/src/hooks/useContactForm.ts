@@ -29,6 +29,12 @@ export const useContactForm = () => {
         id ? `${API_ENDPOINTS.CONTACTS}/${id}` : null
     );
 
+    useEffect(() => {
+        if (id) {
+            refetch();
+        }
+    }, [id, refetch]);
+
     const { fetchData: submitForm } = useFetch<Contact>(
         API_ENDPOINTS.CONTACTS,
         { method: id ? 'PUT' : 'POST' }

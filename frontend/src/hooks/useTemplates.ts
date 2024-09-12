@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Template } from '../types';
 import { getTemplates } from '../services/api';
 import { useErrorHandler } from './useErrorHandler';
@@ -6,22 +6,32 @@ import { useErrorHandler } from './useErrorHandler';
 export const useTemplates = () => {
     const [templates, setTemplates] = useState<Template[]>([]);
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-    const { handleError } = useErrorHandler();
+    const [loading, setLoading] = useState(true);
+    const { error, setError, handleError } = useErrorHandler();
+
+    const fetchTemplates = useCallback(async () => {
+        try {
+            setLoading(true);
+            const templatesData = await getTemplates();
+            setTemplates(templatesData);
+            if (templatesData.length > 0) {
+                setSelectedTemplate(templatesData[0]);
+            }
+            setError(null);
+        } catch (err) {
+            handleError(err);
+        } finally {
+            setLoading(false);
+        }
+    }, [handleError, setError]);
 
     useEffect(() => {
-        const fetchTemplates = async () => {
-            try {
-                const response = await getTemplates();
-                setTemplates(response.data);
-                if (response.data.length > 0) {
-                    setSelectedTemplate(response.data[0]);
-                }
-            } catch (err) {
-                handleError(err);
-            }
-        };
         fetchTemplates();
-    }, []);
+    }, [fetchTemplates]);
 
-    return { templates, selectedTemplate, setSelectedTemplate };
+    const refetch = useCallback(() => {
+        fetchTemplates();
+    }, [fetchTemplates]);
+
+    return { templates, selectedTemplate, setSelectedTemplate, error, loading, refetch };
 };

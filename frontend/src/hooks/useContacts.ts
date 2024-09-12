@@ -1,25 +1,37 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Contact } from '../types';
 import { getContacts } from '../services/api';
+import { useErrorHandler } from './useErrorHandler';
 
 export const useContacts = () => {
     const [contacts, setContacts] = useState<Contact[]>([]);
-    const [error, setError] = useState<string | null>(null);
+    const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
     const [loading, setLoading] = useState(true);
+    const { error, setError, handleError } = useErrorHandler();
+
+    const fetchContacts = useCallback(async () => {
+        try {
+            setLoading(true);
+            const contactsData = await getContacts();
+            setContacts(contactsData);
+            if (contactsData.length > 0) {
+                setSelectedContact(contactsData[0]);
+            }
+            setError(null);
+        } catch (err) {
+            handleError(err);
+        } finally {
+            setLoading(false);
+        }
+    }, [handleError, setError]);
 
     useEffect(() => {
-        const fetchContacts = async () => {
-            try {
-                const response = await getContacts();
-                setContacts(response.data);
-            } catch (err) {
-                setError('Failed to fetch contacts. Please try again.');
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchContacts();
-    }, []);
+    }, [fetchContacts]);
 
-    return { contacts, error, loading };
+    const refetch = useCallback(() => {
+        fetchContacts();
+    }, [fetchContacts]);
+
+    return { contacts, selectedContact, setSelectedContact, error, loading, refetch };
 };

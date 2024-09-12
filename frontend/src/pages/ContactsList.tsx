@@ -1,19 +1,19 @@
-import React from 'react';
+// src/pages/ContactsList.tsx
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { Contact } from '../types';
+import { useContacts } from '../hooks/useContacts';
 import { deleteContact } from '../services/api';
-import { useFetch } from '../hooks/useFetch';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import ConfirmationDialog from '../components/common/ConfirmationDialogue';
 
 const ContactsList: React.FC = () => {
     const navigate = useNavigate();
-    const { data: contacts, isLoading, error, refetch } = useFetch<Contact[]>('/contacts');
-    const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
-    const [contactToDelete, setContactToDelete] = React.useState<number | null>(null);
+    const { contacts, error, loading, refetch } = useContacts();
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [contactToDelete, setContactToDelete] = useState<number | null>(null);
 
     const handleEdit = (id: number) => {
         navigate(`/contacts/edit/${id}`);
@@ -36,7 +36,7 @@ const ContactsList: React.FC = () => {
         setDeleteConfirmOpen(false);
     };
 
-    if (isLoading) return <LoadingSpinner />;
+    if (loading) return <LoadingSpinner />;
     if (error) return <ErrorMessage message={error} />;
 
     return (
@@ -65,7 +65,7 @@ const ContactsList: React.FC = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {contacts?.map((contact) => (
+                        {contacts.map((contact) => (
                             <TableRow key={contact.id}>
                                 <TableCell>{contact.name}</TableCell>
                                 <TableCell>{contact.company}</TableCell>

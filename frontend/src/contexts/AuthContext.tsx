@@ -17,9 +17,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const token = localStorage.getItem('token');
         if (token) {
             try {
-                // You might want to implement a /me endpoint to get user details
-                const response = await api.getCurrentUser();
-                setUser(response.data);
+                const user = await api.getCurrentUser();
+                setUser(user);
                 setIsAuthenticated(true);
             } catch (error) {
                 console.error('Failed to verify token:', error);
@@ -38,7 +37,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             // Fetch user details after successful login
             const userResponse = await api.getCurrentUser();
-            setUser(userResponse.data);
+            setUser(userResponse);
         } catch (error) {
             console.error('Login failed:', error);
             throw error;

@@ -1,6 +1,5 @@
 import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import { API_BASE_URL, API_ENDPOINTS } from '../constants/apiEndpoints';
-import { User, Invoice, InvoiceCreate, Contact, ContactCreate, ContactUpdate, Template, TemplateCreate, TemplateUpdate } from '../types';
+import { API_BASE_URL } from '../constants/apiEndpoints';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -9,70 +8,6 @@ const api = axios.create({
     },
     withCredentials: true,
 });
-
-export const login = async (email: string, password: string) => {
-    const formData = new URLSearchParams();
-    formData.append('username', email);
-    formData.append('password', password);
-
-    const response = await api.post(API_ENDPOINTS.LOGIN, formData, {
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-    });
-
-    return response;
-};
-
-export const register = async (email: string, password: string) => {
-    const response = await api.post(API_ENDPOINTS.REGISTER, { email, password });
-    return response.data;
-};
-
-export const logout = async (): Promise<void> => {
-    await api.post(API_ENDPOINTS.LOGOUT);
-};
-
-// Get current authenticated user
-export const getCurrentUser = () => api.get<User>(`${API_BASE_URL}/auth/me`);
-
-// Invoices
-export const getInvoices = () => api.get<Invoice[]>(API_ENDPOINTS.INVOICES);
-export const getInvoice = (id: number) => api.get<Invoice>(`${API_ENDPOINTS.INVOICES}/${id}`);
-export const createInvoice = (data: InvoiceCreate) => api.post<Invoice>(API_ENDPOINTS.INVOICES, data);
-export const updateInvoice = (id: number, data: InvoiceCreate) => api.put<Invoice>(`${API_ENDPOINTS.INVOICES}/${id}`, data);
-export const deleteInvoice = (id: number) => api.delete(`${API_ENDPOINTS.INVOICES}/${id}`);
-
-// Contacts
-export const getContacts = () => api.get<Contact[]>(API_ENDPOINTS.CONTACTS);
-export const getContact = (id: number) => api.get<Contact>(`${API_ENDPOINTS.CONTACTS}/${id}`);
-export const createContact = (data: ContactCreate) => api.post<Contact>(API_ENDPOINTS.CONTACTS, data);
-export const updateContact = (id: number, data: ContactUpdate) => api.put<Contact>(`${API_ENDPOINTS.CONTACTS}/${id}`, data);
-export const deleteContact = (id: number) => api.delete(`${API_ENDPOINTS.CONTACTS}/${id}`);
-
-// Templates
-export const getTemplates = () => api.get<Template[]>(API_ENDPOINTS.TEMPLATES);
-export const getTemplate = (id: number) => api.get<Template>(`${API_ENDPOINTS.TEMPLATES}/${id}`);
-export const createTemplate = async (data: TemplateCreate) => {
-    console.log('Attempting to create template:', data);
-    const response = await api.post<Template>(API_ENDPOINTS.TEMPLATES, data);
-    console.log('Template created successfully:', response.data);
-    return response.data;
-};
-export const updateTemplate = (id: number, data: TemplateUpdate) => api.put<Template>(`${API_ENDPOINTS.TEMPLATES}/${id}`, data);
-export const deleteTemplate = (id: number) => api.delete(`${API_ENDPOINTS.TEMPLATES}/${id}`);
-
-// PDF Generation
-export const generateInvoicePDF = (invoiceId: number, templateId: number) =>
-    api.get(`${API_ENDPOINTS.INVOICES}/${invoiceId}/pdf?template_id=${templateId}`, { responseType: 'blob' });
-
-// Preview invoice
-export const previewInvoicePDF = (invoice: InvoiceCreate, templateId: number) =>
-    api.post(`${API_ENDPOINTS.INVOICES}/preview-pdf?template_id=${templateId}`, invoice, { responseType: 'blob' });
-
-// Customize template
-export const customizeTemplate = (templateId: number, templateData: TemplateUpdate) =>
-    api.put<Template>(`${API_ENDPOINTS.TEMPLATES}/${templateId}/customize`, templateData);
 
 // Add a request interceptor to include the token in subsequent requests
 api.interceptors.request.use(
@@ -129,3 +64,8 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+export * from './authService';
+export * from './contactService';
+export * from './invoiceService';
+export * from './templateService';

@@ -47,6 +47,12 @@ export const useTemplateForm = () => {
         id ? `${API_ENDPOINTS.TEMPLATES}/${id}` : null
     );
 
+    useEffect(() => {
+        if (id) {
+            refetch();
+        }
+    }, [id, refetch]);
+
     const { fetchData: submitForm } = useFetch<Template>(
         API_ENDPOINTS.TEMPLATES,
         { method: id ? 'PUT' : 'POST' }

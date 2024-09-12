@@ -1,37 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
-import { Invoice } from '../types';
-import { getInvoices, deleteInvoice, generateInvoicePDF } from '../services/api';
+import { useInvoices } from '../hooks/useInvoices';
+import { deleteInvoice, generateInvoicePDF } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import ConfirmationDialog from '../components/common/ConfirmationDialogue';
 import { formatCurrency } from '../utils/currencyFormatter';
+import { Invoice } from '../types';
 
 const InvoicesList: React.FC = () => {
-    const [invoices, setInvoices] = useState<Invoice[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
+    const { invoices, error, loading, refetch } = useInvoices();
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [invoiceToDelete, setInvoiceToDelete] = useState<number | null>(null);
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        fetchInvoices();
-    }, []);
-
-    const fetchInvoices = async () => {
-        try {
-            setLoading(true);
-            const response = await getInvoices();
-            setInvoices(response.data);
-        } catch (err) {
-            setError('Failed to fetch invoices. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleEdit = (id: number) => {
         navigate(`/invoices/edit/${id}`);
@@ -46,9 +29,9 @@ const InvoicesList: React.FC = () => {
         if (invoiceToDelete) {
             try {
                 await deleteInvoice(invoiceToDelete);
-                setInvoices(invoices.filter(invoice => invoice.id !== invoiceToDelete));
+                refetch();
             } catch (err) {
-                setError('Failed to delete invoice. Please try again.');
+                console.error('Failed to delete invoice:', err);
             }
         }
         setDeleteConfirmOpen(false);
@@ -57,7 +40,7 @@ const InvoicesList: React.FC = () => {
     const handleDownloadPDF = async (invoice: Invoice) => {
         try {
             const response = await generateInvoicePDF(invoice.id, invoice.template_id);
-            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const blob = new Blob([response], { type: 'application/pdf' });
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
@@ -66,7 +49,7 @@ const InvoicesList: React.FC = () => {
             link.click();
             link.parentNode?.removeChild(link);
         } catch (err) {
-            setError('Failed to download PDF. Please try again.');
+            console.error('Failed to download PDF:', err);
         }
     };
 

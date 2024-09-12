@@ -1,36 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { Template } from '../types';
-import { getTemplates, deleteTemplate } from '../services/api';
+import { useTemplates } from '../hooks/useTemplates';
+import { deleteTemplate } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import ConfirmationDialog from '../components/common/ConfirmationDialogue';
 
 const TemplatesList: React.FC = () => {
-    const [templates, setTemplates] = useState<Template[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
+    const { templates, error, loading, refetch } = useTemplates();
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [templateToDelete, setTemplateToDelete] = useState<number | null>(null);
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        fetchTemplates();
-    }, []);
-
-    const fetchTemplates = async () => {
-        try {
-            setLoading(true);
-            const response = await getTemplates();
-            setTemplates(response.data);
-        } catch (err) {
-            setError('Failed to fetch templates. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleEdit = (id: number) => {
         navigate(`/templates/edit/${id}`);
@@ -45,9 +27,9 @@ const TemplatesList: React.FC = () => {
         if (templateToDelete) {
             try {
                 await deleteTemplate(templateToDelete);
-                setTemplates(templates.filter(template => template.id !== templateToDelete));
+                refetch();
             } catch (err) {
-                setError('Failed to delete template. Please try again.');
+                console.error('Failed to delete template:', err);
             }
         }
         setDeleteConfirmOpen(false);
