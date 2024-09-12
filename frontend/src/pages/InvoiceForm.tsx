@@ -21,7 +21,7 @@ const InvoiceForm: React.FC = () => {
     const [billToContact, setBillToContact] = useState<Contact | null>(null);
     const [sendToContact, setSendToContact] = useState<Contact | null>(null);
     const { templates, selectedTemplate, setSelectedTemplate } = useTemplates();
-    const { handlePrintToPDF, isSubmitting: isPDFGenerating } = usePDFGeneration();
+    const { handlePreviewPDF, isGenerating: isPDFGenerating } = usePDFGeneration();
     const { contacts, error: contactsError, loading: contactsLoading } = useContacts();
 
     const handleTemplateChange = (event: SelectChangeEvent<number>) => {
@@ -34,6 +34,12 @@ const InvoiceForm: React.FC = () => {
     const handleDateChange = (date: Date | null) => {
         if (date) {
             formik.setFieldValue('invoice_date', formatDateForAPI(date));
+        }
+    };
+
+    const handlePreview = () => {
+        if (selectedTemplate) {
+            handlePreviewPDF(formik.values, selectedTemplate, id);
         }
     };
 
@@ -189,15 +195,15 @@ const InvoiceForm: React.FC = () => {
                                 variant="contained"
                                 color="primary"
                                 sx={{ mr: 2 }}
-                                disabled={isSubmitting || isPDFGenerating}
+                                disabled={isSubmitting}
                             >
                                 {isSubmitting ? 'Saving...' : (id ? 'Update Invoice' : 'Create Invoice')}
                             </Button>
                             <Button
-                                onClick={() => handlePrintToPDF(formik.values, selectedTemplate, id)}
+                                onClick={handlePreview}
                                 variant="outlined"
                                 color="secondary"
-                                disabled={isSubmitting || isPDFGenerating}
+                                disabled={isPDFGenerating}
                             >
                                 {isPDFGenerating ? 'Generating PDF...' : 'PDF Preview'}
                             </Button>

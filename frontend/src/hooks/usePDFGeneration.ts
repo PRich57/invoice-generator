@@ -4,34 +4,33 @@ import { previewInvoicePDF } from '../services/api';
 import { useErrorHandler } from './useErrorHandler';
 
 export const usePDFGeneration = () => {
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
     const { handleError } = useErrorHandler();
 
-    const handlePrintToPDF = async (invoice: InvoiceCreate, selectedTemplate: Template | null, id?: string) => {
-        if (!selectedTemplate) return;
+    const handlePreviewPDF = async (invoice: InvoiceCreate, selectedTemplate: Template | null, id?: string) => {
+        if (!selectedTemplate) {
+            handleError(new Error('No template selected'));
+            return;
+        }
 
         try {
-            setIsSubmitting(true);
-            let pdfContent: Blob;
-            if (id) {
-                const updatedInvoice = {
-                    ...invoice,
-                    id: parseInt(id)
-                };
-                const response = await previewInvoicePDF(updatedInvoice, selectedTemplate.id);
-                pdfContent = new Blob([response.data], { type: 'application/pdf' });
-            } else {
-                const response = await previewInvoicePDF(invoice, selectedTemplate.id);
-                pdfContent = new Blob([response.data], { type: 'application/pdf' });
-            }
-            const url = window.URL.createObjectURL(pdfContent);
-            window.open(url);
+            setIsGenerating(true);
+            const response = await previewInvoicePDF(invoice, selectedTemplate.id);
+            
+            // Create a Blob from the PDF stream
+            const blob = new Blob([response], { type: 'application/pdf' });
+            
+            // Create a URL for the blob
+            const url = window.URL.createObjectURL(blob);
+            
+            // Open the PDF in a new tab
+            window.open(url, '_blank');
         } catch (error) {
             handleError(error);
         } finally {
-            setIsSubmitting(false);
+            setIsGenerating(false);
         }
     };
 
-    return { handlePrintToPDF, isSubmitting };
+    return { handlePreviewPDF, isGenerating };
 };
