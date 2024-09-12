@@ -23,7 +23,7 @@ export const useContacts = () => {
         } finally {
             setLoading(false);
         }
-    }, [handleError, setError]);
+    }, []);
 
     useEffect(() => {
         fetchContacts();

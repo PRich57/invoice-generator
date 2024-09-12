@@ -1,18 +1,28 @@
-import { useState, useCallback } from 'react';
-import axios from 'axios';
+import { useState } from 'react';
+import { toast } from 'react-toastify';
 
 export const useErrorHandler = () => {
     const [error, setError] = useState<string | null>(null);
 
-    const handleError = useCallback((error: unknown) => {
-        if (axios.isAxiosError(error)) {
-            setError(error.response?.data?.message || 'An unexpected error occurred');
-        } else if (error instanceof Error) {
-            setError(error.message);
+    const handleError = (error: unknown) => {
+        let errorMessage: string;
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        } else if (typeof error === 'string') {
+            errorMessage = error;
         } else {
-            setError('An unexpected error occurred');
+            errorMessage = 'An unexpected error occurred';
         }
-    }, []);
+        setError(errorMessage);
+        toast.error(errorMessage, {
+            position: "bottom-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+        });
+    };
 
     return { error, setError, handleError };
 };

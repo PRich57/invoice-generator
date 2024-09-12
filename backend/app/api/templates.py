@@ -52,7 +52,7 @@ def update_template(
     current_user: User = Depends(get_current_user)
 ):
     db_template = template_service.update_template(db, template_id, template, current_user.id)
-    if db_template is None:
+    if db_template is None or not db_template.is_default:
         raise TemplateNotFoundException()
     return db_template
 

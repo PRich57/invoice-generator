@@ -23,15 +23,19 @@ export const useTemplates = () => {
         } finally {
             setLoading(false);
         }
-    }, [handleError, setError]);
+    }, []);
 
     useEffect(() => {
         fetchTemplates();
     }, [fetchTemplates]);
 
+    const getTemplateById = useCallback((id: number) => {
+        return templates.find(template => template.id === id) || null;
+    }, [templates]);
+
     const refetch = useCallback(() => {
         fetchTemplates();
     }, [fetchTemplates]);
 
-    return { templates, selectedTemplate, setSelectedTemplate, error, loading, refetch };
+    return { templates, selectedTemplate, setSelectedTemplate, error, loading, refetch, getTemplateById };
 };

@@ -20,13 +20,13 @@ const InvoiceForm: React.FC = () => {
     const { formik, isLoading, error, isSubmitting } = useInvoiceForm(id);
     const [billToContact, setBillToContact] = useState<Contact | null>(null);
     const [sendToContact, setSendToContact] = useState<Contact | null>(null);
-    const { templates, selectedTemplate, setSelectedTemplate } = useTemplates();
+    const { templates, selectedTemplate, setSelectedTemplate, getTemplateById } = useTemplates();
     const { handlePreviewPDF, isGenerating: isPDFGenerating } = usePDFGeneration();
     const { contacts, error: contactsError, loading: contactsLoading } = useContacts();
 
     const handleTemplateChange = (event: SelectChangeEvent<number>) => {
         const templateId = event.target.value as number;
-        const template = templates.find(t => t.id === templateId);
+        const template = getTemplateById(templateId);
         setSelectedTemplate(template || null);
         formik.setFieldValue('template_id', templateId);
     };

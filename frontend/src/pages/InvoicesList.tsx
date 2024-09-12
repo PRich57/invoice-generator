@@ -76,6 +76,7 @@ const InvoicesList: React.FC = () => {
                             <TableCell>Date</TableCell>
                             <TableCell>Bill To</TableCell>
                             <TableCell>Total</TableCell>
+                            <TableCell>Template</TableCell>
                             <TableCell>Actions</TableCell>
                         </TableRow>
                     </TableHead>
@@ -86,6 +87,7 @@ const InvoicesList: React.FC = () => {
                                 <TableCell>{new Date(invoice.invoice_date).toLocaleDateString()}</TableCell>
                                 <TableCell>{invoice.bill_to_id}</TableCell>
                                 <TableCell>{formatCurrency(invoice.total)}</TableCell>
+                                <TableCell>{invoice.template_id}</TableCell>
                                 <TableCell>
                                     <Button startIcon={<EditIcon />} onClick={() => handleEdit(invoice.id)}>
                                         Edit

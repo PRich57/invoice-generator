@@ -9,6 +9,8 @@ import theme from './styles/theme';
 import routes from './constants/routes';
 import Layout from './layouts/MainLayout';
 import LoadingSpinner from './components/common/LoadingSpinner';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'
 
 const App: React.FC = () => {
     return (
@@ -25,6 +27,19 @@ const App: React.FC = () => {
                                     ))}
                                 </Routes>
                             </Suspense>
+                            <ToastContainer
+                                position="bottom-right"
+                                autoClose={5000}
+                                hideProgressBar={false}
+                                newestOnTop={false}
+                                closeOnClick
+                                rtl={false}
+                                pauseOnFocusLoss
+                                draggable
+                                pauseOnHover
+                                theme="colored"
+                                style={{ width: '300px' }}  // Adjust this value as needed
+                            />
                         </Layout>
                     </Router>
                 </LocalizationProvider>

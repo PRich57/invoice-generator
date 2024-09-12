@@ -4,18 +4,14 @@ import { SketchPicker } from 'react-color';
 import { useTemplateForm } from '../hooks/useTemplateForm';
 import ErrorMessage from '../components/common/ErrorMessage';
 import { useParams } from 'react-router-dom';
+import { useColorPicker } from '../hooks/useColorPicker'
 
 const TemplateForm: React.FC = () => {
     const { formik, isLoading, error, isSubmitting } = useTemplateForm();
     const { id } = useParams<{ id: string }>();
-    const [colorPickerOpen, setColorPickerOpen] = React.useState({
-        primary: false,
-        secondary: false,
-        accent: false,
-        text: false,
-        background: false,
-    });
-    const colorPickerRef = useRef<HTMLDivElement>(null);
+    const { colorPickerOpen, toggleColorPicker, colorPickerRef } = useColorPicker();
+
+
 
     const handleColorChange = (color: string, field: keyof typeof formik.values.colors) => {
         formik.setFieldValue(`colors.${field}`, color);
@@ -54,15 +50,15 @@ const TemplateForm: React.FC = () => {
                             error={formik.touched.colors?.[key as keyof typeof formik.values.colors] && Boolean(formik.errors.colors?.[key as keyof typeof formik.values.colors])}
                             helperText={formik.touched.colors?.[key as keyof typeof formik.values.colors] && formik.errors.colors?.[key as keyof typeof formik.values.colors]}
                         />
-                        <Button onClick={() => setColorPickerOpen(prev => ({ ...prev, [key]: !prev[key as keyof typeof colorPickerOpen] }))}>
+                        <Button onClick={() => toggleColorPicker(key)}>
                             Pick Color
                         </Button>
                     </Box>
-                    {colorPickerOpen[key as keyof typeof colorPickerOpen] && (
+                    {colorPickerOpen[key] && (
                         <Box sx={{ position: 'absolute', zIndex: 2 }} ref={colorPickerRef}>
                             <SketchPicker
                                 color={value}
-                                onChange={(color) => handleColorChange(color.hex, key as keyof typeof formik.values.colors)}
+                                onChange={(color) => formik.setFieldValue(`colors.${key}`, color.hex)}
                             />
                         </Box>
                     )}
@@ -148,7 +144,7 @@ const TemplateForm: React.FC = () => {
             />
 
             <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }} disabled={isSubmitting}>
-                {isSubmitting? 'Submitting...' : (id? 'Update Template' : 'Create Template' )}
+                {isSubmitting ? 'Submitting...' : (id ? 'Update Template' : 'Create Template')}
             </Button>
         </Box>
     );

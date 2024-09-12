@@ -19,10 +19,12 @@ export const useContactForm = () => {
         email: '',
         phone: '',
         street_address: '',
+        address_line2: '',
         city: '',
         state: '',
         postal_code: '',
         country: '',
+        notes: ''
     };
 
     const { data, isLoading, error, refetch } = useFetch<Contact | null>(

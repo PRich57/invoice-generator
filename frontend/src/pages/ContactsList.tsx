@@ -60,7 +60,7 @@ const ContactsList: React.FC = () => {
                             <TableCell>Company</TableCell>
                             <TableCell>Email</TableCell>
                             <TableCell>Phone</TableCell>
-                            <TableCell>City</TableCell>
+                            <TableCell>City, State ZIP</TableCell>
                             <TableCell>Actions</TableCell>
                         </TableRow>
                     </TableHead>
@@ -71,7 +71,7 @@ const ContactsList: React.FC = () => {
                                 <TableCell>{contact.company}</TableCell>
                                 <TableCell>{contact.email}</TableCell>
                                 <TableCell>{contact.phone}</TableCell>
-                                <TableCell>{contact.city}</TableCell>
+                                <TableCell>{contact.city} {contact.state} {contact.postal_code}</TableCell>
                                 <TableCell>
                                     <Button startIcon={<EditIcon />} onClick={() => handleEdit(contact.id)}>
                                         Edit

@@ -23,7 +23,7 @@ export const useInvoices = () => {
         } finally {
             setLoading(false);
         }
-    }, [handleError, setError]);
+    }, []);
 
     useEffect(() => {
         fetchInvoices();

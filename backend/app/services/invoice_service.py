@@ -15,6 +15,7 @@ from ..models.template import Template
 from ..schemas.invoice import InvoiceCreate
 from .pdf_generator import generate_pdf
 from sqlalchemy import asc, desc, func
+from .template_service import get_templates
 
 logger = logging.getLogger(__name__)
 
@@ -160,11 +161,15 @@ def generate_preview_pdf(db: Session, invoice: InvoiceCreate, template: Template
 
 def update_invoice(db: Session, invoice_id: int, invoice: InvoiceCreate, user_id: int) -> Invoice:
     db_invoice = get_invoice(db, invoice_id, user_id)
+    
     if db_invoice is None:
         raise InvoiceNotFoundException()
     
     if invoice.template_id is not None:
-        template = db.query(Template).filter(Template.id == invoice.template_id, Template.user_id == user_id).first()
+        template = db.query(Template).filter(
+            (Template.id == invoice.template_id) & 
+            ((Template.user_id == user_id) | (Template.is_default == True))
+        ).first()
         if not template:
             raise TemplateNotFoundException()
 
