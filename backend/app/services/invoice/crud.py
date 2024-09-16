@@ -1,26 +1,25 @@
-from datetime import date
 import logging
-from decimal import Decimal
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+from datetime import date
 
-from ..core.exceptions import (BadRequestException, ContactNotFoundException,
-                               InvalidInvoiceNumberException,
-                               InvoiceNotFoundException,
-                               InvoiceNumberAlreadyExistsException,
-                               TemplateNotFoundException)
-from ..models.contact import Contact
-from ..models.invoice import Invoice, InvoiceItem, InvoiceSubItem
-from ..models.template import Template
-from ..schemas.invoice import InvoiceCreate
-from .pdf_generator import generate_pdf
 from sqlalchemy import asc, desc, func
-from .template_service import get_templates
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from ...core.exceptions import (BadRequestException, InvoiceNotFoundException,
+                                InvoiceNumberAlreadyExistsException,
+                                TemplateNotFoundException)
+from ...models.contact import Contact
+from ...models.invoice import Invoice, InvoiceItem, InvoiceSubItem
+from ...models.template import Template
+from ...schemas.invoice import InvoiceCreate, InvoiceUpdate
+
 
 logger = logging.getLogger(__name__)
 
+
 def get_invoice(db: Session, invoice_id: int, user_id: int) -> Invoice | None:
     return db.query(Invoice).filter(Invoice.id == invoice_id, Invoice.user_id == user_id).first()
+
 
 def get_invoices(
     db: Session,
@@ -74,16 +73,6 @@ def get_invoices(
 
     return query.all()
 
-def generate_invoice_pdf(db: Session, invoice_id: int, template_id: int, user_id: int) -> bytes:
-    invoice = get_invoice(db, invoice_id, user_id)
-    if not invoice:
-        raise InvoiceNotFoundException()
-    
-    template = db.query(Template).filter(Template.id == template_id).first()
-    if not template:
-        raise TemplateNotFoundException()
-    
-    return generate_pdf(invoice, template)
 
 def create_invoice(db: Session, invoice: InvoiceCreate, user_id: int) -> Invoice:
     logger.info(f"Creating invoice with data: {invoice.model_dump()}")
@@ -122,42 +111,6 @@ def create_invoice(db: Session, invoice: InvoiceCreate, user_id: int) -> Invoice
         logger.error(f"Error creating invoice: {str(e)}", exc_info=True)
         raise BadRequestException("An unexpected error occurred while creating the invoice")
 
-def generate_preview_pdf(db: Session, invoice: InvoiceCreate, template: Template) -> bytes:
-    preview_invoice = Invoice(
-        id=0,
-        user_id=0,
-        invoice_number=invoice.invoice_number,
-        invoice_date=invoice.invoice_date,
-        bill_to_id=invoice.bill_to_id,
-        send_to_id=invoice.send_to_id,
-        tax_rate=Decimal(invoice.tax_rate),
-        discount_percentage=Decimal(invoice.discount_percentage),
-        notes=invoice.notes,
-        template_id=template.id
-    )
-    
-    preview_invoice.bill_to = db.query(Contact).get(invoice.bill_to_id)
-    preview_invoice.send_to = db.query(Contact).get(invoice.send_to_id)
-    
-    preview_invoice.items = [
-        InvoiceItem(
-            id=0,
-            invoice_id=0,
-            description=item.description,
-            quantity=Decimal(item.quantity),
-            unit_price=Decimal(item.unit_price),
-            discount_percentage=Decimal(item.discount_percentage),
-            subitems=[
-                InvoiceSubItem(
-                    id=0,
-                    invoice_item_id=0,
-                    description=subitem.description
-                ) for subitem in item.subitems
-            ]
-        ) for item in invoice.items
-    ]
-    
-    return generate_pdf(preview_invoice, template)
 
 def update_invoice(db: Session, invoice_id: int, invoice: InvoiceCreate, user_id: int) -> Invoice:
     db_invoice = get_invoice(db, invoice_id, user_id)
@@ -194,6 +147,7 @@ def update_invoice(db: Session, invoice_id: int, invoice: InvoiceCreate, user_id
         logger.error(f"Error updating invoice: {str(e)}", exc_info=True)
         raise BadRequestException("An error occurred while updating the invoice")
 
+
 def delete_invoice(db: Session, invoice_id: int, user_id: int) -> Invoice:
     db_invoice = get_invoice(db, invoice_id, user_id)
     if db_invoice is None:
@@ -207,7 +161,8 @@ def delete_invoice(db: Session, invoice_id: int, user_id: int) -> Invoice:
         db.rollback()
         logger.error(f"Error deleting invoice: {str(e)}", exc_info=True)
         raise BadRequestException("An error occurred while deleting the invoice")
-    
+
+
 def get_grouped_invoices(
     db: Session,
     user_id: int,

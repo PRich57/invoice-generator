@@ -5,9 +5,11 @@ from jose import JWTError, jwt
 
 from ..database import get_db
 from ..core.config import settings
-from ..services import user_service
+from ..services.user import crud
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -22,7 +24,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    user = user_service.get_user_by_email(db, email=email)
+    user = crud.get_user_by_email(db, email=email)
     if user is None:
         raise credentials_exception
     return user

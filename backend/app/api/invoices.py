@@ -1,4 +1,6 @@
+import logging
 from datetime import date
+
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
@@ -12,12 +14,15 @@ from ..core.exceptions import (ContactNotFoundException,
 from ..database import get_db
 from ..schemas.invoice import Invoice, InvoiceCreate
 from ..schemas.user import User
-from ..services import invoice_service, template_service
-import logging
+from ..services.invoice import invoice_service
+from ..services.template import crud
+
 
 logger = logging.getLogger(__name__)
 
+
 router = APIRouter()
+
 
 @router.post("/", response_model=Invoice)
 def create_invoice(
@@ -53,7 +58,8 @@ def create_invoice(
     except Exception as e:
         logger.error(f"Error creating invoice: {str(e)}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
-    
+
+
 @router.post("/preview-pdf")
 async def preview_invoice_pdf(
     invoice: InvoiceCreate,
@@ -61,13 +67,14 @@ async def preview_invoice_pdf(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    template = template_service.get_template(db, template_id, current_user.id)
+    template = crud.get_template(db, template_id, current_user.id)
     if not template:
         raise TemplateNotFoundException()
     
     pdf_content = invoice_service.generate_preview_pdf(db, invoice, template)
     
     return Response(content=pdf_content, media_type="application/pdf")
+
 
 @router.get("/", response_model=list[Invoice])
 def read_invoices(
@@ -94,6 +101,7 @@ def read_invoices(
     )
     return invoices
 
+
 @router.get("/{invoice_id}", response_model=Invoice)
 def read_invoice(
     invoice_id: int,
@@ -104,6 +112,7 @@ def read_invoice(
     if db_invoice is None:
         raise InvoiceNotFoundException()
     return db_invoice
+
 
 @router.put("/{invoice_id}", response_model=Invoice)
 def update_invoice(
@@ -117,6 +126,7 @@ def update_invoice(
         raise InvoiceNotFoundException()
     return db_invoice
 
+
 @router.delete("/{invoice_id}", response_model=Invoice)
 def delete_invoice(
     invoice_id: int,
@@ -127,6 +137,7 @@ def delete_invoice(
     if db_invoice is None:
         raise InvoiceNotFoundException()
     return db_invoice
+
 
 @router.get("/{invoice_id}/pdf")
 def generate_invoice_pdf(
@@ -141,6 +152,7 @@ def generate_invoice_pdf(
         "Content-Disposition": f"attachment; filename=invoice_{invoice_id}.pdf"
     })
 
+
 @router.post("/{invoice_id}/regenerate")
 def regenerate_invoice(
     invoice_id: int,
@@ -152,12 +164,13 @@ def regenerate_invoice(
     if db_invoice is None:
         raise InvoiceNotFoundException()
 
-    template = template_service.get_template(db, template_name, current_user.id)
+    template = crud.get_template(db, template_name, current_user.id)
     if template is None:
         raise TemplateNotFoundException()
 
     pdf = invoice_service.regenerate_invoice(db_invoice, template)
     return Response(content=pdf, media_type="application/pdf")
+
 
 @router.get("/grouped", response_model=dict)
 def read_grouped_invoices(

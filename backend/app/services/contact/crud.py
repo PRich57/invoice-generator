@@ -1,11 +1,15 @@
 import logging
-from sqlalchemy.orm import Session
+
 from sqlalchemy import asc, desc
-from ..models.contact import Contact
-from ..schemas.contact import ContactCreate
-from ..core.exceptions import BadRequestException, ContactNotFoundException
+from sqlalchemy.orm import Session
+
+from ...core.exceptions import BadRequestException, ContactNotFoundException
+from ...models.contact import Contact
+from ...schemas.contact import ContactCreate
+
 
 logger = logging.getLogger(__name__)
+
 
 def get_contact(db: Session, contact_id: int, user_id: int) -> Contact:
     contact = db.query(Contact).filter(Contact.id == contact_id, Contact.user_id == user_id).first()
@@ -13,6 +17,7 @@ def get_contact(db: Session, contact_id: int, user_id: int) -> Contact:
         logger.warning(f"Contact not found: id={contact_id}, user_id={user_id}")
         raise ContactNotFoundException(contact_id=contact_id)
     return contact
+
 
 def get_contacts(
     db: Session, 
@@ -51,6 +56,7 @@ def get_contacts(
         logger.error(f"Error retrieving contacts: {str(e)}")
         raise BadRequestException("An error occurred while retrieving contacts")
 
+
 def create_contact(db: Session, contact: ContactCreate, user_id: int) -> Contact:
     try:
         db_contact = Contact(**contact.model_dump(), user_id=user_id)
@@ -63,6 +69,7 @@ def create_contact(db: Session, contact: ContactCreate, user_id: int) -> Contact
         logger.error(f"Error creating contact: {str(e)}")
         db.rollback()
         raise BadRequestException("An error occurred while creating the contact")
+
 
 def update_contact(db: Session, contact_id: int, contact: ContactCreate, user_id: int) -> Contact:
     db_contact = get_contact(db, contact_id, user_id)
@@ -77,6 +84,7 @@ def update_contact(db: Session, contact_id: int, contact: ContactCreate, user_id
         logger.error(f"Error updating contact: {str(e)}")
         db.rollback()
         raise BadRequestException("An error occurred while updating the contact")
+
 
 def delete_contact(db: Session, contact_id: int, user_id: int) -> Contact:
     db_contact = get_contact(db, contact_id, user_id)

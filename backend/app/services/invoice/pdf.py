@@ -1,12 +1,22 @@
+from decimal import Decimal
 from io import BytesIO
+
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.pagesizes import A4, letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from ..schemas.invoice import Invoice
-from ..models.template import Template
-from datetime import datetime
+from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
+                                TableStyle)
+from sqlalchemy.orm import Session
+
+from ...core.exceptions import (InvoiceNotFoundException,
+                                TemplateNotFoundException)
+from ...models.contact import Contact
+from ...models.invoice import InvoiceItem, InvoiceSubItem
+from ...models.template import Template
+from ...schemas.invoice import Invoice, InvoiceCreate
+from .crud import get_invoice
+
 
 def generate_pdf(invoice: Invoice, template: Template) -> bytes:
     buffer = BytesIO()
@@ -122,15 +132,11 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
         [Paragraph(invoice.bill_to.name, styles['AddressText'])],
         [Paragraph(invoice.bill_to.street_address or '', styles['AddressText'])],
         [Paragraph(f"{invoice.bill_to.city or ''} {invoice.bill_to.state or ''} {invoice.bill_to.postal_code or ''}", styles['AddressText'])],
-        # [Paragraph(invoice.bill_to.phone or '', styles['AddressText'])],
-        # [Paragraph(invoice.bill_to.email or '', styles['AddressText'])],
         [Spacer(1, 10)],
         [Paragraph("Send To:", styles['SectionHeader'])],
         [Paragraph(invoice.send_to.name, styles['AddressText'])],
         [Paragraph(invoice.send_to.street_address or '', styles['AddressText'])],
         [Paragraph(f"{invoice.send_to.city or ''} {invoice.send_to.state or ''} {invoice.send_to.postal_code or ''}", styles['AddressText'])],
-        # [Paragraph(invoice.send_to.phone or '', styles['AddressText'])],
-        # [Paragraph(invoice.send_to.email or '', styles['AddressText'])]
     ]
 
     # Create right column (Invoice details, Date, and Balance Due)
@@ -241,3 +247,53 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
     pdf = buffer.getvalue()
     buffer.close()
     return pdf
+
+
+def generate_preview_pdf(db: Session, invoice: InvoiceCreate, template: Template) -> bytes:
+    preview_invoice = Invoice(
+        id=0,
+        user_id=0,
+        invoice_number=invoice.invoice_number,
+        invoice_date=invoice.invoice_date,
+        bill_to_id=invoice.bill_to_id,
+        send_to_id=invoice.send_to_id,
+        tax_rate=Decimal(invoice.tax_rate),
+        discount_percentage=Decimal(invoice.discount_percentage),
+        notes=invoice.notes,
+        template_id=template.id
+    )
+    
+    preview_invoice.bill_to = db.query(Contact).get(invoice.bill_to_id)
+    preview_invoice.send_to = db.query(Contact).get(invoice.send_to_id)
+    
+    preview_invoice.items = [
+        InvoiceItem(
+            id=0,
+            invoice_id=0,
+            description=item.description,
+            quantity=Decimal(item.quantity),
+            unit_price=Decimal(item.unit_price),
+            discount_percentage=Decimal(item.discount_percentage),
+            subitems=[
+                InvoiceSubItem(
+                    id=0,
+                    invoice_item_id=0,
+                    description=subitem.description
+                ) for subitem in item.subitems
+            ]
+        ) for item in invoice.items
+    ]
+    
+    return generate_pdf(preview_invoice, template)
+
+
+def generate_invoice_pdf(db: Session, invoice_id: int, template_id: int, user_id: int) -> bytes:
+    invoice = get_invoice(db, invoice_id, user_id)
+    if not invoice:
+        raise InvoiceNotFoundException()
+    
+    template = db.query(Template).filter(Template.id == template_id).first()
+    if not template:
+        raise TemplateNotFoundException()
+    
+    return generate_pdf(invoice, template)

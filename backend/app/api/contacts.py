@@ -10,7 +10,9 @@ from ..schemas.contact import Contact, ContactCreate
 from ..schemas.user import User
 from ..services import contact_service
 
+
 router = APIRouter()
+
 
 @router.post("/", response_model=Contact)
 def create_contact(
@@ -22,6 +24,7 @@ def create_contact(
         return contact_service.create_contact(db, contact, current_user.id)
     except IntegrityError:
         raise ContactAlreadyExistsException()
+
 
 @router.get("/", response_model=list[Contact])
 def read_contacts(
@@ -49,6 +52,7 @@ def read_contacts(
     )
     return contacts
 
+
 @router.get("/{contact_id}", response_model=Contact)
 def read_contact(
     contact_id: int,
@@ -59,6 +63,7 @@ def read_contact(
     if db_contact is None:
         raise ContactNotFoundException()
     return db_contact
+
 
 @router.put("/{contact_id}", response_model=Contact)
 def update_contact(
@@ -71,6 +76,7 @@ def update_contact(
     if db_contact is None:
         raise ContactNotFoundException()
     return db_contact
+
 
 @router.delete("/{contact_id}", response_model=Contact)
 def delete_contact(

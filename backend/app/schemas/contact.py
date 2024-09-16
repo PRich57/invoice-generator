@@ -1,6 +1,8 @@
-from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
 import re
+from datetime import datetime
+
+from pydantic import BaseModel, Field, field_validator
+
 
 def validate_email(email: str | None) -> str | None:
     if email is None or email == "":
@@ -10,6 +12,7 @@ def validate_email(email: str | None) -> str | None:
         raise ValueError('Invalid email format')
     return email
 
+
 def validate_phone(phone: str | None) -> str | None:
     if phone is None or phone == "":
         return None
@@ -17,6 +20,7 @@ def validate_phone(phone: str | None) -> str | None:
     if not re.match(pattern, phone):
         raise ValueError('Invalid phone number format')
     return phone
+
 
 class ContactBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
@@ -41,8 +45,10 @@ class ContactBase(BaseModel):
     def phone_validator(cls, v: str | None) -> str | None:
         return validate_phone(v)
 
+
 class ContactCreate(ContactBase):
     pass
+
 
 class Contact(ContactBase):
     id: int

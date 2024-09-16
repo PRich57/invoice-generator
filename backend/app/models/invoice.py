@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from sqlalchemy import DECIMAL, Column, Date, ForeignKey, Integer, String
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
@@ -24,6 +22,7 @@ class InvoiceItem(Base):
     def line_total(self):
         return self.quantity * self.unit_price * (1 - self.discount_percentage / 100)
     
+    
 class InvoiceSubItem(Base):
     __tablename__ = "invoice_subitems"
     
@@ -32,6 +31,7 @@ class InvoiceSubItem(Base):
     description = Column(String)
     
     invoice_item = relationship("InvoiceItem", back_populates="subitems")
+
 
 class Invoice(Base):
     __tablename__ = "invoices"

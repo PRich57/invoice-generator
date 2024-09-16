@@ -9,14 +9,17 @@ from pydantic import BaseModel, Field, computed_field, field_validator
 class InvoiceSubItemBase(BaseModel):
     description: str = Field(..., max_length=200)
 
+
 class InvoiceSubItemCreate(InvoiceSubItemBase):
     pass
+
 
 class InvoiceSubItem(InvoiceSubItemBase):
     id: int
 
     class Config:
         from_attributes = True
+
 
 class InvoiceItemBase(BaseModel):
     description: str = Field(..., max_length=200)
@@ -25,8 +28,10 @@ class InvoiceItemBase(BaseModel):
     discount_percentage: Decimal = Field(default=0, ge=0, le=100)
     subitems: list[InvoiceSubItemCreate] = []
 
+
 class InvoiceItemCreate(InvoiceItemBase):
     pass
+
 
 class InvoiceItem(InvoiceItemBase):
     id: int
@@ -40,6 +45,7 @@ class InvoiceItem(InvoiceItemBase):
 
     class Config:
         from_attributes = True
+
 
 class InvoiceBase(BaseModel):
     invoice_number: str = Field(..., min_length=1, max_length=50, example="#001")
@@ -70,8 +76,10 @@ class InvoiceBase(BaseModel):
             raise TemplateNotFoundException(field.name)
         return value
 
+
 class InvoiceCreate(InvoiceBase):
     items: list[InvoiceItemCreate]
+
 
 class Invoice(InvoiceBase):
     id: int

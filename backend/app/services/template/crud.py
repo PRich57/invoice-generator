@@ -1,12 +1,17 @@
 import logging
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 
-from backend.app.core.exceptions import TemplateNotFoundException, TemplateAlreadyExistsException
-from ..models.template import Template
-from ..schemas.template import TemplateCreate, TemplateUpdate
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from backend.app.core.exceptions import (TemplateAlreadyExistsException,
+                                         TemplateNotFoundException)
+
+from ...models.template import Template
+from ...schemas.template import TemplateCreate, TemplateUpdate
+
 
 logger = logging.getLogger(__name__)
+
 
 DEFAULT_TEMPLATES = {
     "default": {
@@ -88,6 +93,7 @@ DEFAULT_TEMPLATES = {
     }
 }
 
+
 def create_default_templates(db: Session):
     for name, config in DEFAULT_TEMPLATES.items():
         template_data = {
@@ -108,6 +114,7 @@ def create_default_templates(db: Session):
         logger.error("Error creating default templates")
         raise
 
+
 def create_template(db: Session, template: TemplateCreate, user_id: int):
     try:
         db_template = Template(**template.model_dump(), user_id=user_id)
@@ -121,6 +128,7 @@ def create_template(db: Session, template: TemplateCreate, user_id: int):
         logger.error(f"Template creation failed: name already exists, user_id={user_id}")
         raise TemplateAlreadyExistsException()
 
+
 def get_template(db: Session, template_id: int, user_id: int | None = None) -> Template | None:
     query = db.query(Template).filter(Template.id == template_id)
     if user_id is not None:
@@ -129,6 +137,7 @@ def get_template(db: Session, template_id: int, user_id: int | None = None) -> T
         query = query.filter(Template.is_default == True)
     return query.first()
 
+
 def get_templates(db: Session, user_id: int | None = None, skip: int = 0, limit: int = 100) -> list[Template]:
     query = db.query(Template)
     if user_id:
@@ -136,6 +145,7 @@ def get_templates(db: Session, user_id: int | None = None, skip: int = 0, limit:
     else:
         query = query.filter(Template.is_default == True)
     return query.offset(skip).limit(limit).all()
+
 
 def update_template(db: Session, template_id: int, template: TemplateUpdate, user_id: int) -> Template:
     db_template = get_template(db, template_id, user_id)
@@ -159,6 +169,7 @@ def update_template(db: Session, template_id: int, template: TemplateUpdate, use
         logger.error(f"Template update failed: integrity error, id={template_id}, user_id={user_id}")
         raise TemplateAlreadyExistsException()
 
+
 def delete_template(db: Session, template_id: int, user_id: int) -> Template:
     db_template = get_template(db, template_id, user_id)
     if not db_template:
@@ -173,6 +184,7 @@ def delete_template(db: Session, template_id: int, user_id: int) -> Template:
     db.commit()
     logger.info(f"Template deleted: id={template_id}, user_id={user_id}")
     return db_template
+
 
 def copy_template(db: Session, template_id: int, user_id: int) -> Template:
     template = get_template(db, template_id)
@@ -195,6 +207,7 @@ def copy_template(db: Session, template_id: int, user_id: int) -> Template:
     db.refresh(new_template)
     logger.info(f"Template copied: original_id={template_id}, new_id={new_template.id}, user_id={user_id}")
     return new_template
+
 
 def get_or_create_default_templates(db: Session, user_id: int):
     existing_templates = get_templates(db, user_id)
