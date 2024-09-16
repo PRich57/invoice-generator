@@ -8,7 +8,7 @@ from ..core.exceptions import (ContactAlreadyExistsException,
 from ..database import get_db
 from ..schemas.contact import Contact, ContactCreate
 from ..schemas.user import User
-from ..services import contact_service
+from ..services.contact import crud
 
 
 router = APIRouter()
@@ -21,7 +21,7 @@ def create_contact(
     current_user: User = Depends(get_current_user)
 ):
     try:
-        return contact_service.create_contact(db, contact, current_user.id)
+        return crud.create_contact(db, contact, current_user.id)
     except IntegrityError:
         raise ContactAlreadyExistsException()
 
@@ -40,7 +40,7 @@ def read_contacts(
     """
     Retrieve contacts with pagination, filtering, and sorting.
     """
-    contacts = contact_service.get_contacts(
+    contacts = crud.get_contacts(
         db, 
         current_user.id, 
         skip=skip, 
@@ -59,7 +59,7 @@ def read_contact(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_contact = contact_service.get_contact(db, contact_id, current_user.id)
+    db_contact = crud.get_contact(db, contact_id, current_user.id)
     if db_contact is None:
         raise ContactNotFoundException()
     return db_contact
@@ -72,7 +72,7 @@ def update_contact(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_contact = contact_service.update_contact(db, contact_id, contact, current_user.id)
+    db_contact = crud.update_contact(db, contact_id, contact, current_user.id)
     if db_contact is None:
         raise ContactNotFoundException()
     return db_contact
@@ -84,7 +84,7 @@ def delete_contact(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_contact = contact_service.delete_contact(db, contact_id, current_user.id)
+    db_contact = crud.delete_contact(db, contact_id, current_user.id)
     if db_contact is None:
         raise ContactNotFoundException()
     return db_contact

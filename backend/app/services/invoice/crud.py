@@ -11,7 +11,7 @@ from ...core.exceptions import (BadRequestException, InvoiceNotFoundException,
 from ...models.contact import Contact
 from ...models.invoice import Invoice, InvoiceItem, InvoiceSubItem
 from ...models.template import Template
-from ...schemas.invoice import InvoiceCreate, InvoiceUpdate
+from ...schemas.invoice import InvoiceCreate
 
 
 logger = logging.getLogger(__name__)

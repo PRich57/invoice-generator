@@ -14,8 +14,7 @@ from ..core.exceptions import (ContactNotFoundException,
 from ..database import get_db
 from ..schemas.invoice import Invoice, InvoiceCreate
 from ..schemas.user import User
-from ..services.invoice import invoice_service
-from ..services.template import crud
+from ..services.invoice import crud
 
 
 logger = logging.getLogger(__name__)
@@ -51,7 +50,7 @@ def create_invoice(
     
     logger.info(f"Received invoice creation request: {invoice.model_dump()}")
     try:
-        return invoice_service.create_invoice(db, invoice, current_user.id)
+        return crud.create_invoice(db, invoice, current_user.id)
     except (InvoiceNumberAlreadyExistsException, ContactNotFoundException, InvalidContactIdException, InvalidInvoiceNumberException, TemplateNotFoundException) as e:
         logger.error(f"Error creating invoice: {str(e)}")
         raise e
@@ -71,7 +70,7 @@ async def preview_invoice_pdf(
     if not template:
         raise TemplateNotFoundException()
     
-    pdf_content = invoice_service.generate_preview_pdf(db, invoice, template)
+    pdf_content = crud.generate_preview_pdf(db, invoice, template)
     
     return Response(content=pdf_content, media_type="application/pdf")
 
@@ -92,7 +91,7 @@ def read_invoices(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    invoices = invoice_service.get_invoices(
+    invoices = crud.get_invoices(
         db, current_user.id, skip=skip, limit=limit,
         sort_by=sort_by, sort_order=sort_order,
         invoice_number=invoice_number, bill_to_name=bill_to_name,
@@ -108,7 +107,7 @@ def read_invoice(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_invoice = invoice_service.get_invoice(db, invoice_id, current_user.id)
+    db_invoice = crud.get_invoice(db, invoice_id, current_user.id)
     if db_invoice is None:
         raise InvoiceNotFoundException()
     return db_invoice
@@ -121,7 +120,7 @@ def update_invoice(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_invoice = invoice_service.update_invoice(db, invoice_id, invoice, current_user.id)
+    db_invoice = crud.update_invoice(db, invoice_id, invoice, current_user.id)
     if db_invoice is None:
         raise InvoiceNotFoundException()
     return db_invoice
@@ -133,7 +132,7 @@ def delete_invoice(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_invoice = invoice_service.delete_invoice(db, invoice_id, current_user.id)
+    db_invoice = crud.delete_invoice(db, invoice_id, current_user.id)
     if db_invoice is None:
         raise InvoiceNotFoundException()
     return db_invoice
@@ -146,7 +145,7 @@ def generate_invoice_pdf(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    pdf_content = invoice_service.generate_invoice_pdf(db, invoice_id, template_id, current_user.id)
+    pdf_content = crud.generate_invoice_pdf(db, invoice_id, template_id, current_user.id)
     
     return Response(content=pdf_content, media_type="application/pdf", headers={
         "Content-Disposition": f"attachment; filename=invoice_{invoice_id}.pdf"
@@ -160,7 +159,7 @@ def regenerate_invoice(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_invoice = invoice_service.get_invoice(db, invoice_id, current_user.id)
+    db_invoice = crud.get_invoice(db, invoice_id, current_user.id)
     if db_invoice is None:
         raise InvoiceNotFoundException()
 
@@ -168,7 +167,7 @@ def regenerate_invoice(
     if template is None:
         raise TemplateNotFoundException()
 
-    pdf = invoice_service.regenerate_invoice(db_invoice, template)
+    pdf = crud.regenerate_invoice(db_invoice, template)
     return Response(content=pdf, media_type="application/pdf")
 
 
@@ -180,4 +179,4 @@ def read_grouped_invoices(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return invoice_service.get_grouped_invoices(db, current_user.id, group_by, date_from, date_to)
+    return crud.get_grouped_invoices(db, current_user.id, group_by, date_from, date_to)
