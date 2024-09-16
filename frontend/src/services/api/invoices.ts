@@ -1,6 +1,6 @@
-import api from './api';
-import { API_ENDPOINTS } from '../constants/apiEndpoints';
-import { Invoice, InvoiceCreate } from '../types';
+import api from '../api';
+import { API_ENDPOINTS } from '../../constants/apiEndpoints';
+import { Invoice, InvoiceCreate } from '../../types';
 
 export const getInvoices = async () => {
     const response = await api.get<Invoice[]>(API_ENDPOINTS.INVOICES);

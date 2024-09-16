@@ -1,6 +1,6 @@
-import api from './api';
-import { API_ENDPOINTS, API_BASE_URL } from '../constants/apiEndpoints';
-import { User } from '../types';
+import api from '../api';
+import { API_ENDPOINTS, API_BASE_URL } from '../../constants/apiEndpoints';
+import { User } from '../../types';
 
 export const login = async (email: string, password: string) => {
     const formData = new URLSearchParams();

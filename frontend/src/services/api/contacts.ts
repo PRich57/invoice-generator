@@ -1,6 +1,6 @@
-import api from './api';
-import { API_ENDPOINTS } from '../constants/apiEndpoints';
-import { Contact, ContactCreate, ContactUpdate } from '../types';
+import api from '../api';
+import { API_ENDPOINTS } from '../../constants/apiEndpoints';
+import { Contact, ContactCreate, ContactUpdate } from '../../types';
 
 export const getContacts = async () => {
     const response = await api.get<Contact[]>(API_ENDPOINTS.CONTACTS);

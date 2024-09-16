@@ -1,6 +1,6 @@
-import api from './api';
-import { API_ENDPOINTS } from '../constants/apiEndpoints';
-import { Template, TemplateCreate, TemplateUpdate } from '../types';
+import api from '../api';
+import { API_ENDPOINTS } from '../../constants/apiEndpoints';
+import { Template, TemplateCreate, TemplateUpdate } from '../../types';
 import axios from 'axios';
 
 export const getTemplates = async () => {

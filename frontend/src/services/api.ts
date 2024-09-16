@@ -35,7 +35,10 @@ api.interceptors.response.use(
 
             try {
                 const refreshToken = localStorage.getItem('refresh_token');
-                const response = await axios.post(`${API_BASE_URL}/auth/token/refresh`, { refresh_token: refreshToken });
+                const response = await axios.post(
+                    `${API_BASE_URL}/auth/token/refresh`, 
+                    { refresh_token: refreshToken }
+                );
 
                 const { access_token, refresh_token } = response.data;
                 localStorage.setItem('token', access_token);
@@ -65,7 +68,7 @@ api.interceptors.response.use(
 
 export default api;
 
-export * from './authService';
-export * from './contactService';
-export * from './invoiceService';
-export * from './templateService';
+export * from './api/auth';
+export * from './api/contacts';
+export * from './api/invoices';
+export * from './api/templates';
