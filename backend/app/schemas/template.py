@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -24,9 +26,13 @@ class TemplateCreate(TemplateBase):
     pass
 
 
-class TemplateUpdate(TemplateBase):
-    colors: TemplateColorSchema | None = None
-    pass
+class TemplateUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    colors: Optional[TemplateColorSchema] = None
+    fonts: Optional[dict] = None
+    font_sizes: Optional[dict] = None
+    layout: Optional[dict] = None
+    custom_css: Optional[str] = Field(None, max_length=1000)
 
 
 class Template(TemplateBase):

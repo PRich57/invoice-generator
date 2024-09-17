@@ -25,5 +25,5 @@ export const templateValidationSchema = Yup.object().shape({
         margin_bottom: Yup.number().required('Bottom margin is required'),
         margin_left: Yup.number().required('Left margin is required'),
     }),
-    custom_css: Yup.string(),
+    custom_css: Yup.string().nullable(),
 });

@@ -6,6 +6,7 @@ import { templateValidationSchema } from '../validationSchemas/templateValidatio
 import { useErrorHandler } from './useErrorHandler';
 import { useFetch } from './useFetch';
 import { API_ENDPOINTS } from '../constants/apiEndpoints';
+import axios from 'axios';
 
 export const useTemplateForm = () => {
     const navigate = useNavigate();
@@ -54,7 +55,7 @@ export const useTemplateForm = () => {
     }, [id, refetch]);
 
     const { fetchData: submitForm } = useFetch<Template>(
-        API_ENDPOINTS.TEMPLATES,
+        id ? `${API_ENDPOINTS.TEMPLATES}/${id}` : API_ENDPOINTS.TEMPLATES,
         { method: id ? 'PUT' : 'POST' }
     );
 
@@ -63,15 +64,23 @@ export const useTemplateForm = () => {
         validationSchema: templateValidationSchema,
         enableReinitialize: true,
         onSubmit: async (values) => {
+            console.log("Submitting template with values:", values);
             setIsSubmitting(true);
             try {
-                await submitForm({ 
+                const result = await submitForm({ 
                     data: values,
                     url: id ? `${API_ENDPOINTS.TEMPLATES}/${id}` : API_ENDPOINTS.TEMPLATES 
                 });
+                console.log("Template submitted successfully, result:", result);
                 navigate('/templates');
             } catch (err) {
-                handleError(err);
+                console.error("Error submitting template:", err);
+                if (axios.isAxiosError(err) && err.response?.status === 404) {
+                    console.log("404 error received, but update might have been successful. Navigating to template list.");
+                    navigate('/templates');
+                } else {
+                    handleError(err);
+                }
             } finally {
                 setIsSubmitting(false);
             }

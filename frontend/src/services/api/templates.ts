@@ -30,8 +30,18 @@ export const createTemplate = async (data: TemplateCreate) => {
 };
 
 export const updateTemplate = async (id: number, data: TemplateUpdate) => {
-    const response = await api.put<Template>(`${API_ENDPOINTS.TEMPLATES}/${id}`, data);
-    return response.data;
+    console.log('Attempting to update template:', id, data);
+    try {
+        const response = await api.put<Template>(`${API_ENDPOINTS.TEMPLATES}/${id}`, data);
+        console.log('Template updated successfully:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating template:', error);
+        if (axios.isAxiosError(error)) {
+            console.error('Axios error details:', error.response?.data);
+        }
+        throw error;
+    }
 };
 
 export const deleteTemplate = async (id: number) => {

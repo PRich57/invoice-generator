@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up...")
     db = SessionLocal()
-    crud.create_default_templates(db)
+    crud.create_or_update_default_templates(db)
     db.close()
     yield
     # Shutdown

@@ -45,7 +45,9 @@ DEFAULT_TEMPLATES = {
         "colors": {
             "primary": "#2C3E50",
             "secondary": "#7F8C8D",
-            "accent": "#3498DB"
+            "accent": "#3498DB",
+            "text": "#000000",
+            "background": "#FFFFFF"
         },
         "fonts": {
             "main": "Helvetica",
@@ -70,7 +72,9 @@ DEFAULT_TEMPLATES = {
         "colors": {
             "primary": "#4A4A4A",
             "secondary": "#A9A9A9",
-            "accent": "#8B0000"
+            "accent": "#8B0000",
+            "text": "#000000",
+            "background": "#FFFFFF"
         },
         "fonts": {
             "main": "Times-Roman",
@@ -94,24 +98,31 @@ DEFAULT_TEMPLATES = {
 }
 
 
-def create_default_templates(db: Session):
+def create_or_update_default_templates(db: Session):
     for name, config in DEFAULT_TEMPLATES.items():
+        template_name = name.capitalize()
         template_data = {
-            "name": name.capitalize(),
+            "name": template_name,
             "is_default": True,
             **config
         }
-        db_template = db.query(Template).filter(Template.name == template_data["name"]).first()
-        if not db_template:
+        db_template = db.query(Template).filter(Template.name == template_name).first()
+        if db_template:
+            # Update existing template with new fields
+            for key, value in template_data.items():
+                if key != 'id':
+                    setattr(db_template, key, value)
+        else:
+            # Create new default template
             db_template = Template(**template_data)
             db.add(db_template)
     
     try:
         db.commit()
-        logger.info("Default templates created successfully")
+        logger.info("Default templates created or updated successfully")
     except IntegrityError:
         db.rollback()
-        logger.error("Error creating default templates")
+        logger.error("Error creating or updating default templates")
         raise
 
 
@@ -155,6 +166,9 @@ def update_template(db: Session, template_id: int, template: TemplateUpdate, use
     
     if db_template.is_default:
         db_template = copy_template(db, template_id, user_id)
+        
+    update_data = template.model_dump(exclude_unset=True)
+    update_data.pop('is_default', None)
     
     for key, value in template.model_dump(exclude_unset=True).items():
         setattr(db_template, key, value)
@@ -202,6 +216,9 @@ def copy_template(db: Session, template_id: int, user_id: int) -> Template:
         layout=template.layout,
         custom_css=template.custom_css
     )
+    
+    new_template.is_default = False
+    
     db.add(new_template)
     db.commit()
     db.refresh(new_template)
