@@ -227,3 +227,60 @@ const InvoiceForm: React.FC = () => {
 };
 
 export default InvoiceForm;
+
+// import React from 'react';
+// import { useParams } from 'react-router-dom';
+// import { Typography, Box } from '@mui/material';
+// import { useInvoiceForm } from '../hooks/useInvoiceForm';
+// import { useTemplates } from '../hooks/useTemplates';
+// import { usePDFGeneration } from '../hooks/usePDFGeneration';
+// import { useContacts } from '../hooks/useContacts';
+// import ErrorMessage from '../components/common/ErrorMessage';
+// import LoadingSpinner from '../components/common/LoadingSpinner';
+// import InvoicePreview from '../components/invoices/InvoicePreview';
+// import InvoiceForm from '../components/invoices/InvoiceForm';
+// import { InvoiceCreate } from '../types';
+
+// const InvoiceFormPage: React.FC = () => {
+//     const { id } = useParams<{ id: string }>();
+//     const { formik, isLoading, error, isSubmitting } = useInvoiceForm(id);
+//     const { templates, selectedTemplate, setSelectedTemplate } = useTemplates();
+//     const { handlePreviewPDF, isGenerating: isPDFGenerating } = usePDFGeneration();
+//     const { contacts, error: contactsError, loading: contactsLoading } = useContacts();
+
+//     const handleSubmit = (values: InvoiceCreate) => {
+//         formik.handleSubmit(values as any);
+//     };
+
+//     if (isLoading || contactsLoading) return <LoadingSpinner />;
+//     if (error || contactsError) return <ErrorMessage message={error || contactsError || 'An error occurred'} />;
+
+//     return (
+//         <Box display="flex" flexDirection="column">
+//             <Typography variant="h4" gutterBottom>
+//                 {id ? 'Edit Invoice' : 'Create New Invoice'}
+//             </Typography>
+//             <Box display="flex" flexDirection="row">
+//                 <Box sx={{ flex: 1, pr: 2 }}>
+//                     <InvoiceForm
+//                         initialValues={formik.values}
+//                         contacts={contacts}
+//                         templates={templates}
+//                         onSubmit={handleSubmit}
+//                         isSubmitting={isSubmitting}
+//                     />
+//                 </Box>
+//                 <Box sx={{ flex: 1, pl: 2 }}>
+//                     {selectedTemplate && (
+//                         <InvoicePreview
+//                             invoice={formik.values}
+//                             template={selectedTemplate}
+//                         />
+//                     )}
+//                 </Box>
+//             </Box>
+//         </Box>
+//     );
+// };
+
+// export default InvoiceFormPage;
