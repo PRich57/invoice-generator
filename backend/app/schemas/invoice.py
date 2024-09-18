@@ -1,17 +1,19 @@
 from datetime import date
 from decimal import Decimal
+from typing import Optional
 
 from ..core.exceptions import InvalidInvoiceNumberException, InvalidContactIdException, TemplateNotFoundException
 
-from pydantic import BaseModel, Field, computed_field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class InvoiceSubItemBase(BaseModel):
+    id: Optional[int] = None
     description: str = Field(..., max_length=200)
 
 
 class InvoiceSubItemCreate(InvoiceSubItemBase):
-    pass
+    id: Optional[int] = None
 
 
 class InvoiceSubItem(InvoiceSubItemBase):
@@ -30,18 +32,13 @@ class InvoiceItemBase(BaseModel):
 
 
 class InvoiceItemCreate(InvoiceItemBase):
-    pass
+    id: Optional[int] = None
 
 
 class InvoiceItem(InvoiceItemBase):
     id: int
     invoice_id: int
     subitems: list[InvoiceSubItem] = []
-    
-    @computed_field
-    @property
-    def line_total(self) -> Decimal:
-        return (self.quantity * self.unit_price * (1 - self.discount_percentage / 100)).quantize(Decimal('0.01'))
 
     class Config:
         from_attributes = True
@@ -81,25 +78,32 @@ class InvoiceCreate(InvoiceBase):
     items: list[InvoiceItemCreate]
 
 
-class Invoice(InvoiceBase):
+class InvoiceDetail(BaseModel):
     id: int
     user_id: int
+    invoice_number: str
+    invoice_date: date
+    bill_to_id: int
+    send_to_id: int
+    tax_rate: Decimal
+    discount_percentage: Decimal
+    notes: str | None
+    subtotal: Decimal
+    tax: Decimal
+    total: Decimal
     items: list[InvoiceItem]
 
-    @computed_field
-    @property
-    def subtotal(self) -> Decimal:
-        return sum(item.line_total for item in self.items).quantize(Decimal('0.01'))
+    class Config:
+        from_attributes = True
 
-    @computed_field
-    @property
-    def tax(self) -> Decimal:
-        return (self.subtotal * (1 - self.discount_percentage / 100) * self.tax_rate / 100).quantize(Decimal('0.01'))
 
-    @computed_field
-    @property
-    def total(self) -> Decimal:
-        return (self.subtotal * (1 - self.discount_percentage / 100) + self.tax).quantize(Decimal('0.01'))
-
+class InvoiceSummary(BaseModel):
+    id: int
+    invoice_number: str
+    invoice_date: date
+    total: Decimal
+    bill_to_id: int
+    template_id: int
+    
     class Config:
         from_attributes = True

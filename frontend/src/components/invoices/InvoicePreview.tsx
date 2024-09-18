@@ -28,7 +28,11 @@ const StyledTableCell = styled(TableCell, {
     wordBreak: 'break-word',
 }));
 
-const ContactInfo: React.FC<{ contact?: Contact | null; label: string; template: Template }> = ({ contact, label, template }) => (
+const ContactInfo: React.FC<{ contact?: Contact | null; label: string; template: Template }> = ({
+    contact,
+    label,
+    template
+}) => (
     <Box mb={2}>
         <Typography variant="h6" style={{
             color: template.colors.primary,
@@ -76,9 +80,18 @@ const isFullInvoice = (invoice: Partial<Invoice> | InvoiceCreate): invoice is In
     'id' in invoice && 'subtotal' in invoice && 'tax' in invoice && 'total' in invoice;
 
 const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, billToContact, sendToContact }) => {
-    const subtotal = calculateSubtotal(invoice.items || [], invoice.discount_percentage || 0);
-    const tax = calculateTax(subtotal, invoice.tax_rate || 0, invoice.discount_percentage || 0);
-    const total = calculateTotal(subtotal, tax, invoice.discount_percentage || 0);
+    const subtotal =
+        'subtotal' in invoice ?
+            invoice.subtotal :
+            calculateSubtotal(invoice.items || [], invoice.discount_percentage || 0);
+    const tax =
+        'tax' in invoice ?
+        invoice.tax :
+        calculateTax(subtotal, invoice.tax_rate || 0, invoice.discount_percentage || 0);
+    const total = 
+        'total' in invoice ?
+        invoice.total :
+        calculateTotal(subtotal, tax, invoice.discount_percentage || 0);
     const discount_percentage = invoice.discount_percentage || 0;
     const discount_amount = calculateDiscountAmount(subtotal, discount_percentage);
 

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
 import { useInvoices } from '../hooks/useInvoices';
-import { deleteInvoice, generateInvoicePDF } from '../services/api';
+import { deleteInvoice, generateInvoicePDF, getContacts, getTemplates } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import ConfirmationDialog from '../components/common/ConfirmationDialogue';
@@ -13,12 +13,50 @@ import { Invoice } from '../types';
 const InvoicesList: React.FC = () => {
     const navigate = useNavigate();
     const { invoices, error, loading, refetch } = useInvoices();
+    const [contacts, setContacts] = useState<Record<number, string>>({});
+    const [templates, setTemplates] = useState<Record<number, string>>({});
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [invoiceToDelete, setInvoiceToDelete] = useState<number | null>(null);
-
     const handleEdit = (id: number) => {
         navigate(`/invoices/edit/${id}`);
     };
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const contactsData = await getContacts();
+                const templatesData = await getTemplates();
+
+                console.log('Fetched Contacts:', contactsData);
+                console.log('Fetched Templates:', templatesData);
+
+                setContacts(
+                    contactsData.reduce((acc, contact) => {
+                        acc[contact.id] = contact.name;
+                        console.log("test", acc);
+                        return acc;
+                    }, {} as Record<number, string>)
+                );
+
+                console.log('Contacts:', contacts)
+
+                setTemplates(
+                    templatesData.reduce((acc, template) => {
+                        acc[template.id] = template.name;
+                        return acc;
+                    }, {} as Record<number, string>)
+                );
+            } catch (err) {
+                console.error('Failed to fetch contacts or templates:', err);
+            }
+        };
+        fetchData();
+    }, []);
+
+    useEffect(() => {
+        console.log('Invoices:', invoices);
+    }, [invoices]);
+
 
     const handleDeleteClick = (id: number) => {
         setInvoiceToDelete(id);
@@ -85,9 +123,9 @@ const InvoicesList: React.FC = () => {
                             <TableRow key={invoice.id}>
                                 <TableCell>{invoice.invoice_number}</TableCell>
                                 <TableCell>{new Date(invoice.invoice_date).toLocaleDateString()}</TableCell>
-                                <TableCell>{invoice.bill_to_id}</TableCell>
+                                <TableCell>{contacts[invoice.bill_to_id] || 'Unknown'}</TableCell>
                                 <TableCell>{formatCurrency(invoice.total)}</TableCell>
-                                <TableCell>{invoice.template_id}</TableCell>
+                                <TableCell>{templates[invoice.template_id] || 'Unknown'}</TableCell>
                                 <TableCell>
                                     <Button startIcon={<EditIcon />} onClick={() => handleEdit(invoice.id)}>
                                         Edit

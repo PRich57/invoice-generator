@@ -23,16 +23,19 @@ export const updateInvoice = async (id: number, data: InvoiceCreate) => {
 };
 
 export const deleteInvoice = async (id: number) => {
-    const response = await api.delete(`${API_ENDPOINTS.INVOICES}/${id}`);
-    return response.data;
+    await api.delete(`${API_ENDPOINTS.INVOICES}/${id}`);
 };
 
 export const generateInvoicePDF = async (invoiceId: number, templateId: number) => {
-    const response = await api.get(`${API_ENDPOINTS.INVOICES}/${invoiceId}/pdf?template_id=${templateId}`, { responseType: 'blob' });
+    const response = await api.get(`${API_ENDPOINTS.INVOICES}/${invoiceId}/pdf?template_id=${templateId}`, {
+        responseType: 'blob',
+    });
     return response.data;
 };
 
 export const previewInvoicePDF = async (invoice: InvoiceCreate, templateId: number) => {
-    const response = await api.post(`${API_ENDPOINTS.INVOICES}/preview-pdf?template_id=${templateId}`, invoice, { responseType: 'blob' });
+    const response = await api.post(`${API_ENDPOINTS.INVOICES}/preview-pdf?template_id=${templateId}`, invoice, {
+        responseType: 'blob',
+    });
     return response.data;
 };

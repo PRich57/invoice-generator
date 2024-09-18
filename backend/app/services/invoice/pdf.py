@@ -1,6 +1,7 @@
 from decimal import Decimal
 from io import BytesIO
 
+from pydantic import ValidationError
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -9,16 +10,17 @@ from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
                                 TableStyle)
 from sqlalchemy.orm import Session
 
-from ...core.exceptions import (InvoiceNotFoundException,
+from ...core.exceptions import (ContactNotFoundException, InvoiceNotFoundException,
                                 TemplateNotFoundException)
 from ...models.contact import Contact
-from ...models.invoice import InvoiceItem, InvoiceSubItem
+from ...models.invoice import Invoice, InvoiceItem, InvoiceSubItem
 from ...models.template import Template
-from ...schemas.invoice import Invoice, InvoiceCreate
+from ...schemas.invoice import InvoiceCreate, InvoiceDetail
 from .crud import get_invoice
+from ..contact import crud as crud_contact
 
 
-def generate_pdf(invoice: Invoice, template: Template) -> bytes:
+def generate_pdf(invoice: InvoiceDetail, template: Template) -> bytes:
     buffer = BytesIO()
     page_size = A4 if template.layout['page_size'].upper() == 'A4' else letter
     doc = SimpleDocTemplate(
@@ -249,42 +251,70 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
     return pdf
 
 
-def generate_preview_pdf(db: Session, invoice: InvoiceCreate, template: Template) -> bytes:
-    preview_invoice = Invoice(
-        id=0,
-        user_id=0,
-        invoice_number=invoice.invoice_number,
-        invoice_date=invoice.invoice_date,
-        bill_to_id=invoice.bill_to_id,
-        send_to_id=invoice.send_to_id,
-        tax_rate=Decimal(invoice.tax_rate),
-        discount_percentage=Decimal(invoice.discount_percentage),
-        notes=invoice.notes,
-        template_id=template.id
+def generate_preview_pdf(
+    db: Session,
+    invoice_data: InvoiceCreate,
+    template: Template,
+    user_id: int,
+) -> bytes:
+    # Retrieve contacts
+    bill_to_contact = crud_contact.get_contact(db, invoice_data.bill_to_id, user_id)
+    send_to_contact = crud_contact.get_contact(db, invoice_data.send_to_id, user_id)
+    
+    if not bill_to_contact or not send_to_contact:
+        raise ContactNotFoundException()
+    
+    # Create Invoice ORM instance
+    temp_invoice = Invoice(
+        user_id=user_id,
+        invoice_number=invoice_data.invoice_number,
+        invoice_date=invoice_data.invoice_date,
+        tax_rate=invoice_data.tax_rate,
+        discount_percentage=invoice_data.discount_percentage,
+        notes=invoice_data.notes,
+        template_id=invoice_data.template_id,
+        bill_to_id=invoice_data.bill_to_id,
+        send_to_id=invoice_data.send_to_id,
     )
     
-    preview_invoice.bill_to = db.query(Contact).get(invoice.bill_to_id)
-    preview_invoice.send_to = db.query(Contact).get(invoice.send_to_id)
+    # Create InvoiceItem ORM instances
+    temp_items = []
+    for item_data in invoice_data.items:
+        temp_item = InvoiceItem(
+            description=item_data.description,
+            quantity=item_data.quantity,
+            unit_price=item_data.unit_price,
+            discount_percentage=item_data.discount_percentage,
+        )
+        # Create InvoiceSubItem ORM instances if any
+        temp_subitems = []
+        if item_data.subitems:
+            for subitem_data in item_data.subitems:
+                temp_subitem = InvoiceSubItem(
+                    description=subitem_data.description,
+                )
+                temp_subitems.append(temp_subitem)
+            temp_item.subitems = temp_subitems
+        temp_items.append(temp_item)
+    temp_invoice.items = temp_items
+
+    # Calculate totals
+    temp_invoice.calculate_totals()
     
-    preview_invoice.items = [
-        InvoiceItem(
-            id=0,
-            invoice_id=0,
-            description=item.description,
-            quantity=Decimal(item.quantity),
-            unit_price=Decimal(item.unit_price),
-            discount_percentage=Decimal(item.discount_percentage),
-            subitems=[
-                InvoiceSubItem(
-                    id=0,
-                    invoice_item_id=0,
-                    description=subitem.description
-                ) for subitem in item.subitems
-            ]
-        ) for item in invoice.items
-    ]
+    # Manually assign contacts (since relationships are not fully loaded)
+    temp_invoice.bill_to = bill_to_contact
+    temp_invoice.send_to = send_to_contact
     
-    return generate_pdf(preview_invoice, template)
+    # Convert ORM model to Pydantic model using from_orm
+    try:
+        preview_invoice = InvoiceDetail.from_orm(temp_invoice)
+    except ValidationError as e:
+        print(e)
+        raise
+    
+    # Pass the Pydantic model to generate_pdf
+    pdf_content = generate_pdf(preview_invoice, template)
+    return pdf_content
 
 
 def generate_invoice_pdf(db: Session, invoice_id: int, template_id: int, user_id: int) -> bytes:

@@ -1,7 +1,27 @@
 import { Contact, Template } from ".";
 
+export interface InvoiceSubItemCreate {
+    id?: number;
+    description: string;
+}
+
+export interface InvoiceSubItem {
+    id: number;
+    description: string;
+}
+
+export interface InvoiceItemCreate {
+    id?: number;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    discount_percentage: number;
+    subitems: InvoiceSubItemCreate[];
+}
+
 export interface InvoiceItem {
     id: number;
+    invoice_id: number;
     description: string;
     quantity: number;
     unit_price: number;
@@ -10,21 +30,16 @@ export interface InvoiceItem {
     line_total: number;
 }
 
-export interface InvoiceItemCreate {
-    description: string;
-    quantity: number;
-    unit_price: number;
+export interface InvoiceCreate {
+    invoice_number: string;
+    invoice_date: string;
+    bill_to_id: number;
+    send_to_id: number;
+    tax_rate: number;
     discount_percentage: number;
-    subitems: InvoiceSubItemCreate[];
-}
-
-export interface InvoiceSubItem {
-    id: number;
-    description: string;
-}
-
-export interface InvoiceSubItemCreate {
-    description: string;
+    notes?: string;
+    items: InvoiceItemCreate[];
+    template_id: number;
 }
 
 export interface Invoice {
@@ -44,28 +59,16 @@ export interface Invoice {
     total: number;
 }
 
-export interface InvoiceCreate {
-    invoice_number: string;
-    invoice_date: string;
-    bill_to_id: number;
-    send_to_id: number;
-    tax_rate: number;
-    discount_percentage: number;
-    notes?: string;
-    items: InvoiceItemCreate[];
-    template_id: number;
-}
-
-export interface InvoiceUpdate extends Partial<InvoiceCreate> {
-    id: number;
-}
-
 export interface InvoicePreviewProps {
-    invoice: Partial<Invoice> | InvoiceCreate;
+    invoice: Invoice | InvoiceCreate;
     template: Template;
     billToContact?: Contact | null;
     sendToContact?: Contact | null;
 }
+
+// export interface InvoiceUpdate extends Partial<InvoiceCreate> {
+//     id: number;
+// }
 
 export type InvoiceFormErrors = {
     invoice_number?: string;

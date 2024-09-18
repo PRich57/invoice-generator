@@ -4,6 +4,9 @@ from datetime import date
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
+from backend.app.services.invoice.pdf import generate_preview_pdf
+from backend.app.services.template.crud import get_template
+
 from ..core.deps import get_current_user
 from ..core.exceptions import (ContactNotFoundException,
                                InvalidContactIdException,
@@ -12,10 +15,10 @@ from ..core.exceptions import (ContactNotFoundException,
                                InvoiceNumberAlreadyExistsException,
                                TemplateNotFoundException)
 from ..database import get_db
-from ..schemas.invoice import Invoice, InvoiceCreate
+from ..schemas.invoice import (InvoiceDetail, InvoiceCreate, InvoiceDetail,
+                               InvoiceSummary)
 from ..schemas.user import User
 from ..services.invoice import crud
-
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +26,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/", response_model=Invoice)
+@router.post("/", response_model=InvoiceDetail)
 def create_invoice(
     invoice: InvoiceCreate = Body(
         ...,
         example={
-            "invoice_number": "#001",
+            "invoice_number": "001",
             "invoice_date": "2024-01-01",
             "bill_to_id": 1,
             "send_to_id": 2,
@@ -51,35 +54,36 @@ def create_invoice(
     logger.info(f"Received invoice creation request: {invoice.model_dump()}")
     try:
         return crud.create_invoice(db, invoice, current_user.id)
-    except (InvoiceNumberAlreadyExistsException, ContactNotFoundException, InvalidContactIdException, InvalidInvoiceNumberException, TemplateNotFoundException) as e:
+    except (
+        InvoiceNumberAlreadyExistsException,
+        ContactNotFoundException,
+        InvalidContactIdException,
+        InvalidInvoiceNumberException,
+        TemplateNotFoundException
+    ) as e:
         logger.error(f"Error creating invoice: {str(e)}")
         raise e
     except Exception as e:
         logger.error(f"Error creating invoice: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"An unexpected error occurred: {str(e)}"
+        )
 
 
-@router.post("/preview-pdf")
-async def preview_invoice_pdf(
-    invoice: InvoiceCreate,
-    template_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    template = crud.get_template(db, template_id, current_user.id)
-    if not template:
-        raise TemplateNotFoundException()
-    
-    pdf_content = crud.generate_preview_pdf(db, invoice, template)
-    
-    return Response(content=pdf_content, media_type="application/pdf")
-
-
-@router.get("/", response_model=list[Invoice])
+@router.get("/", response_model=list[InvoiceSummary])
 def read_invoices(
     skip: int = 0,
     limit: int = 100,
-    sort_by: str | None = Query(None, enum=['invoice_number', 'bill_to_name', 'send_to_name', 'date', 'total']),
+    sort_by: str | None = Query(
+        None, enum=[
+            'invoice_number',
+            'bill_to_name',
+            'send_to_name',
+            'date',
+            'total'
+        ]
+    ),
     sort_order: str = Query('asc', enum=['asc', 'desc']),
     invoice_number: str | None = None,
     bill_to_name: str | None = None,
@@ -101,7 +105,7 @@ def read_invoices(
     return invoices
 
 
-@router.get("/{invoice_id}", response_model=Invoice)
+@router.get("/{invoice_id}", response_model=InvoiceDetail)
 def read_invoice(
     invoice_id: int,
     db: Session = Depends(get_db),
@@ -113,7 +117,7 @@ def read_invoice(
     return db_invoice
 
 
-@router.put("/{invoice_id}", response_model=Invoice)
+@router.put("/{invoice_id}", response_model=InvoiceDetail)
 def update_invoice(
     invoice_id: int,
     invoice: InvoiceCreate,
@@ -126,7 +130,7 @@ def update_invoice(
     return db_invoice
 
 
-@router.delete("/{invoice_id}", response_model=Invoice)
+@router.delete("/{invoice_id}", response_model=InvoiceDetail)
 def delete_invoice(
     invoice_id: int,
     db: Session = Depends(get_db),
@@ -138,6 +142,22 @@ def delete_invoice(
     return db_invoice
 
 
+@router.post("/preview-pdf")
+async def preview_invoice_pdf(
+    invoice: InvoiceCreate,
+    template_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    template = get_template(db, template_id, current_user.id)
+    if not template:
+        raise TemplateNotFoundException()
+    
+    pdf_content = generate_preview_pdf(db, invoice, template, current_user.id)
+    
+    return Response(content=pdf_content, media_type="application/pdf")
+
+
 @router.get("/{invoice_id}/pdf")
 def generate_invoice_pdf(
     invoice_id: int,
@@ -145,7 +165,7 @@ def generate_invoice_pdf(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    pdf_content = crud.generate_invoice_pdf(db, invoice_id, template_id, current_user.id)
+    pdf_content = generate_invoice_pdf(db, invoice_id, template_id, current_user.id)
     
     return Response(content=pdf_content, media_type="application/pdf", headers={
         "Content-Disposition": f"attachment; filename=invoice_{invoice_id}.pdf"
@@ -163,7 +183,7 @@ def regenerate_invoice(
     if db_invoice is None:
         raise InvoiceNotFoundException()
 
-    template = crud.get_template(db, template_name, current_user.id)
+    template = get_template(db, template_name, current_user.id)
     if template is None:
         raise TemplateNotFoundException()
 

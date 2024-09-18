@@ -1,3 +1,4 @@
+from functools import lru_cache
 import logging
 
 from sqlalchemy.exc import IntegrityError
@@ -140,13 +141,12 @@ def create_template(db: Session, template: TemplateCreate, user_id: int):
         raise TemplateAlreadyExistsException()
 
 
-def get_template(db: Session, template_id: int, user_id: int | None = None) -> Template | None:
-    query = db.query(Template).filter(Template.id == template_id)
-    if user_id is not None:
-        query = query.filter((Template.user_id == user_id) | (Template.is_default == True))
-    else:
-        query = query.filter(Template.is_default == True)
-    return query.first()
+@lru_cache(maxsize=128)
+def get_template(db: Session, template_id: int, user_id: int) -> Template | None:
+    return db.query(Template).filter(
+        (Template.id == template_id) & 
+        ((Template.user_id == user_id) | (Template.is_default == True))
+    ).first()
 
 
 def get_templates(db: Session, user_id: int | None = None, skip: int = 0, limit: int = 100) -> list[Template]:

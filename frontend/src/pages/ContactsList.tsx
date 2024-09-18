@@ -1,13 +1,13 @@
-// src/pages/ContactsList.tsx
+import { Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
+import { Box, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import ConfirmationDialog from '../components/common/ConfirmationDialogue';
+import ErrorMessage from '../components/common/ErrorMessage';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useContacts } from '../hooks/useContacts';
 import { deleteContact } from '../services/api';
-import LoadingSpinner from '../components/common/LoadingSpinner';
-import ErrorMessage from '../components/common/ErrorMessage';
-import ConfirmationDialog from '../components/common/ConfirmationDialogue';
+import { formatCityStateZip } from '../utils/cityStateZipFormatter';
 
 const ContactsList: React.FC = () => {
     const navigate = useNavigate();
@@ -40,18 +40,17 @@ const ContactsList: React.FC = () => {
     if (error) return <ErrorMessage message={error} />;
 
     return (
-        <div>
-            <Typography variant="h4" gutterBottom>
-                Contacts
-            </Typography>
-            <Button
-                variant="contained"
-                color="primary"
-                onClick={() => navigate('/contacts/new')}
-                style={{ marginBottom: '1rem' }}
-            >
-                Add New Contact
-            </Button>
+        <Box>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h4">Contacts</Typography>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => navigate('/contacts/new')}
+                >
+                    Create New Contact
+                </Button>
+            </Box>
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
@@ -71,7 +70,7 @@ const ContactsList: React.FC = () => {
                                 <TableCell>{contact.company}</TableCell>
                                 <TableCell>{contact.email}</TableCell>
                                 <TableCell>{contact.phone}</TableCell>
-                                <TableCell>{contact.city} {contact.state} {contact.postal_code}</TableCell>
+                                <TableCell>{formatCityStateZip(contact)}</TableCell>
                                 <TableCell>
                                     <Button startIcon={<EditIcon />} onClick={() => handleEdit(contact.id)}>
                                         Edit
@@ -92,7 +91,7 @@ const ContactsList: React.FC = () => {
                 onConfirm={handleDeleteConfirm}
                 onCancel={() => setDeleteConfirmOpen(false)}
             />
-        </div>
+        </Box>
     );
 };
 
