@@ -201,7 +201,7 @@ def delete_template(db: Session, template_id: int, user_id: int) -> Template:
 
 
 def copy_template(db: Session, template_id: int, user_id: int) -> Template:
-    template = get_template(db, template_id)
+    template = get_template(db, template_id, user_id)
     if not template:
         logger.error(f"Template copy failed: template not found, id={template_id}")
         raise TemplateNotFoundException()
@@ -216,8 +216,6 @@ def copy_template(db: Session, template_id: int, user_id: int) -> Template:
         layout=template.layout,
         custom_css=template.custom_css
     )
-    
-    new_template.is_default = False
     
     db.add(new_template)
     db.commit()

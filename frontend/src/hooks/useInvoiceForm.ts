@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
-import { InvoiceCreate, Invoice } from '../types';
+import { InvoiceCreate } from '../types';
 import { invoiceValidationSchema } from '../validationSchemas/invoiceValidationSchema';
 import { useErrorHandler } from './useErrorHandler';
 import { formatDateForAPI } from '../utils/dateFormatter';
@@ -93,7 +93,6 @@ export const useInvoiceForm = (id?: string) => {
                 navigate('/invoices');
             } catch (err) {
                 handleError(err);
-                setError('Failed to save invoice');
             } finally {
                 setIsSubmitting(false);
             }

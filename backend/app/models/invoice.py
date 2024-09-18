@@ -1,3 +1,4 @@
+from decimal import Decimal
 from sqlalchemy import DECIMAL, Column, Date, ForeignKey, Integer, String, Index, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
@@ -23,7 +24,7 @@ class InvoiceItem(Base):
 
     @hybrid_property
     def line_total(self):
-        return self.quantity * self.unit_price * (1 - self.discount_percentage / 100)
+        return self.quantity * self.unit_price * (Decimal('1') - self.discount_percentage / Decimal('100'))
 
 
 class InvoiceSubItem(Base):
@@ -66,10 +67,17 @@ class Invoice(Base):
     send_to = relationship("Contact", foreign_keys=[send_to_id])
     items = relationship("InvoiceItem", back_populates="invoice", cascade="all, delete-orphan")
     template = relationship("Template")
+    
+    @property
+    def discount_amount(self):
+        return self.subtotal * (self.discount_percentage / Decimal('100'))
+    
+    @property
+    def discounted_subtotal(self):
+        return self.subtotal - self.discount_amount
 
     def calculate_totals(self):
         """Calculates and updates the subtotal, tax, and total for the invoice."""
         self.subtotal = sum(item.line_total for item in self.items)
-        discounted_subtotal = self.subtotal * (1 - self.discount_percentage / 100)
-        self.tax = discounted_subtotal * (self.tax_rate / 100)
-        self.total = discounted_subtotal + self.tax
+        self.tax = self.discounted_subtotal * (self.tax_rate / Decimal('100'))
+        self.total = self.discounted_subtotal + self.tax

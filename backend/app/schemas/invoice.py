@@ -89,6 +89,8 @@ class InvoiceDetail(BaseModel):
     discount_percentage: Decimal
     notes: str | None
     subtotal: Decimal
+    discount_amount: Decimal
+    discounted_subtotal: Decimal
     tax: Decimal
     total: Decimal
     items: list[InvoiceItem]

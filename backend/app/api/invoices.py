@@ -4,7 +4,10 @@ from datetime import date
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
-from backend.app.services.invoice.pdf import generate_preview_pdf
+from backend.app.services.invoice.pdf import (
+    generate_preview_pdf as generate_preview_pdf_file,
+    generate_invoice_pdf as generate_invoice_pdf_file
+)
 from backend.app.services.template.crud import get_template
 
 from ..core.deps import get_current_user
@@ -153,20 +156,18 @@ async def preview_invoice_pdf(
     if not template:
         raise TemplateNotFoundException()
     
-    pdf_content = generate_preview_pdf(db, invoice, template, current_user.id)
-    
+    pdf_content = generate_preview_pdf_file(db, invoice, template, current_user.id)
     return Response(content=pdf_content, media_type="application/pdf")
 
 
 @router.get("/{invoice_id}/pdf")
-def generate_invoice_pdf(
+def get_invoice_pdf(
     invoice_id: int,
     template_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    pdf_content = generate_invoice_pdf(db, invoice_id, template_id, current_user.id)
-    
+    pdf_content = generate_invoice_pdf_file(db, invoice_id, template_id, current_user.id)
     return Response(content=pdf_content, media_type="application/pdf", headers={
         "Content-Disposition": f"attachment; filename=invoice_{invoice_id}.pdf"
     })

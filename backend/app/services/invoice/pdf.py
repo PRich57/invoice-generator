@@ -20,7 +20,18 @@ from .crud import get_invoice
 from ..contact import crud as crud_contact
 
 
-def generate_pdf(invoice: InvoiceDetail, template: Template) -> bytes:
+def generate_pdf(invoice: Invoice, template: Template) -> bytes:
+    invoice_number = invoice.invoice_number
+    invoice_date = invoice.invoice_date
+    bill_to = invoice.bill_to
+    send_to = invoice.send_to
+    items = invoice.items
+    subtotal = invoice.subtotal
+    discount_percentage = invoice.discount_percentage
+    discount_amount = invoice.discount_amount
+    discounted_subtotal = invoice.discounted_subtotal
+    tax = invoice.tax
+    total = invoice.total
     buffer = BytesIO()
     page_size = A4 if template.layout['page_size'].upper() == 'A4' else letter
     doc = SimpleDocTemplate(
@@ -34,7 +45,7 @@ def generate_pdf(invoice: InvoiceDetail, template: Template) -> bytes:
 
     styles = getSampleStyleSheet()
     
-    formatted_date = invoice.invoice_date.strftime('%B %d, %Y') if invoice.invoice_date else ''
+    formatted_date = invoice_date.strftime('%B %d, %Y') if invoice_date else ''
 
     # Use template configuration for colors
     primary_color = colors.HexColor(template.colors['primary'])
@@ -131,26 +142,26 @@ def generate_pdf(invoice: InvoiceDetail, template: Template) -> bytes:
     left_column = [
         [Spacer(1, 30)],
         [Paragraph("Bill To:", styles['SectionHeader'])],
-        [Paragraph(invoice.bill_to.name, styles['AddressText'])],
-        [Paragraph(invoice.bill_to.street_address or '', styles['AddressText'])],
-        [Paragraph(f"{invoice.bill_to.city or ''} {invoice.bill_to.state or ''} {invoice.bill_to.postal_code or ''}", styles['AddressText'])],
+        [Paragraph(bill_to.name, styles['AddressText'])],
+        [Paragraph(bill_to.street_address or '', styles['AddressText'])],
+        [Paragraph(f"{bill_to.city or ''} {bill_to.state or ''} {bill_to.postal_code or ''}", styles['AddressText'])],
         [Spacer(1, 10)],
         [Paragraph("Send To:", styles['SectionHeader'])],
-        [Paragraph(invoice.send_to.name, styles['AddressText'])],
-        [Paragraph(invoice.send_to.street_address or '', styles['AddressText'])],
-        [Paragraph(f"{invoice.send_to.city or ''} {invoice.send_to.state or ''} {invoice.send_to.postal_code or ''}", styles['AddressText'])],
+        [Paragraph(send_to.name, styles['AddressText'])],
+        [Paragraph(send_to.street_address or '', styles['AddressText'])],
+        [Paragraph(f"{send_to.city or ''} {send_to.state or ''} {send_to.postal_code or ''}", styles['AddressText'])],
     ]
 
     # Create right column (Invoice details, Date, and Balance Due)
     right_column = [
         [Paragraph("INVOICE", styles['InvoiceTitle'])],
-        [Paragraph(f"#{invoice.invoice_number}", styles['InvoiceNumber'])],
+        [Paragraph(f"#{invoice_number}", styles['InvoiceNumber'])],
         [Spacer(1, 20)],
         [Table([[Paragraph("Date:", styles['RightAligned']), Paragraph(formatted_date, styles['RightAligned'])]], 
                colWidths=[1.5*inch, 1.75*inch],
                style=[('ALIGN', (0, 0), (-1, -1), 'RIGHT')])],
         [Spacer(1, 10)],
-        [Table([[Paragraph("Balance Due:", styles['BalanceDue']), Paragraph(f"${invoice.total:.2f}", styles['BalanceDue'])]], 
+        [Table([[Paragraph("Balance Due:", styles['BalanceDue']), Paragraph(f"${total:.2f}", styles['BalanceDue'])]], 
                colWidths=[1.5*inch, 1.75*inch],
                style=[
                    ('BACKGROUND', (0, 0), (-1, 0), "#cccccc"),
@@ -177,7 +188,7 @@ def generate_pdf(invoice: InvoiceDetail, template: Template) -> bytes:
 
     # Items table
     items_data = [['Item', 'Unit Price', 'Quantity', 'Total']]
-    for item in invoice.items:
+    for item in items:
         description = item.description
         if item.discount_percentage > 0:
             description += f" ({item.discount_percentage}% Discount)"
@@ -216,18 +227,18 @@ def generate_pdf(invoice: InvoiceDetail, template: Template) -> bytes:
 
     # Totals
     totals_data = [
-        ['', 'Subtotal:', f"${invoice.subtotal:.2f}"],
+        ['', 'Subtotal:', f"${subtotal:.2f}"],
     ]
     
-    if invoice.discount_percentage > 0:
+    if discount_percentage > 0:
         totals_data.extend([
-            ['', f"Discount ({invoice.discount_percentage}%):", f"-${invoice.discount_amount:.2f}"],
-            ['', 'Discounted Subtotal:', f"${invoice.discounted_subtotal:.2f}"],
+            ['', f"Discount ({discount_percentage}%):", f"-${discount_amount:.2f}"],
+            ['', 'Discounted Subtotal:', f"${discounted_subtotal:.2f}"],
         ])
     
     totals_data.extend([
-        ['', f"Tax ({invoice.tax_rate}%):", f"${invoice.tax:.2f}"],
-        ['', 'Total:', f"${invoice.total:.2f}"]
+        ['', f"Tax ({invoice.tax_rate}%):", f"${tax:.2f}"],
+        ['', 'Total:', f"${total:.2f}"]
     ])
     
     totals_table = Table(totals_data, colWidths=[4*inch, 2*inch, 1*inch])
@@ -266,16 +277,20 @@ def generate_preview_pdf(
     
     # Create Invoice ORM instance
     temp_invoice = Invoice(
-        user_id=user_id,
+        user_id=0,
         invoice_number=invoice_data.invoice_number,
         invoice_date=invoice_data.invoice_date,
-        tax_rate=invoice_data.tax_rate,
-        discount_percentage=invoice_data.discount_percentage,
+        tax_rate=invoice_data.tax_rate or 0,
+        discount_percentage=invoice_data.discount_percentage or 0,
         notes=invoice_data.notes,
         template_id=invoice_data.template_id,
         bill_to_id=invoice_data.bill_to_id,
         send_to_id=invoice_data.send_to_id,
     )
+    
+    # Assign contacts directly
+    temp_invoice.bill_to = bill_to_contact
+    temp_invoice.send_to = send_to_contact
     
     # Create InvoiceItem ORM instances
     temp_items = []
@@ -284,7 +299,7 @@ def generate_preview_pdf(
             description=item_data.description,
             quantity=item_data.quantity,
             unit_price=item_data.unit_price,
-            discount_percentage=item_data.discount_percentage,
+            discount_percentage=item_data.discount_percentage or 0,
         )
         # Create InvoiceSubItem ORM instances if any
         temp_subitems = []
@@ -298,22 +313,11 @@ def generate_preview_pdf(
         temp_items.append(temp_item)
     temp_invoice.items = temp_items
 
-    # Calculate totals
+    # Calculate totals using the ORM method
     temp_invoice.calculate_totals()
     
-    # Manually assign contacts (since relationships are not fully loaded)
-    temp_invoice.bill_to = bill_to_contact
-    temp_invoice.send_to = send_to_contact
-    
-    # Convert ORM model to Pydantic model using from_orm
-    try:
-        preview_invoice = InvoiceDetail.from_orm(temp_invoice)
-    except ValidationError as e:
-        print(e)
-        raise
-    
-    # Pass the Pydantic model to generate_pdf
-    pdf_content = generate_pdf(preview_invoice, template)
+    # Pass the ORM model directly to the PDF generation function
+    pdf_content = generate_pdf(temp_invoice, template)
     return pdf_content
 
 

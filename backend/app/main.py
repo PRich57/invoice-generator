@@ -13,7 +13,8 @@ from .core.exceptions import (ContactAlreadyExistsException,
                               ContactNotFoundException,
                               InvoiceNotFoundException,
                               InvoiceNumberAlreadyExistsException,
-                              TemplateNotFoundException)
+                              TemplateNotFoundException,
+                              global_exception_handler)
 from .database import SessionLocal, engine
 from .models import contact, invoice, template, user
 
