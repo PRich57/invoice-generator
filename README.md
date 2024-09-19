@@ -98,3 +98,130 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+```
+invoice-generator
+├─ .gitignore
+├─ backend
+│  ├─ alembic
+│  │  ├─ env.py
+│  │  ├─ README
+│  │  ├─ script.py.mako
+│  │  └─ versions
+│  ├─ alembic.ini
+│  ├─ app
+│  │  ├─ api
+│  │  │  ├─ auth.py
+│  │  │  ├─ contacts.py
+│  │  │  ├─ templates.py
+│  │  │  └─ __init__.py
+│  │  ├─ core
+│  │  │  ├─ config.py
+│  │  │  ├─ deps.py
+│  │  │  ├─ exceptions.py
+│  │  │  └─ security.py
+│  │  ├─ database.py
+│  │  ├─ main.py
+│  │  ├─ models
+│  │  │  ├─ contact.py
+│  │  │  ├─ invoice.py
+│  │  │  ├─ template.py
+│  │  │  ├─ user.py
+│  │  │  └─ __init__.py
+│  │  ├─ schemas
+│  │  │  ├─ contact.py
+│  │  │  ├─ invoice.py
+│  │  │  ├─ template.py
+│  │  │  ├─ user.py
+│  │  │  └─ __init__.py
+│  │  ├─ services
+│  │  │  ├─ contact
+│  │  │  │  └─ crud.py
+│  │  │  ├─ invoice
+│  │  │  │  ├─ crud.py
+│  │  │  │  └─ pdf.py
+│  │  │  ├─ template
+│  │  │  │  └─ crud.py
+│  │  │  └─ user
+│  │  │     └─ crud.py
+│  │  └─ __init__.py
+│  └─ requirements.txt
+├─ data
+├─ frontend
+│  ├─ package.json
+│  ├─ public
+│  │  └─ index.html
+│  ├─ src
+│  │  ├─ App.tsx
+│  │  ├─ components
+│  │  │  ├─ common
+│  │  │  │  ├─ ConfirmationDialogue.tsx
+│  │  │  │  ├─ ErrorMessage.tsx
+│  │  │  │  └─ LoadingSpinner.tsx
+│  │  │  ├─ contacts
+│  │  │  │  └─ ContactForm.tsx
+│  │  │  ├─ layout
+│  │  │  │  ├─ Header.tsx
+│  │  │  │  └─ Sidebar.tsx
+│  │  │  └─ templates
+│  │  │     └─ TemplateForm.tsx
+│  │  ├─ constants
+│  │  │  ├─ apiEndpoints.ts
+│  │  │  └─ routes.ts
+│  │  ├─ contexts
+│  │  │  └─ AuthContext.tsx
+│  │  ├─ hooks
+│  │  │  ├─ useAuth.ts
+│  │  │  ├─ useColorPicker.ts
+│  │  │  ├─ useContactForm.ts
+│  │  │  ├─ useContacts.ts
+│  │  │  ├─ useErrorHandler.ts
+│  │  │  ├─ useFetch.ts
+│  │  │  ├─ useInvoiceForm.ts
+│  │  │  ├─ useInvoices.ts
+│  │  │  ├─ usePDFGeneration.ts
+│  │  │  ├─ useTemplateForm.ts
+│  │  │  └─ useTemplates.ts
+│  │  ├─ index.tsx
+│  │  ├─ layouts
+│  │  │  └─ MainLayout.tsx
+│  │  ├─ pages
+│  │  │  ├─ ContactForm.tsx
+│  │  │  ├─ ContactsList.tsx
+│  │  │  ├─ Dashboard.tsx
+│  │  │  ├─ InvoiceForm.tsx
+│  │  │  ├─ InvoicesList.tsx
+│  │  │  ├─ Login.tsx
+│  │  │  ├─ Register.tsx
+│  │  │  ├─ TemplateForm.tsx
+│  │  │  └─ TemplatesList.tsx
+│  │  ├─ services
+│  │  │  ├─ api
+│  │  │  │  ├─ auth.ts
+│  │  │  │  ├─ contacts.ts
+│  │  │  │  └─ templates.ts
+│  │  │  └─ api.ts
+│  │  ├─ styles
+│  │  │  └─ theme.ts
+│  │  ├─ types
+│  │  │  ├─ common.ts
+│  │  │  ├─ contact.ts
+│  │  │  ├─ index.ts
+│  │  │  ├─ invoice.ts
+│  │  │  ├─ template.ts
+│  │  │  └─ user.ts
+│  │  ├─ utils
+│  │  │  ├─ cityStateZipFormatter.ts
+│  │  │  ├─ currencyFormatter.ts
+│  │  │  ├─ dateFormatter.ts
+│  │  │  └─ validationHelpers.ts
+│  │  └─ validationSchemas
+│  │     ├─ contactValidationSchema.ts
+│  │     ├─ invoiceValidationSchema.ts
+│  │     └─ templateValidationSchema.ts
+│  ├─ tsconfig.json
+│  └─ webpack.config.js
+├─ main.py
+├─ README.md
+
+```

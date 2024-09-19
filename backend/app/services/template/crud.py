@@ -1,15 +1,15 @@
-from functools import lru_cache
 import logging
+from datetime import datetime, timedelta, timezone
+from functools import lru_cache
 
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy import delete, func, or_
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
-from backend.app.core.exceptions import (TemplateAlreadyExistsException,
-                                         TemplateNotFoundException)
-
+from ...core.exceptions import (TemplateAlreadyExistsException,
+                                TemplateNotFoundException)
 from ...models.template import Template
 from ...schemas.template import TemplateCreate, TemplateUpdate
-
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +99,7 @@ DEFAULT_TEMPLATES = {
 }
 
 
-def create_or_update_default_templates(db: Session):
+async def create_or_update_default_templates(db: AsyncSession):
     for name, config in DEFAULT_TEMPLATES.items():
         template_name = name.capitalize()
         template_data = {
@@ -107,103 +107,89 @@ def create_or_update_default_templates(db: Session):
             "is_default": True,
             **config
         }
-        db_template = db.query(Template).filter(Template.name == template_name).first()
+        result = await db.execute(select(Template).filter(Template.name == template_name))
+        db_template = result.scalar_one_or_none()
         if db_template:
-            # Update existing template with new fields
             for key, value in template_data.items():
                 if key != 'id':
                     setattr(db_template, key, value)
         else:
-            # Create new default template
             db_template = Template(**template_data)
             db.add(db_template)
     
     try:
-        db.commit()
+        await db.commit()
         logger.info("Default templates created or updated successfully")
-    except IntegrityError:
-        db.rollback()
-        logger.error("Error creating or updating default templates")
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Error creating or updating default templates: {str(e)}")
         raise
 
 
-def create_template(db: Session, template: TemplateCreate, user_id: int):
+async def create_template(db: AsyncSession, template: TemplateCreate, user_id: int):
+    db_template = Template(**template.model_dump(), user_id=user_id)
+    db.add(db_template)
     try:
-        db_template = Template(**template.model_dump(), user_id=user_id)
-        db.add(db_template)
-        db.commit()
-        db.refresh(db_template)
+        await db.commit()
+        await db.refresh(db_template)
         logger.info(f"Template created: id={db_template.id}, user_id={user_id}")
         return db_template
-    except IntegrityError:
-        db.rollback()
-        logger.error(f"Template creation failed: name already exists, user_id={user_id}")
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Error creating template: {str(e)}")
         raise TemplateAlreadyExistsException()
 
 
 @lru_cache(maxsize=128)
-def get_template(db: Session, template_id: int, user_id: int) -> Template | None:
-    return db.query(Template).filter(
-        (Template.id == template_id) & 
-        ((Template.user_id == user_id) | (Template.is_default == True))
-    ).first()
+async def get_template(db: AsyncSession, template_id: int, user_id: int):
+    query = select(Template).filter(
+        Template.id == template_id,
+        or_(Template.user_id == user_id, Template.is_default == True),
+        Template.is_deleted == False
+    )
+    result = await db.execute(query)
+    return result.scalar_one_or_none()
 
 
-def get_templates(db: Session, user_id: int | None = None, skip: int = 0, limit: int = 100) -> list[Template]:
-    query = db.query(Template)
-    if user_id:
-        query = query.filter((Template.user_id == user_id) | (Template.is_default == True))
-    else:
-        query = query.filter(Template.is_default == True)
-    return query.offset(skip).limit(limit).all()
-
-
-def update_template(db: Session, template_id: int, template: TemplateUpdate, user_id: int) -> Template:
-    db_template = get_template(db, template_id, user_id)
-    if not db_template:
-        logger.error(f"Template update failed: template not found, id={template_id}, user_id={user_id}")
-        raise TemplateNotFoundException()
+@lru_cache(maxsize=128)
+async def get_templates(db: AsyncSession, user_id: int, skip: int = 0, limit: int = 100, sort_by: str | None = None, sort_order: str = 'asc'):
+    query = select(Template).filter(
+        or_(Template.user_id == user_id, Template.is_default == True),
+        Template.is_deleted == False
+    )
     
-    if db_template.is_default:
-        db_template = copy_template(db, template_id, user_id)
-        
-    update_data = template.model_dump(exclude_unset=True)
-    update_data.pop('is_default', None)
+    if sort_by:
+        order_func = func.asc if sort_order == 'asc' else func.desc
+        query = query.order_by(order_func(getattr(Template, sort_by)))
+    
+    result = await db.execute(query.offset(skip).limit(limit))
+    return result.scalars().all()
+
+
+async def update_template(db: AsyncSession, template_id: int, template: TemplateUpdate, user_id: int):
+    db_template = await get_template(db, template_id, user_id)
+    if not db_template:
+        raise TemplateNotFoundException()
     
     for key, value in template.model_dump(exclude_unset=True).items():
         setattr(db_template, key, value)
     
     try:
-        db.commit()
-        db.refresh(db_template)
+        await db.commit()
+        await db.refresh(db_template)
         logger.info(f"Template updated: id={template_id}, user_id={user_id}")
+        get_template.cache_clear()  # Clear the cache for this template
+        get_templates.cache_clear()  # Clear the cache for all templates
         return db_template
-    except IntegrityError:
-        db.rollback()
-        logger.error(f"Template update failed: integrity error, id={template_id}, user_id={user_id}")
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Error updating template: {str(e)}")
         raise TemplateAlreadyExistsException()
 
 
-def delete_template(db: Session, template_id: int, user_id: int) -> Template:
-    db_template = get_template(db, template_id, user_id)
-    if not db_template:
-        logger.error(f"Template deletion failed: template not found, id={template_id}, user_id={user_id}")
-        raise TemplateNotFoundException()
-    
-    if db_template.is_default:
-        logger.error(f"Template deletion failed: cannot delete default template, id={template_id}, user_id={user_id}")
-        raise ValueError("Cannot delete default template")
-    
-    db.delete(db_template)
-    db.commit()
-    logger.info(f"Template deleted: id={template_id}, user_id={user_id}")
-    return db_template
-
-
-def copy_template(db: Session, template_id: int, user_id: int) -> Template:
-    template = get_template(db, template_id, user_id)
+async def copy_template(db: AsyncSession, template_id: int, user_id: int):
+    template = await get_template(db, template_id, user_id)
     if not template:
-        logger.error(f"Template copy failed: template not found, id={template_id}")
         raise TemplateNotFoundException()
     
     new_template = Template(
@@ -218,18 +204,63 @@ def copy_template(db: Session, template_id: int, user_id: int) -> Template:
     )
     
     db.add(new_template)
-    db.commit()
-    db.refresh(new_template)
-    logger.info(f"Template copied: original_id={template_id}, new_id={new_template.id}, user_id={user_id}")
-    return new_template
+    try:
+        await db.commit()
+        await db.refresh(new_template)
+        logger.info(f"Template copied: original_id={template_id}, new_id={new_template.id}, user_id={user_id}")
+        get_templates.cache_clear()  # Clear the cache for all templates
+        return new_template
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Error copying template: {str(e)}")
+        raise
 
 
-def get_or_create_default_templates(db: Session, user_id: int):
-    existing_templates = get_templates(db, user_id)
-    existing_template_names = {t.name.lower() for t in existing_templates}
+async def delete_template(db: AsyncSession, template_id: int, user_id: int) -> Template:
+    db_template = await get_template(db, template_id, user_id)
+    if not db_template:
+        logger.error(f"Template deletion failed: template not found, id={template_id}, user_id={user_id}")
+        raise TemplateNotFoundException()
     
-    for name, config in DEFAULT_TEMPLATES.items():
-        if name not in existing_template_names:
-            create_template(db, TemplateCreate(name=name.capitalize(), **config), user_id)
+    if db_template.is_default:
+        logger.error(f"Template deletion failed: cannot delete default template, id={template_id}, user_id={user_id}")
+        raise ValueError("Cannot delete default template")
     
-    return get_templates(db, user_id)
+    await db.delete(db_template)
+    await db.commit()
+    logger.info(f"Template deleted: id={template_id}, user_id={user_id}")
+    get_template.cache_clear()  # Clear the cache for this template
+    get_templates.cache_clear()  # Clear the cache for all templates
+    return db_template
+
+
+async def soft_delete_template(db: AsyncSession, template_id: int, user_id: int):
+    db_template = await get_template(db, template_id, user_id)
+    if not db_template:
+        raise TemplateNotFoundException()
+    
+    db_template.is_deleted = True
+    db_template.deleted_at = datetime.now(timezone.utc)
+    try:
+        await db.commit()
+        logger.info(f"Template soft deleted: id={template_id}, user_id={user_id}")
+        get_template.cache_clear()
+        get_templates.cache_clear()
+        return db_template
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Error soft deleting template: {str(e)}")
+        raise
+
+
+async def purge_deleted_templates(db: AsyncSession, days: int = 30):
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+    query = delete(Template).where(Template.is_deleted == True, Template.deleted_at <= cutoff_date)
+    try:
+        result = await db.execute(query)
+        await db.commit()
+        logger.info(f"Purged {result.rowcount} templates deleted more than {days} days ago")
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Error purging deleted templates: {str(e)}")
+        raise

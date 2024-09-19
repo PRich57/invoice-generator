@@ -2,24 +2,23 @@ import logging
 from datetime import date
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.services.invoice.pdf import (
-    generate_preview_pdf as generate_preview_pdf_file,
+from backend.app.services.invoice.pdf import \
     generate_invoice_pdf as generate_invoice_pdf_file
-)
+from backend.app.services.invoice.pdf import \
+    generate_preview_pdf as generate_preview_pdf_file
 from backend.app.services.template.crud import get_template
 
 from ..core.deps import get_current_user
-from ..core.exceptions import (ContactNotFoundException,
+from ..core.exceptions import (BadRequestException, ContactNotFoundException,
                                InvalidContactIdException,
                                InvalidInvoiceNumberException,
                                InvoiceNotFoundException,
                                InvoiceNumberAlreadyExistsException,
                                TemplateNotFoundException)
-from ..database import get_db
-from ..schemas.invoice import (InvoiceDetail, InvoiceCreate, InvoiceDetail,
-                               InvoiceSummary)
+from ..database import get_async_db
+from ..schemas.invoice import InvoiceCreate, InvoiceDetail, InvoiceSummary
 from ..schemas.user import User
 from ..services.invoice import crud
 
@@ -30,33 +29,17 @@ router = APIRouter()
 
 
 @router.post("/", response_model=InvoiceDetail)
-def create_invoice(
-    invoice: InvoiceCreate = Body(
-        ...,
-        example={
-            "invoice_number": "001",
-            "invoice_date": "2024-01-01",
-            "bill_to_id": 1,
-            "send_to_id": 2,
-            "tax_rate": 8.00,
-            "notes": "This is a sample invoice.",
-            "items": [
-                {
-                    "description": "Item 1", 
-                    "quantity": 2,
-                    "unit_price": 100.00,
-                    "subitems": []
-                },
-            ]
-        }
-    ),
-    db: Session = Depends(get_db),
+async def create_invoice(
+    invoice: InvoiceCreate,
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
     
     logger.info(f"Received invoice creation request: {invoice.model_dump()}")
     try:
-        return crud.create_invoice(db, invoice, current_user.id)
+        created_invoice = await crud.create_invoice(db, invoice, current_user.id)
+        
+        return created_invoice
     except (
         InvoiceNumberAlreadyExistsException,
         ContactNotFoundException,
@@ -75,7 +58,7 @@ def create_invoice(
 
 
 @router.get("/", response_model=list[InvoiceSummary])
-def read_invoices(
+async def read_invoices(
     skip: int = 0,
     limit: int = 100,
     sort_by: str | None = Query(
@@ -95,51 +78,56 @@ def read_invoices(
     date_to: date | None = None,
     total_min: float | None = None,
     total_max: float | None = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
-    invoices = crud.get_invoices(
+    return await crud.get_invoices(
         db, current_user.id, skip=skip, limit=limit,
         sort_by=sort_by, sort_order=sort_order,
         invoice_number=invoice_number, bill_to_name=bill_to_name,
         send_to_name=send_to_name, date_from=date_from, date_to=date_to,
         total_min=total_min, total_max=total_max
     )
-    return invoices
 
 
 @router.get("/{invoice_id}", response_model=InvoiceDetail)
-def read_invoice(
+async def read_invoice(
     invoice_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_invoice = crud.get_invoice(db, invoice_id, current_user.id)
+    db_invoice = await crud.get_invoice(db, invoice_id, current_user.id)
     if db_invoice is None:
         raise InvoiceNotFoundException()
     return db_invoice
 
 
 @router.put("/{invoice_id}", response_model=InvoiceDetail)
-def update_invoice(
+async def update_invoice(
     invoice_id: int,
     invoice: InvoiceCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_invoice = crud.update_invoice(db, invoice_id, invoice, current_user.id)
-    if db_invoice is None:
-        raise InvoiceNotFoundException()
-    return db_invoice
+    try:
+        db_invoice = await crud.update_invoice(db, invoice_id, invoice, current_user.id)
+        return InvoiceDetail.model_validate(db_invoice)
+    except InvoiceNotFoundException:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    except BadRequestException as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating invoice: {str(e)}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred")
 
 
 @router.delete("/{invoice_id}", response_model=InvoiceDetail)
-def delete_invoice(
+async def delete_invoice(
     invoice_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_invoice = crud.delete_invoice(db, invoice_id, current_user.id)
+    db_invoice = await crud.delete_invoice(db, invoice_id, current_user.id)
     if db_invoice is None:
         raise InvoiceNotFoundException()
     return db_invoice
@@ -149,55 +137,55 @@ def delete_invoice(
 async def preview_invoice_pdf(
     invoice: InvoiceCreate,
     template_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
-    template = get_template(db, template_id, current_user.id)
+    template = await get_template(db, template_id, current_user.id)
     if not template:
         raise TemplateNotFoundException()
     
-    pdf_content = generate_preview_pdf_file(db, invoice, template, current_user.id)
+    pdf_content = await generate_preview_pdf_file(db, invoice, template, current_user.id)
     return Response(content=pdf_content, media_type="application/pdf")
 
 
 @router.get("/{invoice_id}/pdf")
-def get_invoice_pdf(
+async def get_invoice_pdf(
     invoice_id: int,
     template_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
-    pdf_content = generate_invoice_pdf_file(db, invoice_id, template_id, current_user.id)
+    pdf_content = await generate_invoice_pdf_file(db, invoice_id, template_id, current_user.id)
     return Response(content=pdf_content, media_type="application/pdf", headers={
         "Content-Disposition": f"attachment; filename=invoice_{invoice_id}.pdf"
     })
 
 
 @router.post("/{invoice_id}/regenerate")
-def regenerate_invoice(
+async def regenerate_invoice(
     invoice_id: int,
     template_name: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_invoice = crud.get_invoice(db, invoice_id, current_user.id)
+    db_invoice = await crud.get_invoice(db, invoice_id, current_user.id)
     if db_invoice is None:
         raise InvoiceNotFoundException()
 
-    template = get_template(db, template_name, current_user.id)
+    template = await get_template(db, template_name, current_user.id)
     if template is None:
         raise TemplateNotFoundException()
 
-    pdf = crud.regenerate_invoice(db_invoice, template)
+    pdf = await crud.regenerate_invoice(db_invoice, template)
     return Response(content=pdf, media_type="application/pdf")
 
 
 @router.get("/grouped", response_model=dict)
-def read_grouped_invoices(
+async def read_grouped_invoices(
     group_by: list[str] = Query(..., enum=['bill_to', 'send_to', 'month', 'year']),
     date_from: date | None = None,
     date_to: date | None = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
-    return crud.get_grouped_invoices(db, current_user.id, group_by, date_from, date_to)
+    return await crud.get_grouped_invoices(db, current_user.id, group_by, date_from, date_to)

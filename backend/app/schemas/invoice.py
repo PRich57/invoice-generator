@@ -2,9 +2,11 @@ from datetime import date
 from decimal import Decimal
 from typing import Optional
 
-from ..core.exceptions import InvalidInvoiceNumberException, InvalidContactIdException, TemplateNotFoundException
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from pydantic import BaseModel, Field, field_validator
+from ..core.exceptions import (InvalidContactIdException,
+                               InvalidInvoiceNumberException,
+                               TemplateNotFoundException)
 
 
 class InvoiceSubItemBase(BaseModel):
@@ -13,14 +15,14 @@ class InvoiceSubItemBase(BaseModel):
 
 
 class InvoiceSubItemCreate(InvoiceSubItemBase):
-    id: Optional[int] = None
+    pass
 
 
 class InvoiceSubItem(InvoiceSubItemBase):
     id: int
+    order: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InvoiceItemBase(BaseModel):
@@ -39,9 +41,10 @@ class InvoiceItem(InvoiceItemBase):
     id: int
     invoice_id: int
     subitems: list[InvoiceSubItem] = []
+    line_total: Decimal
+    order: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InvoiceBase(BaseModel):
@@ -75,10 +78,10 @@ class InvoiceBase(BaseModel):
 
 
 class InvoiceCreate(InvoiceBase):
-    items: list[InvoiceItemCreate]
+    pass
 
 
-class InvoiceDetail(BaseModel):
+class InvoiceDetail(BaseModel):    
     id: int
     user_id: int
     invoice_number: str
@@ -87,16 +90,22 @@ class InvoiceDetail(BaseModel):
     send_to_id: int
     tax_rate: Decimal
     discount_percentage: Decimal
-    notes: str | None
+    notes: Optional[str]
     subtotal: Decimal
-    discount_amount: Decimal
-    discounted_subtotal: Decimal
     tax: Decimal
     total: Decimal
     items: list[InvoiceItem]
-
-    class Config:
-        from_attributes = True
+    template_id: int
+    
+    @property
+    def discount_amount(self) -> Decimal:
+        return self.subtotal * (self.discount_percentage / Decimal('100'))
+    
+    @property
+    def discounted_subtotal(self) -> Decimal:
+        return self.subtotal - self.discount_amount
+    
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InvoiceSummary(BaseModel):
@@ -107,5 +116,4 @@ class InvoiceSummary(BaseModel):
     bill_to_id: int
     template_id: int
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

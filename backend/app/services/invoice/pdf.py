@@ -1,23 +1,22 @@
-from decimal import Decimal
 from io import BytesIO
 
-from pydantic import ValidationError
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
                                 TableStyle)
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.exceptions import (ContactNotFoundException, InvoiceNotFoundException,
+from ...core.exceptions import (ContactNotFoundException,
+                                InvoiceNotFoundException,
                                 TemplateNotFoundException)
-from ...models.contact import Contact
 from ...models.invoice import Invoice, InvoiceItem, InvoiceSubItem
 from ...models.template import Template
-from ...schemas.invoice import InvoiceCreate, InvoiceDetail
-from .crud import get_invoice
+from ...schemas.invoice import InvoiceCreate
 from ..contact import crud as crud_contact
+from .crud import get_invoice
 
 
 def generate_pdf(invoice: Invoice, template: Template) -> bytes:
@@ -262,15 +261,15 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
     return pdf
 
 
-def generate_preview_pdf(
-    db: Session,
+async def generate_preview_pdf(
+    db: AsyncSession,
     invoice_data: InvoiceCreate,
     template: Template,
     user_id: int,
 ) -> bytes:
     # Retrieve contacts
-    bill_to_contact = crud_contact.get_contact(db, invoice_data.bill_to_id, user_id)
-    send_to_contact = crud_contact.get_contact(db, invoice_data.send_to_id, user_id)
+    bill_to_contact = await crud_contact.get_contact(db, invoice_data.bill_to_id, user_id)
+    send_to_contact = await crud_contact.get_contact(db, invoice_data.send_to_id, user_id)
     
     if not bill_to_contact or not send_to_contact:
         raise ContactNotFoundException()
@@ -321,12 +320,14 @@ def generate_preview_pdf(
     return pdf_content
 
 
-def generate_invoice_pdf(db: Session, invoice_id: int, template_id: int, user_id: int) -> bytes:
-    invoice = get_invoice(db, invoice_id, user_id)
+async def generate_invoice_pdf(db: AsyncSession, invoice_id: int, template_id: int, user_id: int) -> bytes:
+    invoice = await get_invoice(db, invoice_id, user_id)
     if not invoice:
         raise InvoiceNotFoundException()
     
-    template = db.query(Template).filter(Template.id == template_id).first()
+    stmt = select(Template).filter(Template.id == template_id)
+    result = await db.execute(stmt)
+    template = result.scalar_one_or_none()
     if not template:
         raise TemplateNotFoundException()
     

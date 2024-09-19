@@ -2,15 +2,14 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
 from jose import JWTError, jwt
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.config import settings
 from ..core.security import create_access_token, get_current_user
-from ..database import get_db
+from ..database import get_async_db
 from ..schemas.user import User, UserCreate
 from ..services.user import crud
-
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -28,16 +27,16 @@ async def read_current_user(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/register", response_model=User)
-def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = crud.get_user_by_email(db, email=user.email)
+async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_db)):
+    db_user = await crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    return crud.create_user(db=db, user=user)
+    return await crud.create_user(db=db, user=user)
 
 
 @router.post("/token")
-async def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = crud.authenticate_user(db, form_data.username, form_data.password)
+async def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_async_db)):
+    user = await crud.authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -76,7 +75,7 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
 
 
 @router.post("/refresh")
-async def refresh_access_token(response: Response, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+async def refresh_access_token(response: Response, db: AsyncSession = Depends(get_async_db), token: str = Depends(oauth2_scheme)):
     # Verify the refresh token
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])

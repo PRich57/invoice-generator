@@ -1,11 +1,14 @@
 import logging
 from contextlib import asynccontextmanager
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.app.services.template import crud
+from backend.app.services.template.crud import purge_deleted_templates
 
 from .api import (auth_router, contacts_router, invoices_router,
                   templates_router)
@@ -15,29 +18,45 @@ from .core.exceptions import (ContactAlreadyExistsException,
                               InvoiceNumberAlreadyExistsException,
                               TemplateNotFoundException,
                               global_exception_handler)
-from .database import SessionLocal, engine
+from .database import engine, get_async_db
 from .models import contact, invoice, template, user
-
 
 logger = logging.getLogger(__name__)
 
 
-# Create tables
-user.Base.metadata.create_all(bind=engine)
-contact.Base.metadata.create_all(bind=engine)
-invoice.Base.metadata.create_all(bind=engine)
-template.Base.metadata.create_all(bind=engine)
+scheduler = AsyncIOScheduler()
+
+
+async def scheduled_purge():
+    async for db in get_async_db():
+        await purge_deleted_templates(db)
+
+
+async def async_create_or_update_default_templates():
+    async for db in get_async_db():
+        await crud.create_or_update_default_templates(db)
+
+
+# Create tables asynchronously
+async def create_tables():
+    async with engine.begin() as conn:
+        await conn.run_sync(user.Base.metadata.create_all)
+        await conn.run_sync(contact.Base.metadata.create_all)
+        await conn.run_sync(invoice.Base.metadata.create_all)
+        await conn.run_sync(template.Base.metadata.create_all)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up...")
-    db = SessionLocal()
-    crud.create_or_update_default_templates(db)
-    db.close()
+    await create_tables()
+    await async_create_or_update_default_templates()
+    scheduler.add_job(scheduled_purge, CronTrigger(hour=0, minute=0))
+    scheduler.start()
     yield
     # Shutdown
+    scheduler.shutdown()
     logger.info("Shutting down...")
 
 

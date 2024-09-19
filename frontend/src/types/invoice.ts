@@ -66,10 +66,6 @@ export interface InvoicePreviewProps {
     sendToContact?: Contact | null;
 }
 
-// export interface InvoiceUpdate extends Partial<InvoiceCreate> {
-//     id: number;
-// }
-
 export type InvoiceFormErrors = {
     invoice_number?: string;
     invoice_date?: string;

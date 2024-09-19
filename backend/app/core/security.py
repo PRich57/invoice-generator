@@ -4,12 +4,11 @@ from fastapi import Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.config import settings
-from ..database import get_db
+from ..database import get_async_db
 from ..services.user import crud
-
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -47,7 +46,7 @@ def verify_token(token: str):
         return None
 
 
-async def get_current_user(response: Response, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+async def get_current_user(response: Response, token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_async_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -78,7 +77,7 @@ async def get_current_user(response: Response, token: str = Depends(oauth2_schem
     except JWTError:
         raise credentials_exception
     
-    user = crud.get_user_by_email(db, email=email)
+    user = await crud.get_user_by_email(db, email=email)
     if user is None:
         raise credentials_exception
     return user

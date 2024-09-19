@@ -1,5 +1,5 @@
 from decimal import Decimal
-from sqlalchemy import DECIMAL, Column, Date, ForeignKey, Integer, String, Index, func
+from sqlalchemy import DECIMAL, Column, Date, ForeignKey, Integer, String, Index
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 
@@ -18,6 +18,7 @@ class InvoiceItem(Base):
     quantity = Column(DECIMAL(10, 2))
     unit_price = Column(DECIMAL(10, 2))
     discount_percentage = Column(DECIMAL(5, 2), nullable=True, default=0)
+    order = Column(Integer, nullable=False)
 
     invoice = relationship("Invoice", back_populates="items")
     subitems = relationship("InvoiceSubItem", back_populates="invoice_item", cascade="all, delete-orphan")
@@ -33,6 +34,7 @@ class InvoiceSubItem(Base):
     id = Column(Integer, primary_key=True, index=True)
     invoice_item_id = Column(Integer, ForeignKey("invoice_items.id"), index=True)
     description = Column(String)
+    order = Column(Integer, nullable=False)
 
     invoice_item = relationship("InvoiceItem", back_populates="subitems")
 
@@ -68,6 +70,13 @@ class Invoice(Base):
     items = relationship("InvoiceItem", back_populates="invoice", cascade="all, delete-orphan")
     template = relationship("Template")
     
+    
+    def calculate_totals(self):
+        """Calculates and updates the subtotal, tax, and total for the invoice."""
+        self.subtotal = sum(item.line_total for item in self.items)
+        self.tax = self.discounted_subtotal * (self.tax_rate / Decimal('100'))
+        self.total = self.discounted_subtotal + self.tax
+
     @property
     def discount_amount(self):
         return self.subtotal * (self.discount_percentage / Decimal('100'))
@@ -75,9 +84,3 @@ class Invoice(Base):
     @property
     def discounted_subtotal(self):
         return self.subtotal - self.discount_amount
-
-    def calculate_totals(self):
-        """Calculates and updates the subtotal, tax, and total for the invoice."""
-        self.subtotal = sum(item.line_total for item in self.items)
-        self.tax = self.discounted_subtotal * (self.tax_rate / Decimal('100'))
-        self.total = self.discounted_subtotal + self.tax
