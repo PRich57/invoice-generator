@@ -4,6 +4,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsV3';
 import CssBaseline from '@mui/material/CssBaseline';
+import { SnackbarProvider } from 'notistack';
 import { AuthProvider } from './contexts/AuthContext';
 import theme from './styles/theme';
 import routes from './constants/routes';
@@ -18,30 +19,22 @@ const App: React.FC = () => {
             <ThemeProvider theme={theme}>
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <CssBaseline />
-                    <Router>
-                        <Layout>
-                            <Suspense fallback={<LoadingSpinner />}>
-                                <Routes>
-                                    {routes.map((route) => (
-                                        <Route key={route.path} path={route.path} element={<route.component />} />
-                                    ))}
-                                </Routes>
-                            </Suspense>
-                            <ToastContainer
-                                position="bottom-right"
-                                autoClose={5000}
-                                hideProgressBar={false}
-                                newestOnTop={false}
-                                closeOnClick
-                                rtl={false}
-                                pauseOnFocusLoss
-                                draggable
-                                pauseOnHover
-                                theme="colored"
-                                style={{ width: '300px' }}  // Adjust this value as needed
-                            />
-                        </Layout>
-                    </Router>
+                    <SnackbarProvider maxSnack={3} anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'right',
+                    }}>
+                        <Router>
+                            <Layout>
+                                <Suspense fallback={<LoadingSpinner />}>
+                                    <Routes>
+                                        {routes.map((route) => (
+                                            <Route key={route.path} path={route.path} element={<route.component />} />
+                                        ))}
+                                    </Routes>
+                                </Suspense>
+                            </Layout>
+                        </Router>
+                    </SnackbarProvider>
                 </LocalizationProvider>
             </ThemeProvider>
         </AuthProvider>

@@ -1,9 +1,12 @@
 import logging
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.exceptions import BadRequestException, ContactNotFoundException
+from backend.app.models.invoice import Invoice
+
+from ...core.exceptions import BadRequestError, NotFoundError
 from ...models.contact import Contact
 from ...schemas.contact import ContactCreate
 
@@ -16,7 +19,7 @@ async def get_contact(db: AsyncSession, contact_id: int, user_id: int) -> Contac
     contact = result.scalar_one_or_none()
     if contact is None:
         logger.warning(f"Contact not found: id={contact_id}, user_id={user_id}")
-        raise ContactNotFoundException(contact_id=contact_id)
+        raise NotFoundError("contact")
     return contact
 
 
@@ -56,7 +59,7 @@ async def get_contacts(
         return result.scalars().all()
     except Exception as e:
         logger.error(f"Error retrieving contacts: {str(e)}")
-        raise BadRequestException("An error occurred while retrieving contacts")
+        raise BadRequestError("An error occurred while retrieving contacts")
 
 
 async def create_contact(db: AsyncSession, contact: ContactCreate, user_id: int) -> Contact:
@@ -70,7 +73,7 @@ async def create_contact(db: AsyncSession, contact: ContactCreate, user_id: int)
     except Exception as e:
         logger.error(f"Error creating contact: {str(e)}")
         await db.rollback()
-        raise BadRequestException("An error occurred while creating the contact")
+        raise BadRequestError("An error occurred while creating the contact")
 
 
 async def update_contact(db: AsyncSession, contact_id: int, contact: ContactCreate, user_id: int) -> Contact:
@@ -85,17 +88,34 @@ async def update_contact(db: AsyncSession, contact_id: int, contact: ContactCrea
     except Exception as e:
         logger.error(f"Error updating contact: {str(e)}")
         await db.rollback()
-        raise BadRequestException("An error occurred while updating the contact")
+        raise BadRequestError("An error occurred while updating the contact")
 
 
 async def delete_contact(db: AsyncSession, contact_id: int, user_id: int) -> Contact:
     db_contact = await get_contact(db, contact_id, user_id)
+    if db_contact is None:
+        logger.warning(f"Contact not found: id={contact_id}, user_id={user_id}")
+        raise NotFoundError("contact")
     try:
+        # Check if the contact is referenced in invoices
+        stmt = select(Invoice).where((Invoice.bill_to_id == contact_id) | (Invoice.send_to_id == contact_id)).limit(1)
+        result = await db.execute(stmt)
+        invoice = result.scalar_one_or_none()
+        
+        if invoice:
+            raise IntegrityError(
+                statement=None,
+                params=None,
+                orig=Exception(f"Contact is referenced in invoice #{invoice.invoice_number}")
+            )
+        
         await db.delete(db_contact)
         await db.commit()
         logger.info(f"Deleted contact: id={contact_id}, user_id={user_id}")
         return db_contact
-    except Exception as e:
+    except IntegrityError as e:
         logger.error(f"Error deleting contact: {str(e)}")
         await db.rollback()
-        raise BadRequestException("An error occurred while deleting the contact")
+        if "invoice" in str(e):
+            raise BadRequestError(f"Cannot be deleted. {e.orig}")
+        raise BadRequestError("Contact cannot be deleted due to related records")

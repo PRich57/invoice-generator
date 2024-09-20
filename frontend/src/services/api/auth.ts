@@ -1,5 +1,5 @@
 import api from '../api';
-import { API_ENDPOINTS, API_BASE_URL } from '../../constants/apiEndpoints';
+import { API_ENDPOINTS } from '../../constants/apiEndpoints';
 import { User } from '../../types';
 
 export const login = async (email: string, password: string) => {
@@ -13,6 +13,10 @@ export const login = async (email: string, password: string) => {
         },
     });
 
+    if (response.data.access_token) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
+    }
+
     return response;
 };
 
@@ -25,7 +29,15 @@ export const logout = async (): Promise<void> => {
     await api.post(API_ENDPOINTS.LOGOUT);
 };
 
-export const getCurrentUser = async () => {
-    const response = await api.get<User>(`${API_BASE_URL}/auth/me`);
+export const getCurrentUser = async (): Promise<User> => {
+    const response = await api.get<User>(API_ENDPOINTS.ME);
     return response.data;
+};
+
+export const refreshToken = async () => {
+    const response = await api.post(API_ENDPOINTS.REFRESH);
+    if (response.data.access_token) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
+    }
+    return response;
 };

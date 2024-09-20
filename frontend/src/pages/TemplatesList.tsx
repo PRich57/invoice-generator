@@ -7,12 +7,16 @@ import { deleteTemplate } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import ConfirmationDialog from '../components/common/ConfirmationDialogue';
+import { useErrorHandler } from '../hooks/useErrorHandler';
+import { useSnackbar } from 'notistack';
 
 const TemplatesList: React.FC = () => {
     const navigate = useNavigate();
     const { templates, error, loading, refetch } = useTemplates();
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [templateToDelete, setTemplateToDelete] = useState<number | null>(null);
+    const { handleError } = useErrorHandler();
+    const { enqueueSnackbar } = useSnackbar();
 
     const handleEdit = (id: number) => {
         navigate(`/templates/edit/${id}`);
@@ -27,9 +31,10 @@ const TemplatesList: React.FC = () => {
         if (templateToDelete) {
             try {
                 await deleteTemplate(templateToDelete);
+                enqueueSnackbar('Template deleted successfully', { variant: 'success' });
                 refetch();
             } catch (err) {
-                console.error('Failed to delete template:', err);
+                handleError(err);
             }
         }
         setDeleteConfirmOpen(false);

@@ -9,12 +9,16 @@ import ErrorMessage from '../components/common/ErrorMessage';
 import ConfirmationDialog from '../components/common/ConfirmationDialogue';
 import { formatCurrency } from '../utils/currencyFormatter';
 import { Invoice } from '../types';
+import { useSnackbar } from 'notistack';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 
 const InvoicesList: React.FC = () => {
     const navigate = useNavigate();
     const { invoices, error, loading, refetch } = useInvoices();
     const [contacts, setContacts] = useState<Record<number, string>>({});
     const [templates, setTemplates] = useState<Record<number, string>>({});
+    const { handleError } = useErrorHandler();
+    const { enqueueSnackbar } = useSnackbar();
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [invoiceToDelete, setInvoiceToDelete] = useState<number | null>(null);
     const handleEdit = (id: number) => {
@@ -67,9 +71,10 @@ const InvoicesList: React.FC = () => {
         if (invoiceToDelete) {
             try {
                 await deleteInvoice(invoiceToDelete);
+                enqueueSnackbar('Invoice deleted successfully', { variant: 'success' });
                 refetch();
             } catch (err) {
-                console.error('Failed to delete invoice:', err);
+                handleError(err);
             }
         }
         setDeleteConfirmOpen(false);
@@ -86,8 +91,9 @@ const InvoicesList: React.FC = () => {
             document.body.appendChild(link);
             link.click();
             link.parentNode?.removeChild(link);
+            enqueueSnackbar('Invoice PDF generated successfully', { variant: 'success' });
         } catch (err) {
-            console.error('Failed to download PDF:', err);
+            handleError(err);
         }
     };
 

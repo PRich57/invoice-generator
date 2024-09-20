@@ -6,12 +6,13 @@ import { templateValidationSchema } from '../validationSchemas/templateValidatio
 import { useErrorHandler } from './useErrorHandler';
 import { useFetch } from './useFetch';
 import { API_ENDPOINTS } from '../constants/apiEndpoints';
-import axios from 'axios';
+import { useSnackbar } from 'notistack';
 
 export const useTemplateForm = () => {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
     const { handleError } = useErrorHandler();
+    const { enqueueSnackbar } = useSnackbar();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const initialValues: TemplateCreate = {
@@ -64,23 +65,18 @@ export const useTemplateForm = () => {
         validationSchema: templateValidationSchema,
         enableReinitialize: true,
         onSubmit: async (values) => {
-            console.log("Submitting template with values:", values);
             setIsSubmitting(true);
             try {
-                const result = await submitForm({ 
+                await submitForm({ 
                     data: values,
                     url: id ? `${API_ENDPOINTS.TEMPLATES}/${id}` : API_ENDPOINTS.TEMPLATES 
                 });
-                console.log("Template submitted successfully, result:", result);
+                enqueueSnackbar(id ? 'Template updated successfully' : 'Template created successfully',
+                    { variant: 'success' }
+                );
                 navigate('/templates');
             } catch (err) {
-                console.error("Error submitting template:", err);
-                if (axios.isAxiosError(err) && err.response?.status === 404) {
-                    console.log("404 error received, but update might have been successful. Navigating to template list.");
-                    navigate('/templates');
-                } else {
-                    handleError(err);
-                }
+                handleError(err)
             } finally {
                 setIsSubmitting(false);
             }

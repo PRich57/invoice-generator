@@ -1,21 +1,32 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, TextField, Typography, Container, Box, Alert } from '@mui/material';
+import { Button, TextField, Typography, Container, Box } from '@mui/material';
 import { register } from '../services/api';
+import { useSnackbar } from 'notistack';
+import { isValidEmail } from '../utils/validationHelpers';
 
 const Register: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
     const navigate = useNavigate();
+    const { enqueueSnackbar } = useSnackbar();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!isValidEmail(email)) {
+            enqueueSnackbar('Invalid email format', { variant: 'error' });
+            return;
+        }
+        if (!password) {
+            enqueueSnackbar('Password is required', { variant: 'error' });
+            return;
+        }
         try {
             await register(email, password);
+            enqueueSnackbar('Registration successful. Please log in.', { variant: 'success' });
             navigate('/login');
         } catch (err) {
-            setError('Registration failed. Please try again.');
+            enqueueSnackbar('Registration failed. Please try again.', { variant: 'error' });
         }
     };
 
@@ -32,7 +43,6 @@ const Register: React.FC = () => {
                 <Typography component="h1" variant="h5">
                     Register
                 </Typography>
-                {error && <Alert severity="error">{error}</Alert>}
                 <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
                     <TextField
                         margin="normal"

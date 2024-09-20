@@ -11,12 +11,7 @@ from backend.app.services.invoice.pdf import \
 from backend.app.services.template.crud import get_template
 
 from ..core.deps import get_current_user
-from ..core.exceptions import (BadRequestException, ContactNotFoundException,
-                               InvalidContactIdException,
-                               InvalidInvoiceNumberException,
-                               InvoiceNotFoundException,
-                               InvoiceNumberAlreadyExistsException,
-                               TemplateNotFoundException)
+from ..core.exceptions import BadRequestError, NotFoundError, ValidationError, AlreadyExistsError
 from ..database import get_async_db
 from ..schemas.invoice import InvoiceCreate, InvoiceDetail, InvoiceSummary
 from ..schemas.user import User
@@ -37,24 +32,11 @@ async def create_invoice(
     
     logger.info(f"Received invoice creation request: {invoice.model_dump()}")
     try:
-        created_invoice = await crud.create_invoice(db, invoice, current_user.id)
-        
-        return created_invoice
-    except (
-        InvoiceNumberAlreadyExistsException,
-        ContactNotFoundException,
-        InvalidContactIdException,
-        InvalidInvoiceNumberException,
-        TemplateNotFoundException
-    ) as e:
-        logger.error(f"Error creating invoice: {str(e)}")
-        raise e
-    except Exception as e:
-        logger.error(f"Error creating invoice: {str(e)}")
-        raise HTTPException(
-            status_code=500, 
-            detail=f"An unexpected error occurred: {str(e)}"
-        )
+        if not invoice.invoice_number:
+            raise ValidationError("invoice_number")
+        return await crud.create_invoice(db, invoice, current_user.id)
+    except AlreadyExistsError:
+        raise AlreadyExistsError("invoice_number")
 
 
 @router.get("/", response_model=list[InvoiceSummary])
@@ -98,7 +80,7 @@ async def read_invoice(
 ):
     db_invoice = await crud.get_invoice(db, invoice_id, current_user.id)
     if db_invoice is None:
-        raise InvoiceNotFoundException()
+        raise NotFoundError("invoice")
     return db_invoice
 
 
@@ -112,9 +94,9 @@ async def update_invoice(
     try:
         db_invoice = await crud.update_invoice(db, invoice_id, invoice, current_user.id)
         return InvoiceDetail.model_validate(db_invoice)
-    except InvoiceNotFoundException:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-    except BadRequestException as e:
+    except NotFoundError:
+        raise NotFoundError("invoice")
+    except BadRequestError:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error updating invoice: {str(e)}")
@@ -129,7 +111,7 @@ async def delete_invoice(
 ):
     db_invoice = await crud.delete_invoice(db, invoice_id, current_user.id)
     if db_invoice is None:
-        raise InvoiceNotFoundException()
+        raise NotFoundError("invoice")
     return db_invoice
 
 
@@ -142,7 +124,7 @@ async def preview_invoice_pdf(
 ):
     template = await get_template(db, template_id, current_user.id)
     if not template:
-        raise TemplateNotFoundException()
+        raise NotFoundError("template")
     
     pdf_content = await generate_preview_pdf_file(db, invoice, template, current_user.id)
     return Response(content=pdf_content, media_type="application/pdf")
@@ -170,11 +152,11 @@ async def regenerate_invoice(
 ):
     db_invoice = await crud.get_invoice(db, invoice_id, current_user.id)
     if db_invoice is None:
-        raise InvoiceNotFoundException()
+        raise NotFoundError("invoice")
 
     template = await get_template(db, template_name, current_user.id)
     if template is None:
-        raise TemplateNotFoundException()
+        raise NotFoundError("template")
 
     pdf = await crud.regenerate_invoice(db_invoice, template)
     return Response(content=pdf, media_type="application/pdf")

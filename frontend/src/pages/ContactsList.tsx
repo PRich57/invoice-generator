@@ -8,12 +8,16 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useContacts } from '../hooks/useContacts';
 import { deleteContact } from '../services/api';
 import { formatCityStateZip } from '../utils/cityStateZipFormatter';
+import { useSnackbar } from 'notistack';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 
 const ContactsList: React.FC = () => {
     const navigate = useNavigate();
     const { contacts, error, loading, refetch } = useContacts();
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [contactToDelete, setContactToDelete] = useState<number | null>(null);
+    const { handleError } = useErrorHandler();
+    const { enqueueSnackbar } = useSnackbar();
 
     const handleEdit = (id: number) => {
         navigate(`/contacts/edit/${id}`);
@@ -28,9 +32,14 @@ const ContactsList: React.FC = () => {
         if (contactToDelete) {
             try {
                 await deleteContact(contactToDelete);
+                enqueueSnackbar('Contact deleted successfully', { variant: 'success' });
                 refetch();
             } catch (err) {
-                console.error('Failed to delete contact:', err);
+                if (typeof err === 'string') {
+                    enqueueSnackbar(err, { variant: 'error' });
+                } else {
+                    handleError(err);
+                }
             }
         }
         setDeleteConfirmOpen(false);

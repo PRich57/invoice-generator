@@ -1,5 +1,3 @@
-// frontend/src/hooks/useInvoiceForm.ts
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
@@ -8,6 +6,7 @@ import { invoiceValidationSchema } from '../validationSchemas/invoiceValidationS
 import { useErrorHandler } from './useErrorHandler';
 import { formatDateForAPI } from '../utils/dateFormatter';
 import { createInvoice, updateInvoice, getInvoice } from '../services/api/invoices';
+import { useSnackbar } from 'notistack';
 
 export const useInvoiceForm = (id?: string) => {
     const navigate = useNavigate();
@@ -15,6 +14,7 @@ export const useInvoiceForm = (id?: string) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { handleError } = useErrorHandler();
+    const { enqueueSnackbar } = useSnackbar();
 
     const initialValues: InvoiceCreate = {
         invoice_number: '',
@@ -87,8 +87,10 @@ export const useInvoiceForm = (id?: string) => {
             try {
                 if (id) {
                     await updateInvoice(Number(id), values);
+                    enqueueSnackbar('Invoice updated successfully', { variant: 'success' });
                 } else {
                     await createInvoice(values);
+                    enqueueSnackbar('Invoice created successfully', { variant: 'success' });
                 }
                 navigate('/invoices');
             } catch (err) {

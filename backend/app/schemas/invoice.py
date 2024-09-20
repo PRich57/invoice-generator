@@ -4,9 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from ..core.exceptions import (InvalidContactIdException,
-                               InvalidInvoiceNumberException,
-                               TemplateNotFoundException)
+from ..core.exceptions import InvalidIdError, NotFoundError
 
 
 class InvoiceSubItemBase(BaseModel):
@@ -61,19 +59,19 @@ class InvoiceBase(BaseModel):
     @field_validator('invoice_number')
     def validate_invoice_number(cls, value: str) -> str:
         if value.lower() == 'string':
-            raise InvalidInvoiceNumberException()
+            raise InvalidIdError("invoice_number")
         return value.strip()
     
     @field_validator('bill_to_id', 'send_to_id')
     def validate_contact_ids(cls, value: int, field: str) -> int:
         if value <= 0:
-            raise InvalidContactIdException(field.name)
+            raise InvalidIdError(field.name)
         return value
     
     @field_validator('template_id')
     def validate_template_id(cls, value: int , field: str) -> int:
         if value <= 0:
-            raise TemplateNotFoundException(field.name)
+            raise NotFoundError(field.name)
         return value
 
 

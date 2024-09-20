@@ -1,12 +1,11 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.deps import get_current_user
-from ..core.exceptions import (TemplateAlreadyExistsException,
-                               TemplateNotFoundException)
+from ..core.exceptions import AlreadyExistsError, NotFoundError
 from ..database import get_async_db
-from ..schemas.template import Template, TemplateCreate, TemplateUpdate
+from ..schemas.template import Template, TemplateCreate
 from ..schemas.user import User
 from ..services.template import crud
 
@@ -24,9 +23,8 @@ async def create_template(
     try:
         logger.info(f"Creating template for user {current_user.id}")
         return await crud.create_template(db, template, current_user.id)
-    except TemplateAlreadyExistsException as e:
-        logger.error(f"Template creation failed: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
+    except AlreadyExistsError:
+        raise AlreadyExistsError("template_name")
 
 
 @router.get("/", response_model=list[Template])
@@ -52,14 +50,14 @@ async def read_template(
     db_template = await crud.get_template(db, template_id, current_user.id)
     if db_template is None:
         logger.error(f"Template {template_id} not found for user {current_user.id}")
-        raise TemplateNotFoundException()
+        raise NotFoundError("template")
     return db_template
 
 
 @router.put("/{template_id}", response_model=Template)
 async def update_template(
     template_id: int,
-    template: TemplateUpdate,
+    template: TemplateCreate,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -67,14 +65,14 @@ async def update_template(
     db_template = await crud.update_template(db, template_id, template, current_user.id)
     if db_template is None:
         logger.error(f"Template {template_id} not found for user {current_user.id}")
-        raise TemplateNotFoundException()
+        raise NotFoundError("template")
     return db_template
 
 
 @router.put("/{template_id}/customize", response_model=Template)
 async def customize_template(
     template_id: int,
-    template_update: TemplateUpdate,
+    template_update: TemplateCreate,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -82,7 +80,7 @@ async def customize_template(
     db_template = await crud.get_template(db, template_id, current_user.id)
     if db_template is None:
         logger.error(f"Template {template_id} not found for user {current_user.id}")
-        raise TemplateNotFoundException()
+        raise NotFoundError("template")
     
     if db_template.is_default:
         new_template = await crud.copy_template(db, template_id, current_user.id)
@@ -102,5 +100,5 @@ async def delete_template(
     db_template = await crud.delete_template(db, template_id, current_user.id)
     if db_template is None:
         logger.error(f"Template {template_id} not found for user {current_user.id}")
-        raise TemplateNotFoundException()
+        raise NotFoundError("template")
     return db_template

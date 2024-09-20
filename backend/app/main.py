@@ -3,20 +3,15 @@ from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from backend.app.services.template import crud
 from backend.app.services.template.crud import purge_deleted_templates
 
 from .api import (auth_router, contacts_router, invoices_router,
                   templates_router)
-from .core.exceptions import (ContactAlreadyExistsException,
-                              ContactNotFoundException,
-                              InvoiceNotFoundException,
-                              InvoiceNumberAlreadyExistsException,
-                              TemplateNotFoundException,
+from .core.exceptions import (AppException, app_exception_handler,
                               global_exception_handler)
 from .database import engine, get_async_db
 from .models import contact, invoice, template, user
@@ -73,58 +68,8 @@ app.add_middleware(
 
 
 # Exception handlers
-@app.exception_handler(ContactNotFoundException)
-async def contact_not_found_exception_handler(request: Request, exc: ContactNotFoundException):
-    logger.warning(f"Contact not found: {str(exc)}")
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"message": exc.detail},
-    )
-
-
-@app.exception_handler(ContactAlreadyExistsException)
-async def contact_already_exists_exception_handler(request: Request, exc: ContactAlreadyExistsException):
-    logger.warning(f"Contact already exists: {str(exc)}")
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"message": exc.detail},
-    )
-
-
-@app.exception_handler(InvoiceNotFoundException)
-async def invoice_not_found_exception_handler(request: Request, exc: InvoiceNotFoundException):
-    logger.warning(f"Invoice not found: {str(exc)}")
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"message": exc.detail},
-    )
-
-
-@app.exception_handler(InvoiceNumberAlreadyExistsException)
-async def invoice_number_already_exists_exception_handler(request: Request, exc: InvoiceNumberAlreadyExistsException):
-    logger.warning(f"Invoice number already exists: {str(exc)}")
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"message": exc.detail},
-    )
-
-
-@app.exception_handler(TemplateNotFoundException)
-async def template_not_found_exception_handler(request: Request, exc: TemplateNotFoundException):
-    logger.warning(f"Template not found: {str(exc)}")
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"message": exc.detail},
-    )
-    
-    
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"An unexpected error occurred: {str(exc)}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"message": "An unexpected error occurred"},
-    )
+app.add_exception_handler(AppException, app_exception_handler)
+app.add_exception_handler(Exception, global_exception_handler)
 
 
 # Include routers

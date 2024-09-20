@@ -31,15 +31,6 @@ class TemplateCreate(TemplateBase):
     pass
 
 
-class TemplateUpdate(BaseModel):
-    name: str | None = Field(None, min_length=1, max_length=100)
-    colors: TemplateColorSchema | None = None
-    fonts: dict | None = None
-    font_sizes: dict | None = None
-    layout: dict | None = None
-    custom_css: str | None = Field(None, max_length=1000)
-
-
 class Template(TemplateBase):
     id: int
     user_id: int | None = None

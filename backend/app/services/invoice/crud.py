@@ -1,13 +1,12 @@
 import logging
 from datetime import date
 
-from sqlalchemy import select, func, or_, and_
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import aliased, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.exceptions import (BadRequestException, InvoiceNotFoundException,
-                                InvoiceNumberAlreadyExistsException)
+from ...core.exceptions import BadRequestError, NotFoundError, AlreadyExistsError
 from ...models.contact import Contact
 from ...models.invoice import Invoice, InvoiceItem, InvoiceSubItem
 from ...schemas.invoice import InvoiceCreate
@@ -123,18 +122,18 @@ async def create_invoice(db: AsyncSession, invoice: InvoiceCreate, user_id: int)
         await db.rollback()
         logger.error(f"IntegrityError while creating invoice: {str(e)}")
         if "invoice_number" in str(e):
-            raise InvoiceNumberAlreadyExistsException()
-        raise BadRequestException("An error occurred while creating the invoice")
+            raise AlreadyExistsError("invoice")
+        raise BadRequestError("An error occurred while creating the invoice")
     except Exception as e:
         await db.rollback()
         logger.error(f"Error creating invoice: {str(e)}", exc_info=True)
-        raise BadRequestException("An unexpected error occurred while creating the invoice")
+        raise BadRequestError("An unexpected error occurred while creating the invoice")
 
 
 async def update_invoice(db: AsyncSession, invoice_id: int, invoice: InvoiceCreate, user_id: int) -> Invoice:
     db_invoice = await get_invoice(db, invoice_id, user_id)
     if db_invoice is None:
-        raise InvoiceNotFoundException()
+        raise NotFoundError("invoice")
 
     try:
         # Update invoice fields
@@ -186,13 +185,13 @@ async def update_invoice(db: AsyncSession, invoice_id: int, invoice: InvoiceCrea
     except Exception as e:
         await db.rollback()
         logger.error(f"Error updating invoice: {str(e)}", exc_info=True)
-        raise BadRequestException("An error occurred while updating the invoice")
+        raise BadRequestError("An error occurred while updating the invoice")
 
 
 async def delete_invoice(db: AsyncSession, invoice_id: int, user_id: int) -> Invoice:
     db_invoice = await get_invoice(db, invoice_id, user_id)
     if db_invoice is None:
-        raise InvoiceNotFoundException()
+        raise NotFoundError("invoice")
     try:
         await db.delete(db_invoice)
         await db.commit()
@@ -201,7 +200,7 @@ async def delete_invoice(db: AsyncSession, invoice_id: int, user_id: int) -> Inv
     except Exception as e:
         await db.rollback()
         logger.error(f"Error deleting invoice: {str(e)}", exc_info=True)
-        raise BadRequestException("An error occurred while deleting the invoice")
+        raise BadRequestError("An error occurred while deleting the invoice")
 
 
 async def get_grouped_invoices(

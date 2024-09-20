@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, HTTPException, Response, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -10,7 +10,7 @@ from ..core.config import settings
 from ..database import get_async_db
 from ..services.user import crud
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__ident="2b")
 
 
 SECRET_KEY = settings.secret_key
@@ -26,13 +26,16 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+def create_access_token(data: dict) -> str:
     to_encode = data.copy()
-    now = datetime.now(tz=timezone.utc)
-    expire = now + expires_delta if expires_delta else now + timedelta(minutes=30)  # Default for access token
+    expire = datetime.now(tz=timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
     return encoded_jwt
+
+
+async def create_refresh_token(db: AsyncSession, user_id: int) -> str:
+    return await crud.create_refresh_token(db, user_id)
 
 
 def verify_token(token: str):
@@ -46,37 +49,19 @@ def verify_token(token: str):
         return None
 
 
-async def get_current_user(response: Response, token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_async_db)):
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_async_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
-
-        expiration = payload.get("exp")
-        time_left = datetime.fromtimestamp(expiration, tz=timezone.utc) - datetime.now(tz=timezone.utc)
-        
-        if time_left < timedelta(minutes=5):
-            new_access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
-            new_access_token = create_access_token(data={"sub": email}, expires_delta=new_access_token_expires)
-            
-            response.set_cookie(
-                key="access_token",
-                value=f"Bearer {new_access_token}",
-                httponly=True,
-                expires=new_access_token_expires,
-                samesite='lax',
-                secure=settings.PRODUCTION
-            )
-
     except JWTError:
         raise credentials_exception
-    
     user = await crud.get_user_by_email(db, email=email)
     if user is None:
         raise credentials_exception

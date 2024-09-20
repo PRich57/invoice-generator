@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { User, AuthContextType } from '../types';
 import * as api from '../services/api';
+import { useSnackbar } from 'notistack';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -8,49 +9,46 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
+    const { enqueueSnackbar } = useSnackbar();
 
     useEffect(() => {
         checkAuthStatus();
     }, []);
 
     const checkAuthStatus = async () => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            try {
-                const user = await api.getCurrentUser();
-                setUser(user);
-                setIsAuthenticated(true);
-            } catch (error) {
-                console.error('Failed to verify token:', error);
-                localStorage.removeItem('token');
-            }
+        try {
+            const user = await api.getCurrentUser();
+            setUser(user);
+            setIsAuthenticated(true);
+        } catch (error) {
+            setIsAuthenticated(false);
+            setUser(null);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const login = async (email: string, password: string) => {
         try {
-            const response = await api.login(email, password);
-            const { access_token } = response.data;
-            localStorage.setItem('token', access_token);
+            await api.login(email, password);
+            const user = await api.getCurrentUser();
+            setUser(user);
             setIsAuthenticated(true);
-
-            // Fetch user details after successful login
-            const userResponse = await api.getCurrentUser();
-            setUser(userResponse);
+            enqueueSnackbar('Logged in successfully', { variant: 'success' });
         } catch (error) {
-            console.error('Login failed:', error);
-            throw error;
+            enqueueSnackbar('Login failed. Please check your credentials.', { variant: 'error' });
+            setIsAuthenticated(false);
+            setUser(null);
         }
     };
 
     const logout = async () => {
         try {
             await api.logout();
+            enqueueSnackbar('Logged out successfully', { variant: 'success' });
         } catch (error) {
-            console.error('Logout failed:', error);
+            enqueueSnackbar('Logout failed. Please try again.', { variant: 'error' });
         } finally {
-            localStorage.removeItem('token');
             setIsAuthenticated(false);
             setUser(null);
         }

@@ -1,36 +1,28 @@
-from datetime import timedelta
-
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.config import settings
-from ..core.security import create_access_token, get_current_user
+from ..core.exceptions import (AlreadyExistsError, NotFoundError, UnauthorizedError,
+                               ValidationError)
+from ..core.security import (create_access_token, create_refresh_token,
+                             get_current_user)
 from ..database import get_async_db
 from ..schemas.user import User, UserCreate
 from ..services.user import crud
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-
-@router.options("/register")
-@router.options("/token")
-async def auth_options():
-    return {"message": "OK"}
-
-
-@router.get("/me", response_model=User)
-async def read_current_user(current_user: User = Depends(get_current_user)):
-    return current_user
 
 
 @router.post("/register", response_model=User)
 async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_db)):
+    if not user.email:
+        raise ValidationError("email")
+    if not user.password:
+        raise ValidationError("password")
     db_user = await crud.get_user_by_email(db, email=user.email)
     if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise AlreadyExistsError("user")
     return await crud.create_user(db=db, user=user)
 
 
@@ -38,35 +30,26 @@ async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_d
 async def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_async_db)):
     user = await crud.authenticate_user(db, form_data.username, form_data.password)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise UnauthorizedError()
     
-    access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
-    access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
-    )
-    
-    refresh_token_expires = timedelta(days=14)
-    refresh_token = create_access_token(
-        data={"sub": user.email}, expires_delta=refresh_token_expires
-    )
+    access_token = create_access_token(data={"sub": user.email})
+    refresh_token = await create_refresh_token(db, user.id)
     
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
-        expires=access_token_expires,
+        max_age=settings.access_token_expire_minutes * 60,
+        expires=settings.access_token_expire_minutes * 60,
         samesite='lax',
         secure=settings.PRODUCTION
     )
     response.set_cookie(
         key="refresh_token",
-        value=f"Bearer {refresh_token}",
+        value=refresh_token,
         httponly=True,
-        expires=refresh_token_expires,
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+        expires=settings.refresh_token_expire_days * 24 * 60 * 60,
         samesite='lax',
         secure=settings.PRODUCTION
     )
@@ -75,26 +58,36 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
 
 
 @router.post("/refresh")
-async def refresh_access_token(response: Response, db: AsyncSession = Depends(get_async_db), token: str = Depends(oauth2_scheme)):
-    # Verify the refresh token
-    try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        email: str = payload.get("sub")
-        if email is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
-    except JWTError:
+async def refresh_access_token(response: Response, refresh_token: str = Cookie(None), db: AsyncSession = Depends(get_async_db)):
+    if not refresh_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token missing")
+    
+    db_refresh_token = await crud.get_refresh_token(db, refresh_token)
+    if not db_refresh_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
     
-    # Generate a new access token
-    access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
-    access_token = create_access_token(data={"sub": email}, expires_delta=access_token_expires)
+    user = await crud.get_user(db, db_refresh_token.user_id)
+    if not user:
+        raise NotFoundError("user")
     
-    # Update the access token in the cookie
+    access_token = create_access_token(data={"sub": user.email})
+    new_refresh_token = await crud.rotate_refresh_token(db, db_refresh_token)
+    
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
-        expires=access_token_expires,
+        max_age=settings.access_token_expire_minutes * 60,
+        expires=settings.access_token_expire_minutes * 60,
+        samesite='lax',
+        secure=settings.PRODUCTION
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh_token,
+        httponly=True,
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+        expires=settings.refresh_token_expire_days * 24 * 60 * 60,
         samesite='lax',
         secure=settings.PRODUCTION
     )
@@ -102,13 +95,14 @@ async def refresh_access_token(response: Response, db: AsyncSession = Depends(ge
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get("/status")
-async def auth_status(current_user: User = Depends(get_current_user)):
-    return {"status": "authenticated"}
-
-
 @router.post("/logout")
-async def logout(response: Response):
+async def logout(response: Response, db: AsyncSession = Depends(get_async_db), current_user: User = Depends(get_current_user)):
+    await crud.invalidate_refresh_tokens(db, current_user.id)
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
-    return {"status": "success"}
+    return
+{"status": "success"}
+
+@router.get("/me", response_model=User)
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user

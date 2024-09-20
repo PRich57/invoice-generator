@@ -1,6 +1,10 @@
+import secrets
+
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+
 from ...core.security import get_password_hash, verify_password
+from ...models.refresh_token import RefreshToken
 from ...models.user import User
 from ...schemas.user import UserCreate
 
@@ -13,11 +17,6 @@ async def get_user(db: AsyncSession, user_id: int):
 async def get_user_by_email(db: AsyncSession, email: str):
     result = await db.execute(select(User).filter(User.email == email))
     return result.scalar_one_or_none()
-
-
-async def get_users(db: AsyncSession, skip: int = 0, limit: int = 100):
-    result = await db.execute(select(User).offset(skip).limit(limit))
-    return result.scalars().all()
 
 
 async def create_user(db: AsyncSession, user: UserCreate):
@@ -38,5 +37,35 @@ async def authenticate_user(db: AsyncSession, email: str, password: str):
     return user
 
 
+async def create_refresh_token(db: AsyncSession, user_id: int) -> str:
+    token = secrets.token_urlsafe()
+    db_token = RefreshToken(user_id=user_id, token=token)
+    db.add(db_token)
+    await db.commit()
+    return token
+
+
+async def get_refresh_token(db: AsyncSession, token: str):
+    result = await db.execute(select(RefreshToken).filter(RefreshToken.token == token))
+    return result.scalar_one_or_none()
+
+
+async def rotate_refresh_token(db: AsyncSession, old_token: RefreshToken) -> str:
+    new_token = secrets.token_urlsafe()
+    old_token.token = new_token
+    old_token.created_at = func.now()
+    await db.commit()
+    return new_token
+
+
+async def invalidate_refresh_tokens(db: AsyncSession, user_id: int):
+    await db.execute(delete(RefreshToken).where(RefreshToken.user_id == user_id))
+    await db.commit()
+
+
 def is_active(user: User) -> bool:
     return True
+
+
+async def get_refresh_token_from_cookie(request):
+    return request.cookies.get("refresh_token")

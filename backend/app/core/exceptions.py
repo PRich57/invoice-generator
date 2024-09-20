@@ -1,52 +1,61 @@
 from fastapi import HTTPException, status
+from fastapi.responses import JSONResponse
 
 
-class ContactNotFoundException(HTTPException):
-    def __init__(self, contact_type: str, contact_id: int):
-        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=f"{contact_type} contact with id {contact_id} does not exist")
+class AppException(HTTPException):
+    def __init__(self, status_code: int, detail: str):
+        super().__init__(status_code=status_code, detail=detail)
 
 
-class ContactAlreadyExistsException(HTTPException):
-    def __init__(self):
-        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail="Contact with this email already exists")
-
-
-class InvalidContactIdException(HTTPException):
+class ValidationError(AppException):
     def __init__(self, field: str):
-        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid {field} ID. Contact ID must be a positive integer.")
+        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, 
+                         detail=f"The {field} field is required.")
 
 
-class InvoiceNotFoundException(HTTPException):
-    def __init__(self):
-        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+class NotFoundError(AppException):
+    def __init__(self, item: str):
+        super().__init__(status_code=status.HTTP_404_NOT_FOUND, 
+                         detail=f"The requested {item} was not found.")
 
 
-class InvoiceNumberAlreadyExistsException(HTTPException):
-    def __init__(self):
-        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail="Invoice number already exists")
+class AlreadyExistsError(AppException):
+    def __init__(self, item: str):
+        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, 
+                         detail=f"A {item} with this identifier already exists.")
 
 
-class InvalidInvoiceNumberException(HTTPException):
-    def __init__(self):
-        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid invoice number. Please provide a proper invoice number.")
+class InvalidIdError(AppException):
+    def __init__(self, field: str):
+        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, 
+                         detail=f"Invalid {field} ID. It must be a positive integer.")
 
 
-class TemplateNotFoundException(HTTPException):
-    def __init__(self):
-        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
-
-
-class TemplateAlreadyExistsException(HTTPException):
-    def __init__(self):
-        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail="A template with this name already exists")
-
-
-class BadRequestException(HTTPException):
+class BadRequestError(AppException):
     def __init__(self, detail: str):
         super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
         
         
+class UnauthorizedError(AppException):
+    def __init__(self):
+        super().__init__(status_code=status.HTTP_401_UNAUTHORIZED,
+                         detail="Could not validate credentials")
+
+
+async def app_exception_handler(request, exc: AppException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"message": exc.detail}
+    )
+
+
 async def global_exception_handler(request, exc):
     if isinstance(exc, HTTPException):
-        return {"detail": exc.detail, "status_code": exc.status_code}
-    return {"detail": "An unexpected error occurred", "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR}
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"message": exc.detail}
+        )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"message": "An unexpected error occurred"}
+    )

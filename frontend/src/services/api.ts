@@ -1,65 +1,70 @@
 import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { API_BASE_URL } from '../constants/apiEndpoints';
+import { refreshToken } from './api/auth';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
     withCredentials: true,
 });
 
-// Add a request interceptor to include the token in subsequent requests
-api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            config.headers['Authorization'] = `Bearer ${token}`;
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
         }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
+    });
+
+    failedQueue = [];
+};
 
 api.interceptors.response.use(
-    (response: AxiosResponse) => {
-        return response;
-    },
+    (response) => response,
     async (error: AxiosError) => {
         const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
-
         if (error.response?.status === 401 && !originalRequest._retry) {
-            originalRequest._retry = true;
-
-            try {
-                const refreshToken = localStorage.getItem('refresh_token');
-                const response = await axios.post(
-                    `${API_BASE_URL}/auth/token/refresh`, 
-                    { refresh_token: refreshToken }
-                );
-
-                const { access_token, refresh_token } = response.data;
-                localStorage.setItem('token', access_token);
-                localStorage.setItem('refresh_token', refresh_token);
-
-                api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-
-                if (!originalRequest.headers) {
-                    originalRequest.headers = {};
-                }
-
-                originalRequest.headers['Authorization'] = `Bearer ${access_token}`;
-
-                return api(originalRequest);
-            } catch (refreshError) {
-                console.error('Token refresh failed:', refreshError);
-                localStorage.removeItem('token');
-                localStorage.removeItem('refresh_token');
-                window.location.href = '/login'; // Redirect to login
-                return Promise.reject(refreshError);
+            if (isRefreshing) {
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                }).then(token => {
+                    if (originalRequest.headers) {
+                        originalRequest.headers['Authorization'] = 'Bearer ' + token;
+                    } else {
+                        originalRequest.headers = { 'Authorization': 'Bearer ' + token };
+                    }
+                    return api(originalRequest);
+                }).catch(err => {
+                    return Promise.reject(err);
+                });
             }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            return new Promise((resolve, reject) => {
+                refreshToken()
+                    .then(({ data }) => {
+                        api.defaults.headers.common['Authorization'] = 'Bearer ' + data.access_token;
+                        if (originalRequest.headers) {
+                            originalRequest.headers['Authorization'] = 'Bearer ' + data.access_token;
+                        } else {
+                            originalRequest.headers = { 'Authorization': 'Bearer ' + data.access_token };
+                        }
+                        processQueue(null, data.access_token);
+                        resolve(api(originalRequest));
+                    })
+                    .catch((err) => {
+                        processQueue(err, null);
+                        reject(err);
+                    })
+                    .finally(() => {
+                        isRefreshing = false;
+                    });
+            });
         }
 
         return Promise.reject(error);

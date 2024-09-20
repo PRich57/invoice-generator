@@ -3,27 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import { Button, TextField, Typography, Container, Box } from '@mui/material';
 import { useAuth } from '../hooks/useAuth';
 import { isValidEmail } from '../utils/validationHelpers';
-import ErrorMessage from '../components/common/ErrorMessage';
+import { useSnackbar } from 'notistack';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
     const navigate = useNavigate();
     const { login } = useAuth();
+    const { enqueueSnackbar } = useSnackbar();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isValidEmail(email)) {
-            setError('Invalid email format');
+            enqueueSnackbar('Invalid email format', { variant: 'error' });
+            return;
+        }
+        if (!password) {
+            enqueueSnackbar('Password is required', { variant: 'error' });
             return;
         }
         try {
             await login(email, password);
             navigate('/dashboard');
         } catch (err) {
-            setError('Invalid email or password');
-            console.error(err);
+            // Error is handled in AuthContext
         }
     };
 
@@ -40,7 +43,6 @@ const Login: React.FC = () => {
                 <Typography component="h1" variant="h5">
                     Sign in
                 </Typography>
-                {error && <ErrorMessage message={error} />}
                 <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
                     <TextField
                         margin="normal"

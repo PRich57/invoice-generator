@@ -6,11 +6,13 @@ import { contactValidationSchema } from '../validationSchemas/contactValidationS
 import { useErrorHandler } from './useErrorHandler';
 import { useFetch } from './useFetch';
 import { API_ENDPOINTS } from '../constants/apiEndpoints';
+import { useSnackbar } from 'notistack';
 
 export const useContactForm = () => {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
     const { handleError } = useErrorHandler();
+    const { enqueueSnackbar } = useSnackbar();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const initialValues: ContactCreate = {
@@ -53,6 +55,9 @@ export const useContactForm = () => {
                     data: values,
                     url: id ? `${API_ENDPOINTS.CONTACTS}/${id}` : API_ENDPOINTS.CONTACTS
                 });
+                enqueueSnackbar(id ? 'Contact updated successfully' : 'Contact created successfully', 
+                    { variant: 'success' }
+                );
                 navigate('/contacts');
             } catch (err) {
                 handleError(err);

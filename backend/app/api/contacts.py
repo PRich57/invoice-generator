@@ -3,8 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.deps import get_current_user
-from ..core.exceptions import (ContactAlreadyExistsException,
-                               ContactNotFoundException)
+from ..core.exceptions import AlreadyExistsError, BadRequestError, NotFoundError, ValidationError
 from ..database import get_async_db
 from ..schemas.contact import Contact, ContactCreate
 from ..schemas.user import User
@@ -20,9 +19,11 @@ async def create_contact(
     current_user: User = Depends(get_current_user)
 ):
     try:
+        if not contact.name:
+            raise ValidationError("name")
         return await crud.create_contact(db, contact, current_user.id)
     except IntegrityError:
-        raise ContactAlreadyExistsException()
+        raise AlreadyExistsError("contact")
 
 
 @router.get("/", response_model=list[Contact])
@@ -60,7 +61,7 @@ async def read_contact(
 ):
     db_contact = await crud.get_contact(db, contact_id, current_user.id)
     if db_contact is None:
-        raise ContactNotFoundException()
+        raise NotFoundError("contact")
     return db_contact
 
 
@@ -71,9 +72,11 @@ async def update_contact(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
+    if not contact.name:
+        raise ValidationError("name")
     db_contact = await crud.update_contact(db, contact_id, contact, current_user.id)
     if db_contact is None:
-        raise ContactNotFoundException()
+        raise NotFoundError("contact")
     return db_contact
 
 
@@ -83,7 +86,10 @@ async def delete_contact(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
-    db_contact = await crud.delete_contact(db, contact_id, current_user.id)
-    if db_contact is None:
-        raise ContactNotFoundException()
-    return db_contact
+    try:
+        db_contact = await crud.delete_contact(db, contact_id, current_user.id)
+        return db_contact
+    except NotFoundError:
+        raise NotFoundError("contact")
+    except BadRequestError as e:
+        raise BadRequestError(str(e))

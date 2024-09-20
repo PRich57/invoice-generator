@@ -9,9 +9,7 @@ from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.exceptions import (ContactNotFoundException,
-                                InvoiceNotFoundException,
-                                TemplateNotFoundException)
+from ...core.exceptions import NotFoundError
 from ...models.invoice import Invoice, InvoiceItem, InvoiceSubItem
 from ...models.template import Template
 from ...schemas.invoice import InvoiceCreate
@@ -272,7 +270,7 @@ async def generate_preview_pdf(
     send_to_contact = await crud_contact.get_contact(db, invoice_data.send_to_id, user_id)
     
     if not bill_to_contact or not send_to_contact:
-        raise ContactNotFoundException()
+        raise NotFoundError("contact")
     
     # Create Invoice ORM instance
     temp_invoice = Invoice(
@@ -323,12 +321,12 @@ async def generate_preview_pdf(
 async def generate_invoice_pdf(db: AsyncSession, invoice_id: int, template_id: int, user_id: int) -> bytes:
     invoice = await get_invoice(db, invoice_id, user_id)
     if not invoice:
-        raise InvoiceNotFoundException()
+        raise NotFoundError("invoice")
     
     stmt = select(Template).filter(Template.id == template_id)
     result = await db.execute(stmt)
     template = result.scalar_one_or_none()
     if not template:
-        raise TemplateNotFoundException()
+        raise NotFoundError("template")
     
     return generate_pdf(invoice, template)
