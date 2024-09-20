@@ -11,19 +11,19 @@ const TemplatesList = lazy(() => import('../pages/TemplatesList'));
 const TemplateForm = lazy(() => import('../pages/TemplateForm'));
 
 const routes = [
-    { path: '/login', component: Login },
-    { path: '/register', component: Register },
-    { path: '/dashboard', component: Dashboard },
-    { path: '/invoices', component: InvoicesList },
-    { path: '/invoices/new', component: InvoiceForm },
-    { path: '/invoices/edit/:id', component: InvoiceForm },
-    { path: '/contacts', component: ContactsList },
-    { path: '/contacts/new', component: ContactForm },
-    { path: '/contacts/edit/:id', component: ContactForm },
-    { path: '/templates', component: TemplatesList },
-    { path: '/templates/new', component: TemplateForm },
-    { path: '/templates/edit/:id', component: TemplateForm },
-    { path: '/', component: Dashboard },
+    { path: '/login', component: Login, protected: false },
+    { path: '/register', component: Register, protected: false },
+    { path: '/dashboard', component: Dashboard, protected: false },
+    { path: '/invoices', component: InvoicesList, protected: true },
+    { path: '/invoices/new', component: InvoiceForm, protected: false },
+    { path: '/invoices/edit/:id', component: InvoiceForm, protected: true },
+    { path: '/contacts', component: ContactsList, protected: true },
+    { path: '/contacts/new', component: ContactForm, protected: true },
+    { path: '/contacts/edit/:id', component: ContactForm, protected: true },
+    { path: '/templates', component: TemplatesList, protected: true },
+    { path: '/templates/new', component: TemplateForm, protected: true },
+    { path: '/templates/edit/:id', component: TemplateForm, protected: true },
+    { path: '/', component: Dashboard, protected: false },
 ];
 
 export default routes;

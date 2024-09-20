@@ -1,15 +1,13 @@
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status, Cookie
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from ..core.config import settings
-from ..core.exceptions import (AlreadyExistsError, NotFoundError, UnauthorizedError,
-                               ValidationError)
-from ..core.security import (create_access_token, create_refresh_token,
-                             get_current_user)
+from ..core.exceptions import AlreadyExistsError, NotFoundError, UnauthorizedError, ValidationError
+from ..core.security import create_access_token, create_refresh_token, get_current_user
 from ..database import get_async_db
 from ..schemas.user import User, UserCreate
 from ..services.user import crud
+from ..schemas.refresh_token import RefreshToken
 
 router = APIRouter()
 
@@ -100,8 +98,8 @@ async def logout(response: Response, db: AsyncSession = Depends(get_async_db), c
     await crud.invalidate_refresh_tokens(db, current_user.id)
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
-    return
-{"status": "success"}
+    return {"status": "success"}
+
 
 @router.get("/me", response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_user)):

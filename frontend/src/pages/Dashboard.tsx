@@ -1,57 +1,163 @@
 import React from 'react';
-import { Typography, Container, Box, Paper, Stack } from '@mui/material';
-import { Person, Receipt, Description } from '@mui/icons-material';
+import { Typography, Container, Box, Paper, Stack, Button } from '@mui/material';
+import { Person, Description, AccountCircle, Login, PaletteOutlined, ReceiptLongOutlined, AddOutlined } from '@mui/icons-material';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 const Dashboard: React.FC = () => {
+    const { isAuthenticated } = useAuth();
+
     return (
         <Container maxWidth="lg">
-            <Typography variant="h4" gutterBottom>
+            <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
                 Dashboard
             </Typography>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
-                <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 240, flex: 1 }}>
-                    <Typography component="h2" variant="h6" color="primary" gutterBottom>
-                        Contacts
-                    </Typography>
-                    <Typography component="p" variant="h4">
-                        23
-                    </Typography>
-                    <Typography color="text.secondary" sx={{ flex: 1 }}>
-                        Total contacts
-                    </Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <Person />
-                    </Box>
-                </Paper>
-                <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 240, flex: 1 }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ mb: 4 }}>
+                <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', height: 340, flex: 1 }}>
                     <Typography component="h2" variant="h6" color="primary" gutterBottom>
                         Invoices
                     </Typography>
-                    <Typography component="p" variant="h4">
-                        15
+                    <Typography component="p" variant="h4" sx={{ mb: 2 }}>
+                        {isAuthenticated ? '15' : 'Create Now'}
                     </Typography>
                     <Typography color="text.secondary" sx={{ flex: 1 }}>
-                        Active invoices
+                        {isAuthenticated ? 'Active invoices' : 'Try our free invoice generator'}
                     </Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <Receipt />
-                    </Box>
+                    <Button
+                        variant='contained'
+                        component={Link}
+                        to="/invoices/new"
+                        endIcon={<ReceiptLongOutlined />}
+                        sx={{ mb: 1 }}
+                    >
+                        Create Invoice
+                    </Button>
+                    {isAuthenticated ? 
+                    <Button
+                        variant='outlined'
+                        component={Link}
+                        to="/invoices"
+                        endIcon={<Description />}
+                    >
+                        Manage Invoices
+                    </Button> : ''}
                 </Paper>
-                <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 240, flex: 1 }}>
-                    <Typography component="h2" variant="h6" color="primary" gutterBottom>
-                        Templates
-                    </Typography>
-                    <Typography component="p" variant="h4">
-                        3
-                    </Typography>
-                    <Typography color="text.secondary" sx={{ flex: 1 }}>
-                        Available templates
-                    </Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <Description />
-                    </Box>
-                </Paper>
+                {isAuthenticated ? (
+                    <>
+                        <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', height: 340, flex: 1 }}>
+                            <Typography component="h2" variant="h6" color="primary" gutterBottom>
+                                Contacts
+                            </Typography>
+                            <Typography component="p" variant="h4" sx={{ mb: 2 }}>
+                                23
+                            </Typography>
+                            <Typography color="text.secondary" sx={{ flex: 1 }}>
+                                Total contacts
+                            </Typography>
+                            <Button
+                                variant='contained'
+                                component={Link}
+                                to="/contacts/new"
+                                endIcon={<AddOutlined />}
+                                sx={{ mb: 1 }}
+                            >
+                                New Contact
+                            </Button>
+                            <Button
+                                variant='outlined'
+                                component={Link}
+                                to="/contacts"
+                                endIcon={<Person />}
+                            >
+                                Manage Contacts
+                            </Button>
+                        </Paper>
+                        <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', height: 340, flex: 1 }}>
+                            <Typography component="h2" variant="h6" color="primary" gutterBottom>
+                                Templates
+                            </Typography>
+                            <Typography component="p" variant="h4" sx={{ mb: 2 }}>
+                                3
+                            </Typography>
+                            <Typography color="text.secondary" sx={{ flex: 1 }}>
+                                Available templates
+                            </Typography>
+                            <Button
+                                variant='contained'
+                                component={Link}
+                                to="/contacts/new"
+                                endIcon={<PaletteOutlined />}
+                                sx={{ mb: 1 }}
+                            >
+                                Custom Template
+                            </Button>
+                            <Button
+                                variant='outlined'
+                                component={Link}
+                                to="/templates"
+                                endIcon={<Description />}
+                            >
+                                Manage Templates
+                            </Button>
+                        </Paper>
+                    </>
+                ) : (
+                    <Paper
+                        sx={{
+                            p: 3,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            height: 340,
+                            flex: 1,
+                            border: 1,
+                            borderColor: 'primary.main'
+                        }}
+                    >
+                        <Typography component="h2" variant="h6" color="primary" gutterBottom>
+                            Unlock the Full Potential
+                        </Typography>
+                        <Typography sx={{ mb: 2, flex: 1 }}>
+                            Manage your business effortlessly:
+                            <ul style={{ marginLeft: '20px', marginTop: '10px' }}>
+                                <li>Save and organize invoices securely</li>
+                                <li>Manage contacts and client information</li>
+                                <li>Create and customize professional templates</li>
+                                <li>Include your company logo for a branded touch</li>
+                                <li>Send invoices and track payments seamlessly</li>
+                                <li>...and much more!</li>
+                            </ul>
+                        </Typography>
+                        <Stack direction="row" spacing={2}>
+                            <Button
+                                variant='contained'
+                                component={Link}
+                                to="/register"
+                                endIcon={<AccountCircle />}
+                                fullWidth
+                            >
+                                Sign Up
+                            </Button>
+                            <Button
+                                variant='outlined'
+                                component={Link}
+                                to="/login"
+                                color="primary"
+                                endIcon={<Login />}
+                                fullWidth
+                            >
+                                Login
+                            </Button>
+                        </Stack>
+                    </Paper>
+                )}
             </Stack>
+            {!isAuthenticated && (
+                <Box mt={3}>
+                    <Typography variant="body1" align="center" color="text.secondary">
+                        Create a free account to access all features and start managing your invoices efficiently.
+                    </Typography>
+                </Box>
+            )}
         </Container>
     );
 }

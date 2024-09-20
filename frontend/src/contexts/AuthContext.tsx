@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, ReactNode, useEffect } from
 import { User, AuthContextType } from '../types';
 import * as api from '../services/api';
 import { useSnackbar } from 'notistack';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -10,6 +11,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const { enqueueSnackbar } = useSnackbar();
+    const { handleError } = useErrorHandler();
 
     useEffect(() => {
         checkAuthStatus();
@@ -31,12 +33,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const login = async (email: string, password: string) => {
         try {
             await api.login(email, password);
-            const user = await api.getCurrentUser();
-            setUser(user);
-            setIsAuthenticated(true);
+            await checkAuthStatus();
             enqueueSnackbar('Logged in successfully', { variant: 'success' });
         } catch (error) {
-            enqueueSnackbar('Login failed. Please check your credentials.', { variant: 'error' });
+            handleError(error);
             setIsAuthenticated(false);
             setUser(null);
         }
@@ -45,17 +45,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const logout = async () => {
         try {
             await api.logout();
+            setIsAuthenticated(false);
+            setUser(null);
             enqueueSnackbar('Logged out successfully', { variant: 'success' });
         } catch (error) {
-            enqueueSnackbar('Logout failed. Please try again.', { variant: 'error' });
-        } finally {
+            handleError(error);
+        }
+    };
+
+    const refreshToken = async () => {
+        try {
+            await api.refreshToken();
+            await checkAuthStatus();
+        } catch (error) {
+            handleError(error);
             setIsAuthenticated(false);
             setUser(null);
         }
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading }}>
+        <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading, refreshToken }}>
             {children}
         </AuthContext.Provider>
     );

@@ -31,11 +31,7 @@ api.interceptors.response.use(
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject });
                 }).then(token => {
-                    if (originalRequest.headers) {
-                        originalRequest.headers['Authorization'] = 'Bearer ' + token;
-                    } else {
-                        originalRequest.headers = { 'Authorization': 'Bearer ' + token };
-                    }
+                    originalRequest.headers!['Authorization'] = 'Bearer ' + token;
                     return api(originalRequest);
                 }).catch(err => {
                     return Promise.reject(err);
@@ -45,26 +41,18 @@ api.interceptors.response.use(
             originalRequest._retry = true;
             isRefreshing = true;
 
-            return new Promise((resolve, reject) => {
-                refreshToken()
-                    .then(({ data }) => {
-                        api.defaults.headers.common['Authorization'] = 'Bearer ' + data.access_token;
-                        if (originalRequest.headers) {
-                            originalRequest.headers['Authorization'] = 'Bearer ' + data.access_token;
-                        } else {
-                            originalRequest.headers = { 'Authorization': 'Bearer ' + data.access_token };
-                        }
-                        processQueue(null, data.access_token);
-                        resolve(api(originalRequest));
-                    })
-                    .catch((err) => {
-                        processQueue(err, null);
-                        reject(err);
-                    })
-                    .finally(() => {
-                        isRefreshing = false;
-                    });
-            });
+            try {
+                const { data } = await refreshToken();
+                api.defaults.headers.common['Authorization'] = 'Bearer ' + data.access_token;
+                originalRequest.headers!['Authorization'] = 'Bearer ' + data.access_token;
+                processQueue(null, data.access_token);
+                return api(originalRequest);
+            } catch (refreshError) {
+                processQueue(refreshError, null);
+                return Promise.reject(refreshError);
+            } finally {
+                isRefreshing = false;
+            }
         }
 
         return Promise.reject(error);

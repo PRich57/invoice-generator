@@ -35,9 +35,14 @@ export const getCurrentUser = async (): Promise<User> => {
 };
 
 export const refreshToken = async () => {
-    const response = await api.post(API_ENDPOINTS.REFRESH);
-    if (response.data.access_token) {
-        api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
+    try {
+        const response = await api.post(API_ENDPOINTS.REFRESH);
+        if (response.data.access_token) {
+            api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
+        }
+        return response;
+    } catch (error) {
+        console.error('Error refreshing token:', error);
+        throw error;
     }
-    return response;
 };
