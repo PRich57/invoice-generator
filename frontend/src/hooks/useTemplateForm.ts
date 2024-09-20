@@ -45,43 +45,43 @@ export const useTemplateForm = () => {
         custom_css: '',
     };
 
-    const { data, isLoading, error, refetch } = useFetch<Template | null>(
+    const { data: templateData, isLoading, refetch } = useFetch<Template | null>(
         id ? `${API_ENDPOINTS.TEMPLATES}/${id}` : null
+    );
+
+    const { fetchData: submitForm } = useFetch<Template>(
+        API_ENDPOINTS.TEMPLATES,
+        { method: id ? 'PUT' : 'POST' }
     );
 
     useEffect(() => {
         if (id) {
             refetch();
         }
-    }, [id, refetch]);
-
-    const { fetchData: submitForm } = useFetch<Template>(
-        id ? `${API_ENDPOINTS.TEMPLATES}/${id}` : API_ENDPOINTS.TEMPLATES,
-        { method: id ? 'PUT' : 'POST' }
-    );
+    }, []);
 
     const formik = useFormik<TemplateCreate>({
-        initialValues: data || initialValues,
+        initialValues: templateData || initialValues,
         validationSchema: templateValidationSchema,
         enableReinitialize: true,
         onSubmit: async (values) => {
             setIsSubmitting(true);
             try {
-                await submitForm({ 
+                await submitForm({
                     data: values,
-                    url: id ? `${API_ENDPOINTS.TEMPLATES}/${id}` : API_ENDPOINTS.TEMPLATES 
+                    url: id ? `${API_ENDPOINTS.TEMPLATES}/${id}` : API_ENDPOINTS.TEMPLATES
                 });
-                enqueueSnackbar(id ? 'Template updated successfully' : 'Template created successfully',
+                enqueueSnackbar(id ? 'Template updated successfully' : 'Template created successfully', 
                     { variant: 'success' }
                 );
                 navigate('/templates');
             } catch (err) {
-                handleError(err)
+                handleError(err);
             } finally {
                 setIsSubmitting(false);
             }
         },
     });
 
-    return { formik, isLoading, error, isSubmitting, refetch, id };
+    return { formik, isLoading, isSubmitting };
 };

@@ -29,23 +29,23 @@ export const useContactForm = () => {
         notes: ''
     };
 
-    const { data, isLoading, error, refetch } = useFetch<Contact | null>(
+    const { data: contactData, isLoading, refetch } = useFetch<Contact | null>(
         id ? `${API_ENDPOINTS.CONTACTS}/${id}` : null
     );
-
-    useEffect(() => {
-        if (id) {
-            refetch();
-        }
-    }, [id, refetch]);
 
     const { fetchData: submitForm } = useFetch<Contact>(
         API_ENDPOINTS.CONTACTS,
         { method: id ? 'PUT' : 'POST' }
     );
 
+    useEffect(() => {
+        if (id) {
+            refetch();
+        }
+    }, []);
+
     const formik = useFormik<ContactCreate>({
-        initialValues: data || initialValues,
+        initialValues: contactData || initialValues,
         validationSchema: contactValidationSchema,
         enableReinitialize: true,
         onSubmit: async (values) => {
@@ -67,5 +67,5 @@ export const useContactForm = () => {
         },
     });
 
-    return { formik, isLoading, error, isSubmitting, refetch, id };
+    return { formik, isLoading, isSubmitting };
 };

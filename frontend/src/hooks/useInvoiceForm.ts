@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useFormik } from 'formik';
-import { InvoiceCreate } from '../types';
+import { InvoiceCreate, Invoice } from '../types';
 import { invoiceValidationSchema } from '../validationSchemas/invoiceValidationSchema';
 import { useErrorHandler } from './useErrorHandler';
+import { useFetch } from './useFetch';
 import { formatDateForAPI } from '../utils/dateFormatter';
-import { createInvoice, updateInvoice, getInvoice } from '../services/api/invoices';
+import { API_ENDPOINTS } from '../constants/apiEndpoints';
 import { useSnackbar } from 'notistack';
 
-export const useInvoiceForm = (id?: string) => {
+export const useInvoiceForm = () => {
     const navigate = useNavigate();
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const { id } = useParams<{ id: string }>();
     const { handleError } = useErrorHandler();
     const { enqueueSnackbar } = useSnackbar();
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const initialValues: InvoiceCreate = {
         invoice_number: '',
@@ -36,62 +36,35 @@ export const useInvoiceForm = (id?: string) => {
         template_id: 0,
     };
 
-    const [initialData, setInitialData] = useState<InvoiceCreate>(initialValues);
+    const { data: invoiceData, isLoading, refetch } = useFetch<Invoice | null>(
+        id ? `${API_ENDPOINTS.INVOICES}/${id}` : null
+    );
+
+    const { fetchData: submitForm } = useFetch<Invoice>(
+        API_ENDPOINTS.INVOICES,
+        { method: id ? 'PUT' : 'POST' }
+    );
 
     useEffect(() => {
         if (id) {
-            const fetchInvoice = async () => {
-                setIsLoading(true);
-                try {
-                    const invoice = await getInvoice(Number(id));
-                    // Map the received invoice to InvoiceCreate format
-                    const mappedInvoice: InvoiceCreate = {
-                        invoice_number: invoice.invoice_number,
-                        invoice_date: invoice.invoice_date,
-                        bill_to_id: invoice.bill_to_id,
-                        send_to_id: invoice.send_to_id,
-                        tax_rate: invoice.tax_rate,
-                        discount_percentage: invoice.discount_percentage,
-                        notes: invoice.notes,
-                        items: invoice.items.map((item) => ({
-                            id: item.id,
-                            description: item.description,
-                            quantity: item.quantity,
-                            unit_price: item.unit_price,
-                            discount_percentage: item.discount_percentage,
-                            subitems: item.subitems.map((subitem) => ({
-                                id: subitem.id,
-                                description: subitem.description,
-                            })),
-                        })),
-                        template_id: invoice.template_id,
-                    };
-                    setInitialData(mappedInvoice);
-                } catch (err) {
-                    handleError(err);
-                    setError('Failed to load invoice data');
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-            fetchInvoice();
+            refetch();
         }
     }, []);
 
     const formik = useFormik<InvoiceCreate>({
-        initialValues: initialData,
+        initialValues: invoiceData || initialValues,
         validationSchema: invoiceValidationSchema,
         enableReinitialize: true,
         onSubmit: async (values) => {
             setIsSubmitting(true);
             try {
-                if (id) {
-                    await updateInvoice(Number(id), values);
-                    enqueueSnackbar('Invoice updated successfully', { variant: 'success' });
-                } else {
-                    await createInvoice(values);
-                    enqueueSnackbar('Invoice created successfully', { variant: 'success' });
-                }
+                await submitForm({
+                    data: values,
+                    url: id ? `${API_ENDPOINTS.INVOICES}/${id}` : API_ENDPOINTS.INVOICES
+                });
+                enqueueSnackbar(id ? 'Invoice updated successfully' : 'Invoice created successfully',
+                    { variant: 'success' }
+                );
                 navigate('/invoices');
             } catch (err) {
                 handleError(err);
@@ -101,5 +74,5 @@ export const useInvoiceForm = (id?: string) => {
         },
     });
 
-    return { formik, isLoading, isSubmitting, error };
+    return { formik, isLoading, isSubmitting };
 };

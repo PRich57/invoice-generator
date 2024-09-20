@@ -9,13 +9,12 @@ interface ContactFormProps {
 }
 
 const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
-    const { formik, isLoading, error, isSubmitting } = useContactForm();
+    const { formik, isLoading, isSubmitting } = useContactForm();
 
     if (isLoading) return <LoadingSpinner />;
 
     return (
         <Box component="form" onSubmit={formik.handleSubmit} sx={{ maxWidth: 600, margin: 'auto' }}>
-            {error && <ErrorMessage message={error} />}
 
             <TextField
                 fullWidth
