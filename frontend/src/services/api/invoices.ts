@@ -2,9 +2,34 @@ import api from '../api';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
 import { Invoice, InvoiceCreate } from '../../types';
 
-export const getInvoices = async () => {
+export const getInvoices = async (params: {
+    sort_by?: string;
+    sort_order?: 'asc' | 'desc';
+    group_by?: string[];
+    invoice_number?: string;
+    bill_to_name?: string;
+    send_to_name?: string;
+    date_from?: string;
+    date_to?: string;
+    total_min?: number;
+    total_max?: number;
+}) => {
+
+    const cleanParams = Object.entries(params).reduce((acc, [key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            if (Array.isArray(value) && value.length === 0) {
+                return acc;
+            }
+            acc[key] = value;
+        }
+        return acc;
+    }, {} as Record<string, any>);
+
+    console.log('Cleaned params:', cleanParams);
+    
+
     try {
-        const response = await api.get<Invoice[]>(API_ENDPOINTS.INVOICES);
+        const response = await api.get<Invoice[]>(API_ENDPOINTS.INVOICES, { params: cleanParams });
         return response.data;
     } catch (error) {
         throw error;

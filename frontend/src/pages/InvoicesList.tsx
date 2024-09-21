@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box, TextField, FormControl, Select, MenuItem, Chip, InputLabel, SelectChangeEvent } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
 import { useInvoices } from '../hooks/useInvoices';
 import { deleteInvoice, generateInvoicePDF, getContacts, getTemplates } from '../services/api';
@@ -14,16 +14,43 @@ import { useErrorHandler } from '../hooks/useErrorHandler';
 
 const InvoicesList: React.FC = () => {
     const navigate = useNavigate();
-    const { invoices, error, loading, refetch } = useInvoices();
+    const {
+        invoices, error, loading, fetchInvoices,
+        updateSorting, updateGrouping, updateFilters,
+        sortBy, sortOrder, groupBy, filters, setFilters
+    } = useInvoices();
     const [contacts, setContacts] = useState<Record<number, string>>({});
     const [templates, setTemplates] = useState<Record<number, string>>({});
     const { handleError } = useErrorHandler();
     const { enqueueSnackbar } = useSnackbar();
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [invoiceToDelete, setInvoiceToDelete] = useState<number | null>(null);
+
+    const handleSort = (column: string) => {
+        updateSorting(column);
+    };
+
+    const handleGroup = (event: SelectChangeEvent<string[]>) => {
+        const {
+            target: { value },
+        } = event;
+        updateGrouping(typeof value === 'string' ? value.split(',') : value);
+    };
+
+    const handleFilterChange = (field: string, value: string) => {
+        updateFilters({ [field]: value || undefined });
+    };
+
     const handleEdit = (id: number) => {
         navigate(`/invoices/edit/${id}`);
     };
+
+    useEffect(() => {
+        console.log('Current filters:', filters);
+        console.log('Sort by:', sortBy);
+        console.log('Sort order:', sortOrder);
+        console.log('Group by:', groupBy);
+    }, [filters, sortBy, sortOrder, groupBy]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -72,7 +99,7 @@ const InvoicesList: React.FC = () => {
             try {
                 await deleteInvoice(invoiceToDelete);
                 enqueueSnackbar('Invoice deleted successfully', { variant: 'success' });
-                refetch();
+                fetchInvoices();
             } catch (err) {
                 handleError(err);
             }
@@ -114,14 +141,74 @@ const InvoicesList: React.FC = () => {
                     Create New Invoice
                 </Button>
             </Box>
+
+            <Box mb={2}>
+                <FormControl fullWidth>
+                    <InputLabel>Group By</InputLabel>
+                    <Select
+                        multiple
+                        value={groupBy}
+                        onChange={handleGroup}
+                        renderValue={(selected) => (
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {(selected as string[]).map((value) => (
+                                    <Chip key={value} label={value} />
+                                ))}
+                            </Box>
+                        )}
+                    >
+                        <MenuItem value="bill_to">Bill To</MenuItem>
+                        <MenuItem value="month">Month</MenuItem>
+                        <MenuItem value="year">Year</MenuItem>
+                    </Select>
+                </FormControl>
+            </Box>
+
+            <Box mb={2}>
+                <TextField
+                    name="invoice_number"
+                    label="Invoice Number"
+                    value={filters.invoice_number || ''}
+                    onChange={(e) => handleFilterChange('invoice_number', e.target.value)}
+                />
+                <TextField
+                    name="bill_to_name"
+                    label="Bill To Name"
+                    value={filters.bill_to_name || ''}
+                    onChange={(e) => handleFilterChange('bill_to_name', e.target.value)}
+                />
+                <TextField
+                    name="total_min"
+                    label="Min Total"
+                    type="number"
+                    value={filters.total_min || ''}
+                    onChange={(e) => handleFilterChange('total_min', e.target.value)}
+                />
+                <TextField
+                    name="total_max"
+                    label="Max Total"
+                    type="number"
+                    value={filters.total_max || ''}
+                    onChange={(e) => handleFilterChange('total_max', e.target.value)}
+                />
+            </Box>
+
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>Invoice Number</TableCell>
-                            <TableCell>Date</TableCell>
-                            <TableCell>Bill To</TableCell>
-                            <TableCell>Total</TableCell>
+                            <TableCell onClick={() => handleSort('invoice_number')}>
+                                Invoice Number {sortBy === 'invoice_number' && (sortOrder === 'asc' ? '▲' : '▼')}
+                            </TableCell>
+                            <TableCell onClick={() => handleSort('date')}>
+                                Date {sortBy === 'date' && (sortOrder === 'asc' ? '▲' : '▼')}
+                            </TableCell>
+                            <TableCell onClick={() => handleSort('bill_to_name')}>
+                                Bill To {sortBy === 'bill_to_name' && (sortOrder === 'asc' ? '▲' : '▼')}
+                            </TableCell>
+                            <TableCell onClick={() => handleSort('total')}>
+                                Total {sortBy === 'total' && (sortOrder === 'asc' ? '▲' : '▼')}
+                            </TableCell>
                             <TableCell>Template</TableCell>
                             <TableCell>Actions</TableCell>
                         </TableRow>

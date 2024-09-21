@@ -1,7 +1,7 @@
 import logging
 from datetime import date
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_, desc, asc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import aliased, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,6 +39,7 @@ async def get_invoices(
     limit: int = 100,
     sort_by: str | None = None,
     sort_order: str = 'asc',
+    group_by: list[str] = [],
     invoice_number: str | None = None,
     bill_to_name: str | None = None,
     send_to_name: str | None = None,
@@ -73,7 +74,7 @@ async def get_invoices(
 
     # Apply sorting
     if sort_by:
-        order_func = func.asc if sort_order == 'asc' else func.desc
+        order_func = desc if sort_order.lower() == 'desc' else asc
         sort_column = {
             'invoice_number': Invoice.invoice_number,
             'bill_to_name': BillToContact.name,
@@ -83,6 +84,20 @@ async def get_invoices(
         }.get(sort_by)
         if sort_column is not None:
             stmt = stmt.order_by(order_func(sort_column))
+
+    # Apply grouping
+    if group_by:
+        group_columns = []
+        for group in group_by:
+            if group == 'bill_to':
+                group_columns.append(BillToContact.name)
+            elif group == 'month':
+                group_columns.append(func.date_trunc('month', Invoice.invoice_date))
+            elif group == 'year':
+                group_columns.append(func.date_trunc('year', Invoice.invoice_date))
+        
+        if group_columns:
+            stmt = stmt.group_by(*group_columns)
 
     # Apply pagination
     stmt = stmt.offset(skip).limit(limit)

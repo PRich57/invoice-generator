@@ -1,5 +1,6 @@
 import logging
 from datetime import date
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +12,8 @@ from backend.app.services.invoice.pdf import \
 from backend.app.services.template.crud import get_template
 
 from ..core.deps import get_current_user
-from ..core.exceptions import BadRequestError, NotFoundError, ValidationError, AlreadyExistsError
+from ..core.exceptions import (AlreadyExistsError, BadRequestError,
+                               NotFoundError, ValidationError)
 from ..database import get_async_db
 from ..schemas.invoice import InvoiceCreate, InvoiceDetail, InvoiceSummary
 from ..schemas.user import User
@@ -43,33 +45,38 @@ async def create_invoice(
 async def read_invoices(
     skip: int = 0,
     limit: int = 100,
-    sort_by: str | None = Query(
-        None, enum=[
-            'invoice_number',
-            'bill_to_name',
-            'send_to_name',
-            'date',
-            'total'
-        ]
-    ),
+    sort_by: Optional[str] = Query(None, enum=['invoice_number', 'bill_to_name', 'send_to_name', 'date', 'total']),
     sort_order: str = Query('asc', enum=['asc', 'desc']),
-    invoice_number: str | None = None,
-    bill_to_name: str | None = None,
-    send_to_name: str | None = None,
-    date_from: date | None = None,
-    date_to: date | None = None,
-    total_min: float | None = None,
-    total_max: float | None = None,
+    group_by: list[str] = Query(default=[], enum=['bill_to', 'month', 'year']),
+    invoice_number: Optional[str] = None,
+    bill_to_name: Optional[str] = None,
+    send_to_name: Optional[str] = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    total_min: Optional[float] = None,
+    total_max: Optional[float] = None,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
-    return await crud.get_invoices(
-        db, current_user.id, skip=skip, limit=limit,
-        sort_by=sort_by, sort_order=sort_order,
-        invoice_number=invoice_number, bill_to_name=bill_to_name,
-        send_to_name=send_to_name, date_from=date_from, date_to=date_to,
-        total_min=total_min, total_max=total_max
-    )
+    logger.info(f"Received request with parameters: skip={skip}, limit={limit}, sort_by={sort_by}, sort_order={sort_order}, group_by={group_by}, invoice_number={invoice_number}, bill_to_name={bill_to_name}, send_to_name={send_to_name}, date_from={date_from}, date_to={date_to}, total_min={total_min}, total_max={total_max}")
+    
+    # Convert empty strings to None
+    invoice_number = invoice_number if invoice_number else None
+    bill_to_name = bill_to_name if bill_to_name else None
+    send_to_name = send_to_name if send_to_name else None
+
+    try:
+        invoices = await crud.get_invoices(
+            db, current_user.id, skip=skip, limit=limit,
+            sort_by=sort_by, sort_order=sort_order, group_by=group_by,
+            invoice_number=invoice_number, bill_to_name=bill_to_name,
+            send_to_name=send_to_name, date_from=date_from, date_to=date_to,
+            total_min=total_min, total_max=total_max
+        )
+        return invoices
+    except Exception as e:
+        logger.error(f"Error in read_invoices: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/{invoice_id}", response_model=InvoiceDetail)
