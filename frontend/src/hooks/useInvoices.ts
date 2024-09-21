@@ -6,6 +6,7 @@ import { useErrorHandler } from './useErrorHandler';
 export const useInvoices = () => {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+    const [invoiceCount, setInvoiceCount] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const { error, setError, handleError } = useErrorHandler();
 
@@ -16,6 +17,7 @@ export const useInvoices = () => {
             setInvoices(invoicesData);
             if (invoicesData.length > 0) {
                 setSelectedInvoice(invoicesData[0]);
+                setInvoiceCount(invoicesData.length);
             }
             setError(null);
         } catch (err) {
@@ -33,5 +35,5 @@ export const useInvoices = () => {
         fetchInvoices();
     }, [fetchInvoices]);
 
-    return { invoices, selectedInvoice, setSelectedInvoice, error, loading, refetch };
+    return { invoices, invoiceCount, selectedInvoice, setSelectedInvoice, error, loading, refetch };
 };

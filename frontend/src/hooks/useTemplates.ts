@@ -6,6 +6,7 @@ import { useErrorHandler } from './useErrorHandler';
 export const useTemplates = () => {
     const [templates, setTemplates] = useState<Template[]>([]);
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+    const [templateCount, setTemplateCount] =useState<number>(0);
     const [loading, setLoading] = useState(true);
     const { error, setError, handleError } = useErrorHandler();
 
@@ -16,6 +17,7 @@ export const useTemplates = () => {
             setTemplates(templatesData);
             if (templatesData.length > 0) {
                 setSelectedTemplate(templatesData[0]);
+                setTemplateCount(templatesData.length);
             }
             setError(null);
         } catch (err) {
@@ -37,5 +39,5 @@ export const useTemplates = () => {
         fetchTemplates();
     }, [fetchTemplates]);
 
-    return { templates, selectedTemplate, setSelectedTemplate, error, loading, refetch, getTemplateById };
+    return { templates, templateCount, selectedTemplate, setSelectedTemplate, error, loading, refetch, getTemplateById };
 };

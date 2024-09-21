@@ -1,11 +1,18 @@
+import { AccountCircle, AddOutlined, Description, Login, PaletteOutlined, Person, ReceiptLongOutlined } from '@mui/icons-material';
+import { Box, Button, Container, Paper, Stack, Typography } from '@mui/material';
 import React from 'react';
-import { Typography, Container, Box, Paper, Stack, Button } from '@mui/material';
-import { Person, Description, AccountCircle, Login, PaletteOutlined, ReceiptLongOutlined, AddOutlined } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../hooks/useAuth';
+import { useContacts } from '../hooks/useContacts';
+import { useInvoices } from '../hooks/useInvoices';
+import { useTemplates } from '../hooks/useTemplates';
 
 const Dashboard: React.FC = () => {
     const { isAuthenticated } = useAuth();
+    const { contactCount } = useContacts();
+    const { invoiceCount } = useInvoices();
+    const { templateCount } = useTemplates();
 
     return (
         <Container maxWidth="lg">
@@ -18,7 +25,7 @@ const Dashboard: React.FC = () => {
                         Invoices
                     </Typography>
                     <Typography component="p" variant="h4" sx={{ mb: 2 }}>
-                        {isAuthenticated ? '15' : 'Create Now'}
+                        {isAuthenticated ? invoiceCount : 'Create Now'}
                     </Typography>
                     <Typography color="text.secondary" sx={{ flex: 1 }}>
                         {isAuthenticated ? 'Active invoices' : 'Try our free invoice generator'}
@@ -28,19 +35,19 @@ const Dashboard: React.FC = () => {
                         component={Link}
                         to="/invoices/new"
                         endIcon={<ReceiptLongOutlined />}
-                        sx={{ mb: 1 }}
                     >
                         Create Invoice
                     </Button>
-                    {isAuthenticated ? 
-                    <Button
-                        variant='outlined'
-                        component={Link}
-                        to="/invoices"
-                        endIcon={<Description />}
-                    >
-                        Manage Invoices
-                    </Button> : ''}
+                    {isAuthenticated ?
+                        <Button
+                            variant='outlined'
+                            component={Link}
+                            to="/invoices"
+                            endIcon={<Description />}
+                            sx={{ mt: 1 }}
+                        >
+                            Manage Invoices
+                        </Button> : ''}
                 </Paper>
                 {isAuthenticated ? (
                     <>
@@ -49,7 +56,7 @@ const Dashboard: React.FC = () => {
                                 Contacts
                             </Typography>
                             <Typography component="p" variant="h4" sx={{ mb: 2 }}>
-                                23
+                                {contactCount ? contactCount : <LoadingSpinner />}
                             </Typography>
                             <Typography color="text.secondary" sx={{ flex: 1 }}>
                                 Total contacts
@@ -77,7 +84,7 @@ const Dashboard: React.FC = () => {
                                 Templates
                             </Typography>
                             <Typography component="p" variant="h4" sx={{ mb: 2 }}>
-                                3
+                                {templateCount ? templateCount : <LoadingSpinner />}
                             </Typography>
                             <Typography color="text.secondary" sx={{ flex: 1 }}>
                                 Available templates
@@ -114,7 +121,7 @@ const Dashboard: React.FC = () => {
                         }}
                     >
                         <Typography component="h2" variant="h6" color="primary" gutterBottom>
-                            Unlock the Full Potential
+                            Unlock Full Potential
                         </Typography>
                         <Typography sx={{ mb: 2, flex: 1 }}>
                             Manage your business effortlessly:
