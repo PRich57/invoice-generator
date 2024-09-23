@@ -124,9 +124,7 @@ const InvoicesList: React.FC = () => {
         }
     };
 
-    if (loading || !Object.keys(contacts).length || !Object.keys(templates).length) {
-        return <LoadingSpinner />;
-    }
+    if (loading) return <LoadingSpinner />;
     if (error) return <ErrorMessage message={error} />;
 
     return (

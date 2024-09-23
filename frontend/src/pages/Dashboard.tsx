@@ -56,7 +56,7 @@ const Dashboard: React.FC = () => {
                                 Contacts
                             </Typography>
                             <Typography component="p" variant="h4" sx={{ mb: 2 }}>
-                                {contactCount ? contactCount : <LoadingSpinner />}
+                                {contactCount ? contactCount : 0}
                             </Typography>
                             <Typography color="text.secondary" sx={{ flex: 1 }}>
                                 Total contacts
@@ -92,7 +92,7 @@ const Dashboard: React.FC = () => {
                             <Button
                                 variant='contained'
                                 component={Link}
-                                to="/contacts/new"
+                                to="/templates/new"
                                 endIcon={<PaletteOutlined />}
                                 sx={{ mb: 1 }}
                             >
