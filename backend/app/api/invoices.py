@@ -46,7 +46,7 @@ async def read_invoices(
     skip: int = 0,
     limit: int = 100,
     sort_by: Optional[str] = Query(None, enum=['invoice_number', 'bill_to_name', 'send_to_name', 'date', 'total']),
-    sort_order: str = Query('asc', enum=['asc', 'desc']),
+    sort_order: str = Query('desc', enum=['asc', 'desc']),
     group_by: list[str] = Query(default=[], enum=['bill_to', 'month', 'year']),
     invoice_number: Optional[str] = None,
     bill_to_name: Optional[str] = None,

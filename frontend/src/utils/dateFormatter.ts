@@ -1,14 +1,22 @@
-import { format, parseISO } from 'date-fns';
+import dayjs, { Dayjs } from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 
-export const formatDate = (date: string | Date, formatString: string = 'yyyy-MM-dd'): string => {
-    const parsedDate = typeof date === 'string' ? parseISO(date) : date;
-    return format(parsedDate, formatString);
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+export const formatDate = (date: string | Date, formatString: string = 'YYYY-MM-DD'): string => {
+    return dayjs(date).format(formatString);
 };
 
 export const formatDateForAPI = (date: Date): string => {
-    return format(date, 'yyyy-MM-dd');
+    return dayjs(date).format('YYYY-MM-DD');
 };
 
 export const formatDateForDisplay = (date: string | Date): string => {
-    return formatDate(date, 'MMMM dd, yyyy');
+    return dayjs(date).format('MMMM DD, YYYY');
+};
+
+export const parseDate = (date: string | Date): Dayjs => {
+    return dayjs(date);
 };

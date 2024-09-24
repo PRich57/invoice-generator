@@ -59,7 +59,6 @@ class Invoice(Base):
     notes = Column(String, nullable=True)
     template_id = Column(Integer, ForeignKey("templates.id"), nullable=False, index=True)
 
-    # New columns to store precomputed values
     subtotal = Column(DECIMAL(10, 2), default=0)
     tax = Column(DECIMAL(10, 2), default=0)
     total = Column(DECIMAL(10, 2), default=0)

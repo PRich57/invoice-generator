@@ -11,7 +11,7 @@ import { useTemplates } from '../hooks/useTemplates';
 const Dashboard: React.FC = () => {
     const { isAuthenticated } = useAuth();
     const { contactCount } = useContacts();
-    const { invoiceCount } = useInvoices();
+    // const { invoiceCount } = useInvoices();
     const { templateCount } = useTemplates();
 
     return (
@@ -25,7 +25,7 @@ const Dashboard: React.FC = () => {
                         Invoices
                     </Typography>
                     <Typography component="p" variant="h4" sx={{ mb: 2 }}>
-                        {isAuthenticated ? invoiceCount : 'Create Now'}
+                        {isAuthenticated ? 0 : 'Create Now'}
                     </Typography>
                     <Typography color="text.secondary" sx={{ flex: 1 }}>
                         {isAuthenticated ? 'Active invoices' : 'Try our free invoice generator'}

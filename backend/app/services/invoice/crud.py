@@ -118,7 +118,6 @@ async def get_invoices(
 
 
 async def create_invoice(db: AsyncSession, invoice: InvoiceCreate, user_id: int) -> Invoice:
-    logger.info(f"Creating invoice with data: {invoice.model_dump()}")
     try:
         invoice_data = invoice.model_dump(exclude={'items', 'template_id'})
         db_invoice = Invoice(**invoice_data, user_id=user_id, template_id=invoice.template_id)
@@ -142,17 +141,15 @@ async def create_invoice(db: AsyncSession, invoice: InvoiceCreate, user_id: int)
         for item in db_invoice.items:
             await db.refresh(item, attribute_names=['subitems'])
 
-        logger.info(f"Invoice created successfully: ID {db_invoice.id}")
+
         return db_invoice
     except IntegrityError as e:
         await db.rollback()
-        logger.error(f"IntegrityError while creating invoice: {str(e)}")
         if "invoice_number" in str(e):
             raise AlreadyExistsError("invoice")
         raise BadRequestError("An error occurred while creating the invoice")
     except Exception as e:
         await db.rollback()
-        logger.error(f"Error creating invoice: {str(e)}", exc_info=True)
         raise BadRequestError("An unexpected error occurred while creating the invoice")
 
 

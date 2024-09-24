@@ -48,12 +48,15 @@ export interface Invoice {
     invoice_number: string;
     invoice_date: string;
     bill_to_id: number;
+    bill_to_name: string;
     send_to_id: number;
+    send_to_name: string;
     tax_rate: number;
     discount_percentage: number;
     notes?: string;
     items: InvoiceItem[];
     template_id: number;
+    template_name: string;
     subtotal: number;
     tax: number;
     total: number;

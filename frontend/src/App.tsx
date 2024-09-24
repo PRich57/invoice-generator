@@ -11,6 +11,12 @@ import routes from './constants/routes';
 import Layout from './layouts/MainLayout';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import 'react-toastify/dist/ReactToastify.css'
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { isAuthenticated, loading } = useAuth();

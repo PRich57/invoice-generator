@@ -1,16 +1,36 @@
+import { Delete as DeleteIcon, Edit as EditIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
+import {
+    Box,
+    Button,
+    Checkbox,
+    Chip,
+    FormControl,
+    InputLabel,
+    ListItemText,
+    MenuItem,
+    OutlinedInput,
+    Paper,
+    Select,
+    SelectChangeEvent,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    TextField,
+    Typography
+} from '@mui/material';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import dayjs from 'dayjs';
+import { useSnackbar } from 'notistack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box, TextField, FormControl, Select, MenuItem, Chip, InputLabel, SelectChangeEvent, OutlinedInput, Checkbox, ListItemText } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
+import ConfirmationDialog from '../components/common/ConfirmationDialogue';
+import ErrorMessage from '../components/common/ErrorMessage';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 import { useInvoices } from '../hooks/useInvoices';
 import { deleteInvoice, generateInvoicePDF, getContacts, getTemplates } from '../services/api';
-import LoadingSpinner from '../components/common/LoadingSpinner';
-import ErrorMessage from '../components/common/ErrorMessage';
-import ConfirmationDialog from '../components/common/ConfirmationDialogue';
-import { formatCurrency } from '../utils/currencyFormatter';
 import { Invoice } from '../types';
-import { useSnackbar } from 'notistack';
-import { useErrorHandler } from '../hooks/useErrorHandler';
+import { formatCurrency } from '../utils/currencyFormatter';
 
 const InvoicesList: React.FC = () => {
     const navigate = useNavigate();
@@ -47,10 +67,11 @@ const InvoicesList: React.FC = () => {
                 );
             } catch (err) {
                 console.error('Failed to fetch contacts or templates:', err);
+                handleError(err);
             }
         };
         fetchData();
-    }, []);
+    }, [handleError]);
 
     const handleFilterChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = event.target;
@@ -70,6 +91,14 @@ const InvoicesList: React.FC = () => {
         navigate(`/invoices/edit/${id}`);
     }, [navigate]);
 
+    const handleDateChange = (dateType: 'date_from' | 'date_to') => (newValue: dayjs.Dayjs | null) => {
+        if (newValue) {
+            updateFilters({ [dateType]: newValue.format('YYYY-MM-DD') });
+        } else {
+            updateFilters({ [dateType]: null });
+        }
+    };
+
     const handleDeleteClick = useCallback((id: number) => {
         setInvoiceToDelete(id);
         setDeleteConfirmOpen(true);
@@ -86,7 +115,7 @@ const InvoicesList: React.FC = () => {
             }
         }
         setDeleteConfirmOpen(false);
-    }, [invoiceToDelete, deleteInvoice, enqueueSnackbar, fetchInvoices, handleError]);
+    }, [invoiceToDelete, enqueueSnackbar, fetchInvoices, handleError]);
 
     const handleDownloadPDF = useCallback(async (invoice: Invoice) => {
         try {
@@ -109,7 +138,7 @@ const InvoicesList: React.FC = () => {
         return invoices.map((invoice) => (
             <TableRow key={invoice.id}>
                 <TableCell>{invoice.invoice_number}</TableCell>
-                <TableCell>{new Date(invoice.invoice_date).toLocaleDateString()}</TableCell>
+                <TableCell>{dayjs(invoice.invoice_date).format('MM/DD/YYYY')}</TableCell>
                 <TableCell>{contacts[invoice.bill_to_id] || 'Unknown'}</TableCell>
                 <TableCell>{formatCurrency(invoice.total)}</TableCell>
                 <TableCell>{templates[invoice.template_id] || 'Unknown'}</TableCell>
@@ -144,8 +173,9 @@ const InvoicesList: React.FC = () => {
                 </Button>
             </Box>
 
-            <Box mb={2}>
-                <FormControl fullWidth sx={{ mb: 2 }}>
+            <Box mb={2} display="flex" flexDirection="column" gap={2}>
+                {/* Group By */}
+                <FormControl fullWidth>
                     <InputLabel>Group By</InputLabel>
                     <Select
                         multiple
@@ -163,88 +193,87 @@ const InvoicesList: React.FC = () => {
                         {['bill_to', 'month', 'year'].map((option) => (
                             <MenuItem key={option} value={option}>
                                 <Checkbox checked={groupBy.indexOf(option) > -1} />
-                                <ListItemText primary={option} />
+                                <ListItemText primary={option.replace('_', ' ').toUpperCase()} />
                             </MenuItem>
                         ))}
                     </Select>
                 </FormControl>
-            </Box>
 
-            <Box mb={2}>
-                <TextField
-                    name="invoice_number"
-                    label="Invoice Number"
-                    value={filters.invoice_number}
-                    onChange={handleFilterChange}
-                    sx={{ mr: 2 }}
-                />
-                <TextField
-                    name="bill_to_name"
-                    label="Bill To Name"
-                    value={filters.bill_to_name}
-                    onChange={handleFilterChange}
-                    sx={{ mr: 2 }}
-                />
-                <TextField
-                    name="total_min"
-                    label="Min Total"
-                    type="number"
-                    value={filters.total_min || ''}
-                    onChange={handleFilterChange}
-                />
-                <TextField
-                    name="total_max"
-                    label="Max Total"
-                    type="number"
-                    value={filters.total_max || ''}
-                    onChange={handleFilterChange}
-                    sx={{ mr: 2 }}
-                />
-                <TextField
-                    name="date_from"
-                    label="From Date"
-                    type="date"
-                    slotProps={{
-                        inputLabel: {
-                            shrink: true
-                        }
-                    }}
-                    value={filters.date_from}
-                    onChange={handleFilterChange}
-                    sx={{ minWidth: 180 }}
-                />
-                <TextField
-                    name="date_to"
-                    label="To Date"
-                    type="date"
-                    slotProps={{
-                        inputLabel: {
-                            shrink: true
-                        }
-                    }}
-                    value={filters.date_to}
-                    onChange={handleFilterChange}
-                    sx={{ minWidth: 180 }}
-                />
+                {/* Filters */}
+                <Box display="flex" flexWrap="wrap" gap={2}>
+                    <TextField
+                        name="invoice_number"
+                        label="Invoice Number"
+                        value={filters.invoice_number}
+                        onChange={handleFilterChange}
+                        sx={{ minWidth: 200 }}
+                    />
+                    <TextField
+                        name="bill_to_name"
+                        label="Bill To Name"
+                        value={filters.bill_to_name}
+                        onChange={handleFilterChange}
+                        sx={{ minWidth: 200 }}
+                    />
+                    <TextField
+                        name="send_to_name"
+                        label="Send To Name"
+                        value={filters.send_to_name}
+                        onChange={handleFilterChange}
+                        sx={{ minWidth: 200 }}
+                    />
+                    <TextField
+                        name="total_min"
+                        label="Min Total"
+                        type="number"
+                        value={filters.total_min || ''}
+                        onChange={handleFilterChange}
+                        sx={{ minWidth: 150 }}
+                    />
+                    <TextField
+                        name="total_max"
+                        label="Max Total"
+                        type="number"
+                        value={filters.total_max || ''}
+                        onChange={handleFilterChange}
+                        sx={{ minWidth: 150 }}
+                    />
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                            label="From Date"
+                            value={filters.date_from ? dayjs(filters.date_from) : null}
+                            onChange={handleDateChange('date_from')}
+                            slotProps={{ textField: { sx: { minWidth: 180 } } }}
+                        />
+                        <DatePicker
+                            label="To Date"
+                            value={filters.date_to ? dayjs(filters.date_to) : null}
+                            onChange={handleDateChange('date_to')}
+                            slotProps={{ textField: { sx: { minWidth: 180 } } }}
+                        />
+                    </LocalizationProvider>
+                </Box>
             </Box>
 
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell onClick={() => handleSort('invoice_number')}>
+                            <TableCell onClick={() => handleSort('invoice_number')} sx={{ cursor: 'pointer' }}>
                                 Invoice Number {sortBy === 'invoice_number' && (sortOrder === 'asc' ? '▲' : '▼')}
                             </TableCell>
-                            <TableCell onClick={() => handleSort('date')}>
+                            <TableCell onClick={() => handleSort('date')} sx={{ cursor: 'pointer' }}>
                                 Date {sortBy === 'date' && (sortOrder === 'asc' ? '▲' : '▼')}
                             </TableCell>
-                            <TableCell onClick={() => handleSort('bill_to_name')}>
+                            <TableCell onClick={() => handleSort('bill_to_name')} sx={{ cursor: 'pointer' }}>
                                 Bill To {sortBy === 'bill_to_name' && (sortOrder === 'asc' ? '▲' : '▼')}
                             </TableCell>
-                            <TableCell onClick={() => handleSort('total')}>
+                            <TableCell onClick={() => handleSort('total')} sx={{ cursor: 'pointer' }}>
                                 Total {sortBy === 'total' && (sortOrder === 'asc' ? '▲' : '▼')}
                             </TableCell>
-                            <TableCell>Template</TableCell>
+                            <TableCell onClick={() => handleSort('template_name')} sx={{ cursor: 'pointer' }}>
+                                Template {sortBy === 'template_name' && (sortOrder === 'asc' ? '▲' : '▼')}
+                            </TableCell>
                             <TableCell>Actions</TableCell>
                         </TableRow>
                     </TableHead>
@@ -262,6 +291,7 @@ const InvoicesList: React.FC = () => {
             />
         </Box>
     );
+
 };
 
 export default InvoicesList;

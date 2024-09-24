@@ -10,11 +10,13 @@ import {
     Typography,
     SelectChangeEvent,
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useFormikContext, FieldArray } from 'formik';
 import { InvoiceCreate, Contact, Template } from '../../types';
 import InvoiceItemFields from './InvoiceItemFields';
 import { formatDateForAPI } from '../../utils/dateFormatter';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import dayjs from 'dayjs';
 
 interface InvoiceFormProps {
     contacts: Contact[];
@@ -23,11 +25,11 @@ interface InvoiceFormProps {
     setSelectedTemplate: (template: Template | null) => void;
 }
 
-const InvoiceForm: React.FC<InvoiceFormProps> = ({ 
+const InvoiceForm: React.FC<InvoiceFormProps> = ({
     contacts,
-    templates, 
-    isSubmitting, 
-    setSelectedTemplate 
+    templates,
+    isSubmitting,
+    setSelectedTemplate
 }) => {
     const formik = useFormikContext<InvoiceCreate>();
 
@@ -38,9 +40,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
         setSelectedTemplate(selected);
     };
 
-    const handleDateChange = (date: Date | null) => {
-        if (date) {
-            formik.setFieldValue('invoice_date', formatDateForAPI(date));
+    const handleDateChange = (newValue: dayjs.Dayjs | null) => {
+        if (newValue) {
+            formik.setFieldValue('invoice_date', formatDateForAPI(newValue.toDate()));
         }
     };
 
@@ -59,12 +61,14 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                     />
                 </Box>
                 <Box flex="1 1 45%">
-                    <DatePicker
-                        label="Invoice Date"
-                        value={formik.values.invoice_date ? new Date(formik.values.invoice_date) : null}
-                        onChange={handleDateChange}
-                        slotProps={{ textField: { fullWidth: true } }}
-                    />
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                            label="Invoice Date"
+                            value={formik.values.invoice_date ? dayjs(formik.values.invoice_date) : null}
+                            onChange={handleDateChange}
+                            slotProps={{ textField: { fullWidth: true } }}
+                        />
+                    </LocalizationProvider>
                 </Box>
                 <Box flex="1 1 45%">
                     <FormControl fullWidth>

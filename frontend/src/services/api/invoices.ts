@@ -3,6 +3,8 @@ import { API_ENDPOINTS } from '../../constants/apiEndpoints';
 import { Invoice, InvoiceCreate } from '../../types';
 
 export const getInvoices = async (params: {
+    skip?: number;
+    limit?: number;
     sort_by?: string;
     sort_order?: 'asc' | 'desc';
     group_by?: string[];
@@ -23,10 +25,7 @@ export const getInvoices = async (params: {
             acc[key] = value;
         }
         return acc;
-    }, {} as Record<string, any>);
-
-    console.log('Cleaned params:', cleanParams);
-    
+    }, {} as Record<string, any>);    
 
     try {
         const response = await api.get<Invoice[]>(API_ENDPOINTS.INVOICES, { params: cleanParams });
