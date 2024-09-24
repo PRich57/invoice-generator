@@ -1,12 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Invoice } from '../types';
 import { getInvoices } from '../services/api';
 import { useErrorHandler } from './useErrorHandler';
 
 export const useInvoices = () => {
-    const [invoices, setInvoices] = useState<Invoice[]>([]);
-    const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-    const [invoiceCount, setInvoiceCount] = useState<number>(0);
+    const [allInvoices, setAllInvoices] = useState<Invoice[]>([]);
     const [loading, setLoading] = useState(true);
     const { error, setError, handleError } = useErrorHandler();
     const [sortBy, setSortBy] = useState<string>('date');
@@ -29,56 +27,62 @@ export const useInvoices = () => {
                 sort_by: sortBy,
                 sort_order: sortOrder,
                 group_by: groupBy.length > 0 ? groupBy : undefined,
-                ...Object.entries(filters).reduce((acc, [key, value]) => {
-                    if (value) acc[key] = value;
-                    return acc;
-                }, {} as Record<string, any>),
-                total_min: filters.total_min ? parseFloat(filters.total_min) : undefined,
-                total_max: filters.total_max ? parseFloat(filters.total_max) : undefined,
-                date_from: filters.date_from || undefined,
-                date_to: filters.date_to || undefined,
             });
-            setInvoices(invoicesData);
-            console.log(invoicesData);
-            if (invoicesData.length > 0) {
-                setSelectedInvoice(invoicesData[0]);
-                setInvoiceCount(invoicesData.length);
-            }
+            setAllInvoices(invoicesData);
             setError(null);
         } catch (err) {
-            console.error('Error in fetchInvoices:', err)
             handleError(err);
         } finally {
             setLoading(false);
         }
-    }, [sortBy, sortOrder, groupBy, filters]);
+    }, [sortBy, sortOrder, groupBy, handleError]);
 
     useEffect(() => {
         fetchInvoices();
     }, [fetchInvoices]);
 
-    const updateSorting = (newSortBy: string) => {
-        if (newSortBy === sortBy) {
-            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortBy(newSortBy);
-            setSortOrder('asc');
-        }
-    };
+    const updateSorting = useCallback((newSortBy: string) => {
+        setSortBy(prevSortBy => {
+            if (newSortBy === prevSortBy) {
+                setSortOrder(prevOrder => prevOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+                setSortOrder('asc');
+            }
+            return newSortBy;
+        });
+    }, []);
 
-    const updateGrouping = (newGroupBy: string[]) => {
+    const updateGrouping = useCallback((newGroupBy: string[]) => {
         setGroupBy(newGroupBy);
-    };
+    }, []);
 
-    const updateFilters = (newFilters: Partial<typeof filters>) => {
+    const updateFilters = useCallback((newFilters: Partial<typeof filters>) => {
         setFilters(prevFilters => ({ ...prevFilters, ...newFilters }));
-    };
+    }, []);
+
+    const filteredInvoices = useMemo(() => {
+        return allInvoices.filter(invoice => {
+            const invoiceDate = new Date(invoice.invoice_date);
+            const dateFrom = filters.date_from ? new Date(filters.date_from) : null;
+            const dateTo = filters.date_to ? new Date(filters.date_to) : null;
+
+            return (
+                invoice.invoice_number.toLowerCase().includes(filters.invoice_number.toLowerCase()) &&
+                (filters.bill_to_name === '' || invoice.bill_to_id.toString().includes(filters.bill_to_name)) &&
+                (filters.send_to_name === '' || invoice.send_to_id.toString().includes(filters.send_to_name)) &&
+                (filters.total_min === '' || invoice.total >= parseFloat(filters.total_min)) &&
+                (filters.total_max === '' || invoice.total <= parseFloat(filters.total_max)) &&
+                (!dateFrom || invoiceDate >= dateFrom) &&
+                (!dateTo || invoiceDate <= dateTo)
+            );
+        });
+    }, [allInvoices, filters]);
+
+    const invoiceCount = useMemo(() => allInvoices.length, [allInvoices]);
 
     return {
-        invoices,
+        invoices: filteredInvoices,
         invoiceCount,
-        selectedInvoice,
-        setSelectedInvoice,
         error,
         loading,
         fetchInvoices,
@@ -89,6 +93,5 @@ export const useInvoices = () => {
         sortOrder,
         groupBy,
         filters,
-        setFilters
     };
 };

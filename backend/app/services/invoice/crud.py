@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.exceptions import BadRequestError, NotFoundError, AlreadyExistsError
 from ...models.contact import Contact
+from ...models.template import Template
 from ...models.invoice import Invoice, InvoiceItem, InvoiceSubItem
 from ...schemas.invoice import InvoiceCreate
 
@@ -50,10 +51,12 @@ async def get_invoices(
 ) -> list[Invoice]:
     BillToContact = aliased(Contact)
     SendToContact = aliased(Contact)
+    AliasedTemplate = aliased(Template)
 
     stmt = select(Invoice).options(
         selectinload(Invoice.bill_to),
-        selectinload(Invoice.send_to)
+        selectinload(Invoice.send_to),
+        selectinload(Invoice.template)
     ).filter(Invoice.user_id == user_id)
 
     # Apply filters
@@ -80,9 +83,16 @@ async def get_invoices(
             'bill_to_name': BillToContact.name,
             'send_to_name': SendToContact.name,
             'date': Invoice.invoice_date,
-            'total': Invoice.total
+            'total': Invoice.total,
+            'template_name': AliasedTemplate.name
         }.get(sort_by)
         if sort_column is not None:
+            if sort_by == 'template_name':
+                stmt = stmt.join(Template)
+            elif sort_by == 'bill_to_name':
+                stmt = stmt.join(BillToContact, Invoice.bill_to)
+            elif sort_by == 'send_to_name':
+                stmt = stmt.join(SendToContact, Invoice.send_to)
             stmt = stmt.order_by(order_func(sort_column))
 
     # Apply grouping
@@ -90,6 +100,7 @@ async def get_invoices(
         group_columns = []
         for group in group_by:
             if group == 'bill_to':
+                stmt = stmt.join(BillToContact, Invoice.bill_to)
                 group_columns.append(BillToContact.name)
             elif group == 'month':
                 group_columns.append(func.date_trunc('month', Invoice.invoice_date))
@@ -97,7 +108,7 @@ async def get_invoices(
                 group_columns.append(func.date_trunc('year', Invoice.invoice_date))
         
         if group_columns:
-            stmt = stmt.group_by(*group_columns)
+            stmt = stmt.group_by(*group_columns, Invoice.id)
 
     # Apply pagination
     stmt = stmt.offset(skip).limit(limit)

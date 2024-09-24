@@ -64,7 +64,7 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
                 fullWidth
                 margin="normal"
                 name={`items.${index}.discount_percentage`}
-                label="Discount Percentage"
+                label="Unit Discount (%)"
                 type="number"
                 value={item.discount_percentage}
                 onChange={handleChange}

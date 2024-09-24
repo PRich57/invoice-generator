@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box, TextField, FormControl, Select, MenuItem, Chip, InputLabel, SelectChangeEvent } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box, TextField, FormControl, Select, MenuItem, Chip, InputLabel, SelectChangeEvent, OutlinedInput, Checkbox, ListItemText } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
 import { useInvoices } from '../hooks/useInvoices';
 import { deleteInvoice, generateInvoicePDF, getContacts, getTemplates } from '../services/api';
@@ -17,7 +17,7 @@ const InvoicesList: React.FC = () => {
     const {
         invoices, error, loading, fetchInvoices,
         updateSorting, updateGrouping, updateFilters,
-        sortBy, sortOrder, groupBy, filters, setFilters
+        sortBy, sortOrder, groupBy, filters
     } = useInvoices();
     const [contacts, setContacts] = useState<Record<number, string>>({});
     const [templates, setTemplates] = useState<Record<number, string>>({});
@@ -26,50 +26,18 @@ const InvoicesList: React.FC = () => {
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [invoiceToDelete, setInvoiceToDelete] = useState<number | null>(null);
 
-    const handleSort = (column: string) => {
-        updateSorting(column);
-    };
-
-    const handleGroup = (event: SelectChangeEvent<string[]>) => {
-        const {
-            target: { value },
-        } = event;
-        updateGrouping(typeof value === 'string' ? value.split(',') : value);
-    };
-
-    const handleFilterChange = (field: string, value: string) => {
-        updateFilters({ [field]: value || undefined });
-    };
-
-    const handleEdit = (id: number) => {
-        navigate(`/invoices/edit/${id}`);
-    };
-
-    useEffect(() => {
-        console.log('Current filters:', filters);
-        console.log('Sort by:', sortBy);
-        console.log('Sort order:', sortOrder);
-        console.log('Group by:', groupBy);
-    }, [filters, sortBy, sortOrder, groupBy]);
-
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const contactsData = await getContacts();
                 const templatesData = await getTemplates();
 
-                console.log('Fetched Contacts:', contactsData);
-                console.log('Fetched Templates:', templatesData);
-
                 setContacts(
                     contactsData.reduce((acc, contact) => {
                         acc[contact.id] = contact.name;
-                        console.log("test", acc);
                         return acc;
                     }, {} as Record<number, string>)
                 );
-
-                console.log('Contacts:', contacts)
 
                 setTemplates(
                     templatesData.reduce((acc, template) => {
@@ -84,17 +52,30 @@ const InvoicesList: React.FC = () => {
         fetchData();
     }, []);
 
-    useEffect(() => {
-        console.log('Invoices:', invoices);
-    }, [invoices]);
+    const handleFilterChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = event.target;
+        updateFilters({ [name]: value });
+    }, [updateFilters]);
 
+    const handleSort = useCallback((column: string) => {
+        updateSorting(column);
+    }, [updateSorting]);
 
-    const handleDeleteClick = (id: number) => {
+    const handleGroup = useCallback((event: SelectChangeEvent<string[]>) => {
+        const value = event.target.value;
+        updateGrouping(typeof value === 'string' ? value.split(',') : value);
+    }, [updateGrouping]);
+
+    const handleEdit = useCallback((id: number) => {
+        navigate(`/invoices/edit/${id}`);
+    }, [navigate]);
+
+    const handleDeleteClick = useCallback((id: number) => {
         setInvoiceToDelete(id);
         setDeleteConfirmOpen(true);
-    };
+    }, []);
 
-    const handleDeleteConfirm = async () => {
+    const handleDeleteConfirm = useCallback(async () => {
         if (invoiceToDelete) {
             try {
                 await deleteInvoice(invoiceToDelete);
@@ -105,9 +86,9 @@ const InvoicesList: React.FC = () => {
             }
         }
         setDeleteConfirmOpen(false);
-    };
+    }, [invoiceToDelete, deleteInvoice, enqueueSnackbar, fetchInvoices, handleError]);
 
-    const handleDownloadPDF = async (invoice: Invoice) => {
+    const handleDownloadPDF = useCallback(async (invoice: Invoice) => {
         try {
             const response = await generateInvoicePDF(invoice.id, invoice.template_id);
             const blob = new Blob([response], { type: 'application/pdf' });
@@ -122,9 +103,32 @@ const InvoicesList: React.FC = () => {
         } catch (err) {
             handleError(err);
         }
-    };
+    }, [enqueueSnackbar, handleError]);
 
-    if (loading) return <LoadingSpinner />;
+    const renderInvoices = useMemo(() => {
+        return invoices.map((invoice) => (
+            <TableRow key={invoice.id}>
+                <TableCell>{invoice.invoice_number}</TableCell>
+                <TableCell>{new Date(invoice.invoice_date).toLocaleDateString()}</TableCell>
+                <TableCell>{contacts[invoice.bill_to_id] || 'Unknown'}</TableCell>
+                <TableCell>{formatCurrency(invoice.total)}</TableCell>
+                <TableCell>{templates[invoice.template_id] || 'Unknown'}</TableCell>
+                <TableCell>
+                    <Button startIcon={<EditIcon />} onClick={() => handleEdit(invoice.id)}>
+                        Edit
+                    </Button>
+                    <Button startIcon={<DeleteIcon />} onClick={() => handleDeleteClick(invoice.id)}>
+                        Delete
+                    </Button>
+                    <Button startIcon={<PdfIcon />} onClick={() => handleDownloadPDF(invoice)}>
+                        Download PDF
+                    </Button>
+                </TableCell>
+            </TableRow>
+        ));
+    }, [invoices, contacts, templates, handleEdit, handleDeleteClick, handleDownloadPDF]);
+
+    if (loading && invoices.length === 0) return <LoadingSpinner />;
     if (error) return <ErrorMessage message={error} />;
 
     return (
@@ -141,12 +145,13 @@ const InvoicesList: React.FC = () => {
             </Box>
 
             <Box mb={2}>
-                <FormControl fullWidth>
+                <FormControl fullWidth sx={{ mb: 2 }}>
                     <InputLabel>Group By</InputLabel>
                     <Select
                         multiple
                         value={groupBy}
                         onChange={handleGroup}
+                        input={<OutlinedInput label="Group By" />}
                         renderValue={(selected) => (
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                 {(selected as string[]).map((value) => (
@@ -155,9 +160,12 @@ const InvoicesList: React.FC = () => {
                             </Box>
                         )}
                     >
-                        <MenuItem value="bill_to">Bill To</MenuItem>
-                        <MenuItem value="month">Month</MenuItem>
-                        <MenuItem value="year">Year</MenuItem>
+                        {['bill_to', 'month', 'year'].map((option) => (
+                            <MenuItem key={option} value={option}>
+                                <Checkbox checked={groupBy.indexOf(option) > -1} />
+                                <ListItemText primary={option} />
+                            </MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
             </Box>
@@ -166,28 +174,57 @@ const InvoicesList: React.FC = () => {
                 <TextField
                     name="invoice_number"
                     label="Invoice Number"
-                    value={filters.invoice_number || ''}
-                    onChange={(e) => handleFilterChange('invoice_number', e.target.value)}
+                    value={filters.invoice_number}
+                    onChange={handleFilterChange}
+                    sx={{ mr: 2 }}
                 />
                 <TextField
                     name="bill_to_name"
                     label="Bill To Name"
-                    value={filters.bill_to_name || ''}
-                    onChange={(e) => handleFilterChange('bill_to_name', e.target.value)}
+                    value={filters.bill_to_name}
+                    onChange={handleFilterChange}
+                    sx={{ mr: 2 }}
                 />
                 <TextField
                     name="total_min"
                     label="Min Total"
                     type="number"
                     value={filters.total_min || ''}
-                    onChange={(e) => handleFilterChange('total_min', e.target.value)}
+                    onChange={handleFilterChange}
                 />
                 <TextField
                     name="total_max"
                     label="Max Total"
                     type="number"
                     value={filters.total_max || ''}
-                    onChange={(e) => handleFilterChange('total_max', e.target.value)}
+                    onChange={handleFilterChange}
+                    sx={{ mr: 2 }}
+                />
+                <TextField
+                    name="date_from"
+                    label="From Date"
+                    type="date"
+                    slotProps={{
+                        inputLabel: {
+                            shrink: true
+                        }
+                    }}
+                    value={filters.date_from}
+                    onChange={handleFilterChange}
+                    sx={{ minWidth: 180 }}
+                />
+                <TextField
+                    name="date_to"
+                    label="To Date"
+                    type="date"
+                    slotProps={{
+                        inputLabel: {
+                            shrink: true
+                        }
+                    }}
+                    value={filters.date_to}
+                    onChange={handleFilterChange}
+                    sx={{ minWidth: 180 }}
                 />
             </Box>
 
@@ -212,26 +249,7 @@ const InvoicesList: React.FC = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {invoices.map((invoice) => (
-                            <TableRow key={invoice.id}>
-                                <TableCell>{invoice.invoice_number}</TableCell>
-                                <TableCell>{new Date(invoice.invoice_date).toLocaleDateString()}</TableCell>
-                                <TableCell>{contacts[invoice.bill_to_id] || 'Unknown'}</TableCell>
-                                <TableCell>{formatCurrency(invoice.total)}</TableCell>
-                                <TableCell>{templates[invoice.template_id] || 'Unknown'}</TableCell>
-                                <TableCell>
-                                    <Button startIcon={<EditIcon />} onClick={() => handleEdit(invoice.id)}>
-                                        Edit
-                                    </Button>
-                                    <Button startIcon={<DeleteIcon />} onClick={() => handleDeleteClick(invoice.id)}>
-                                        Delete
-                                    </Button>
-                                    <Button startIcon={<PdfIcon />} onClick={() => handleDownloadPDF(invoice)}>
-                                        Download PDF
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {renderInvoices}
                     </TableBody>
                 </Table>
             </TableContainer>
