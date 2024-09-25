@@ -7,10 +7,13 @@ interface InvoiceFilters {
     invoice_number?: string;
     bill_to_name?: string;
     send_to_name?: string;
+    client_type?: string;
+    invoice_type?: string;
     date_from?: string;
     date_to?: string;
     total_min?: string;
     total_max?: string;
+    status?: string;
 }
 
 export const useInvoices = () => {
@@ -24,6 +27,9 @@ export const useInvoices = () => {
         invoice_number: '',
         bill_to_name: '',
         send_to_name: '',
+        client_type: '',
+        invoice_type: '',
+        status: '',
         date_from: '',
         date_to: '',
         total_min: '',
@@ -40,12 +46,15 @@ export const useInvoices = () => {
                 invoice_number: filters.invoice_number || undefined,
                 bill_to_name: filters.bill_to_name || undefined,
                 send_to_name: filters.send_to_name || undefined,
+                client_type: filters.client_type || undefined,
+                invoice_type: filters.invoice_type || undefined,
+                status: filters.status || undefined,
                 date_from: filters.date_from || undefined,
                 date_to: filters.date_to || undefined,
                 total_min: filters.total_min ? parseFloat(filters.total_min) : undefined,
                 total_max: filters.total_max ? parseFloat(filters.total_max) : undefined,
                 skip: 0, 
-                limit: 10,
+                limit: 25,
             });
             setInvoices(invoicesData);
             setError(null);

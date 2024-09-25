@@ -60,6 +60,16 @@ export interface Invoice {
     subtotal: number;
     tax: number;
     total: number;
+    client_type?: string;
+    invoice_type?: string;
+    status?: string;
+}
+
+export interface GroupedInvoices {
+    [groupKey: string]: {
+        invoice_count: number;
+        total_amount: number;
+    }
 }
 
 export interface InvoicePreviewProps {

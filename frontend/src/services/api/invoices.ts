@@ -15,6 +15,9 @@ export const getInvoices = async (params: {
     date_to?: string;
     total_min?: number;
     total_max?: number;
+    client_type?: string;
+    invoice_type?: string;
+    status?: string;
 }) => {
 
     const cleanParams = Object.entries(params).reduce((acc, [key, value]) => {

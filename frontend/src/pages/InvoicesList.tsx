@@ -1,36 +1,24 @@
-import { Delete as DeleteIcon, Edit as EditIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
-import {
-    Box,
-    Button,
-    Checkbox,
-    Chip,
-    FormControl,
-    InputLabel,
-    ListItemText,
-    MenuItem,
-    OutlinedInput,
-    Paper,
-    Select,
-    SelectChangeEvent,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    TextField,
-    Typography
-} from '@mui/material';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import dayjs from 'dayjs';
-import { useSnackbar } from 'notistack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ConfirmationDialog from '../components/common/ConfirmationDialogue';
-import ErrorMessage from '../components/common/ErrorMessage';
-import LoadingSpinner from '../components/common/LoadingSpinner';
-import { useErrorHandler } from '../hooks/useErrorHandler';
+import {
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
+    Button, Typography, Box, TextField, FormControl, Select, MenuItem,
+    Chip, InputLabel, SelectChangeEvent, OutlinedInput, Checkbox, ListItemText
+} from '@mui/material';
+import { Edit as EditIcon, Delete as DeleteIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
 import { useInvoices } from '../hooks/useInvoices';
 import { deleteInvoice, generateInvoicePDF, getContacts, getTemplates } from '../services/api';
-import { Invoice } from '../types';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import ErrorMessage from '../components/common/ErrorMessage';
+import ConfirmationDialog from '../components/common/ConfirmationDialogue';
 import { formatCurrency } from '../utils/currencyFormatter';
+import { Invoice, GroupedInvoices } from '../types';
+import { useSnackbar } from 'notistack';
+import { useErrorHandler } from '../hooks/useErrorHandler';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import dayjs from 'dayjs';
 
 const InvoicesList: React.FC = () => {
     const navigate = useNavigate();
@@ -73,31 +61,34 @@ const InvoicesList: React.FC = () => {
         fetchData();
     }, [handleError]);
 
-    const handleFilterChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFilterChange = useCallback(
+        (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>) => {
         const { name, value } = event.target;
         updateFilters({ [name]: value });
     }, [updateFilters]);
+
+    const handleGroup = useCallback((event: SelectChangeEvent<string[]>) => {
+        const {
+            target: { value },
+        } = event;
+        updateGrouping(typeof value === 'string' ? value.split(',') : value);
+    }, [updateGrouping]);
 
     const handleSort = useCallback((column: string) => {
         updateSorting(column);
     }, [updateSorting]);
 
-    const handleGroup = useCallback((event: SelectChangeEvent<string[]>) => {
-        const value = event.target.value;
-        updateGrouping(typeof value === 'string' ? value.split(',') : value);
-    }, [updateGrouping]);
-
     const handleEdit = useCallback((id: number) => {
         navigate(`/invoices/edit/${id}`);
     }, [navigate]);
 
-    const handleDateChange = (dateType: 'date_from' | 'date_to') => (newValue: dayjs.Dayjs | null) => {
+    const handleDateChange = useCallback((dateType: 'date_from' | 'date_to') => (newValue: dayjs.Dayjs | null) => {
         if (newValue) {
             updateFilters({ [dateType]: newValue.format('YYYY-MM-DD') });
         } else {
-            updateFilters({ [dateType]: null });
+            updateFilters({ [dateType]: undefined });
         }
-    };
+    }, [updateFilters]);
 
     const handleDeleteClick = useCallback((id: number) => {
         setInvoiceToDelete(id);
@@ -134,8 +125,99 @@ const InvoicesList: React.FC = () => {
         }
     }, [enqueueSnackbar, handleError]);
 
+    const groupOptions = [
+        { value: 'bill_to', label: 'Bill To' },
+        { value: 'send_to', label: 'Send To' },
+        { value: 'month', label: 'Month' },
+        { value: 'year', label: 'Year' },
+        { value: 'status', label: 'Status' },
+        { value: 'client_type', label: 'Client Type' },
+        { value: 'invoice_type', label: 'Invoice Type' },
+    ];
+
     const renderInvoices = useMemo(() => {
-        return invoices.map((invoice) => (
+        // If grouped, render grouped data
+        if (groupBy.length > 0) {
+            const grouped: GroupedInvoices = invoices.reduce((acc: GroupedInvoices, invoice: Invoice) => {
+                let key = 'Others';
+                if (groupBy.includes('bill_to')) {
+                    key = contacts[invoice.bill_to_id] || 'Unknown';
+                } else if (groupBy.includes('send_to')) {
+                    key = contacts[invoice.send_to_id] || 'Unknown';
+                } else if (groupBy.includes('month')) {
+                    key = dayjs(invoice.invoice_date).format('MMMM');
+                } else if (groupBy.includes('year')) {
+                    key = dayjs(invoice.invoice_date).format('YYYY');
+                } else if (groupBy.includes('status')) {
+                    key = invoice.status || 'Unknown';
+                } else if (groupBy.includes('client_type')) {
+                    key = invoice.client_type || 'Unknown';
+                } else if (groupBy.includes('invoice_type')) {
+                    key = invoice.invoice_type || 'Unknown';
+                }
+
+                if (!acc[key]) acc[key] = { invoice_count: 0, total_amount: 0 };
+                acc[key].invoice_count += 1;
+                acc[key].total_amount += parseFloat(invoice.total.toString());
+                return acc;
+            }, {});
+
+            return Object.entries(grouped).map(([group, data]) => (
+                <React.Fragment key={`group-${group}`}>
+                    <TableRow>
+                        <TableCell colSpan={6}>
+                            <Typography variant="h6">
+                                {group} &nbsp;
+                                <Typography variant="subtitle2" component="span">
+                                    ({data.invoice_count} invoices, Total: {formatCurrency(data.total_amount)})
+                                </Typography>
+                            </Typography>
+                        </TableCell>
+                    </TableRow>
+                    {invoices.filter(invoice => {
+                        let key = 'Others';
+                        if (groupBy.includes('bill_to')) {
+                            key = contacts[invoice.bill_to_id] || 'Unknown';
+                        } else if (groupBy.includes('send_to')) {
+                            key = contacts[invoice.send_to_id] || 'Unknown';
+                        } else if (groupBy.includes('month')) {
+                            key = dayjs(invoice.invoice_date).format('MMMM');
+                        } else if (groupBy.includes('year')) {
+                            key = dayjs(invoice.invoice_date).format('YYYY');
+                        } else if (groupBy.includes('status')) {
+                            key = invoice.status || 'Unknown';
+                        } else if (groupBy.includes('client_type')) {
+                            key = invoice.client_type || 'Unknown';
+                        } else if (groupBy.includes('invoice_type')) {
+                            key = invoice.invoice_type || 'Unknown';
+                        }
+                        return key === group;
+                    }).map((invoice: Invoice) => (
+                        <TableRow key={invoice.id}>
+                            <TableCell>{invoice.invoice_number}</TableCell>
+                            <TableCell>{dayjs(invoice.invoice_date).format('MM/DD/YYYY')}</TableCell>
+                            <TableCell>{contacts[invoice.bill_to_id] || 'Unknown'}</TableCell>
+                            <TableCell>{formatCurrency(invoice.total)}</TableCell>
+                            <TableCell>{templates[invoice.template_id] || 'Unknown'}</TableCell>
+                            <TableCell>
+                                <Button startIcon={<EditIcon />} onClick={() => handleEdit(invoice.id)}>
+                                    Edit
+                                </Button>
+                                <Button startIcon={<DeleteIcon />} onClick={() => handleDeleteClick(invoice.id)}>
+                                    Delete
+                                </Button>
+                                <Button startIcon={<PdfIcon />} onClick={() => handleDownloadPDF(invoice)}>
+                                    Download PDF
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </React.Fragment>
+            ));
+        }
+
+        // Default rendering without grouping
+        return invoices.map((invoice: Invoice) => (
             <TableRow key={invoice.id}>
                 <TableCell>{invoice.invoice_number}</TableCell>
                 <TableCell>{dayjs(invoice.invoice_date).format('MM/DD/YYYY')}</TableCell>
@@ -155,7 +237,7 @@ const InvoicesList: React.FC = () => {
                 </TableCell>
             </TableRow>
         ));
-    }, [invoices, contacts, templates, handleEdit, handleDeleteClick, handleDownloadPDF]);
+    }, [invoices, groupBy, contacts, templates, handleEdit, handleDeleteClick, handleDownloadPDF]);
 
     if (loading && invoices.length === 0) return <LoadingSpinner />;
     if (error) return <ErrorMessage message={error} />;
@@ -179,21 +261,22 @@ const InvoicesList: React.FC = () => {
                     <InputLabel>Group By</InputLabel>
                     <Select
                         multiple
+                        name="groupBy"
                         value={groupBy}
                         onChange={handleGroup}
                         input={<OutlinedInput label="Group By" />}
                         renderValue={(selected) => (
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                 {(selected as string[]).map((value) => (
-                                    <Chip key={value} label={value} />
+                                    <Chip key={value} label={groupOptions.find(opt => opt.value === value)?.label || value} />
                                 ))}
                             </Box>
                         )}
                     >
-                        {['bill_to', 'month', 'year'].map((option) => (
-                            <MenuItem key={option} value={option}>
-                                <Checkbox checked={groupBy.indexOf(option) > -1} />
-                                <ListItemText primary={option.replace('_', ' ').toUpperCase()} />
+                        {groupOptions.map((option) => (
+                            <MenuItem key={option.value} value={option.value}>
+                                <Checkbox checked={groupBy.indexOf(option.value) > -1} />
+                                <ListItemText primary={option.label} />
                             </MenuItem>
                         ))}
                     </Select>
@@ -222,6 +305,49 @@ const InvoicesList: React.FC = () => {
                         onChange={handleFilterChange}
                         sx={{ minWidth: 200 }}
                     />
+                    <FormControl sx={{ minWidth: 200 }}>
+                        <InputLabel>Client Type</InputLabel>
+                        <Select
+                            name="client_type"
+                            value={filters.client_type}
+                            onChange={handleFilterChange}
+                            label="Client Type"
+                        >
+                            <MenuItem value=""><em>None</em></MenuItem>
+                            <MenuItem value="INDIVIDUAL">Individual</MenuItem>
+                            <MenuItem value="BUSINESS">Business</MenuItem>
+                            {/* Add more client types as needed */}
+                        </Select>
+                    </FormControl>
+                    <FormControl sx={{ minWidth: 200 }}>
+                        <InputLabel>Invoice Type</InputLabel>
+                        <Select
+                            name="invoice_type"
+                            value={filters.invoice_type}
+                            onChange={handleFilterChange}
+                            label="Invoice Type"
+                        >
+                            <MenuItem value=""><em>None</em></MenuItem>
+                            <MenuItem value="SERVICE">Service</MenuItem>
+                            <MenuItem value="PRODUCT">Product</MenuItem>
+                            {/* Add more invoice types as needed */}
+                        </Select>
+                    </FormControl>
+                    <FormControl sx={{ minWidth: 200 }}>
+                        <InputLabel>Status</InputLabel>
+                        <Select
+                            name="status"
+                            value={filters.status}
+                            onChange={handleFilterChange}
+                            label="Status"
+                        >
+                            <MenuItem value=""><em>None</em></MenuItem>
+                            <MenuItem value="PAID">Paid</MenuItem>
+                            <MenuItem value="UNPAID">Unpaid</MenuItem>
+                            <MenuItem value="OVERDUE">Overdue</MenuItem>
+                            {/* Add more statuses as needed */}
+                        </Select>
+                    </FormControl>
                     <TextField
                         name="total_min"
                         label="Min Total"
