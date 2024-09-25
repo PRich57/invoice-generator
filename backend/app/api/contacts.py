@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,7 +27,7 @@ async def create_contact(
         raise AlreadyExistsError("contact")
 
 
-@router.get("/", response_model=list[Contact])
+@router.get("/", response_model=List[Contact])
 async def read_contacts(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),

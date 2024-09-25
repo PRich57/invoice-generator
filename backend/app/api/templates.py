@@ -1,4 +1,5 @@
 import logging
+from typing import List
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,7 +28,7 @@ async def create_template(
         raise AlreadyExistsError("template_name")
 
 
-@router.get("/", response_model=list[Template])
+@router.get("/", response_model=List[Template])
 async def read_templates(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),

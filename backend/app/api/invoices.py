@@ -1,6 +1,6 @@
 import logging
 from datetime import date
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,9 +21,7 @@ from ..services.invoice import crud
 
 logger = logging.getLogger(__name__)
 
-
 router = APIRouter()
-
 
 @router.post("/", response_model=InvoiceDetail)
 async def create_invoice(
@@ -41,16 +39,19 @@ async def create_invoice(
         raise AlreadyExistsError("invoice_number")
 
 
-@router.get("/", response_model=list[InvoiceSummary])
+@router.get("/", response_model=List[InvoiceSummary])
 async def read_invoices(
     skip: int = 0,
     limit: int = 100,
-    sort_by: Optional[str] = Query(None, enum=['invoice_number', 'bill_to_name', 'send_to_name', 'date', 'total']),
+    sort_by: Optional[str] = Query(None, enum=['invoice_number', 'bill_to_name', 'send_to_name', 'date', 'total', 'status', 'client_type', 'invoice_type']),
     sort_order: str = Query('desc', enum=['asc', 'desc']),
-    group_by: list[str] = Query(default=[], enum=['bill_to', 'month', 'year']),
+    group_by: List[str] = Query(default=[], enum=['bill_to', 'send_to', 'month', 'year', 'status', 'client_type', 'invoice_type']),
     invoice_number: Optional[str] = None,
     bill_to_name: Optional[str] = None,
     send_to_name: Optional[str] = None,
+    client_type: Optional[str] = None,
+    invoice_type: Optional[str] = None,
+    status: Optional[str] = None,
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
     total_min: Optional[float] = None,
@@ -58,19 +59,24 @@ async def read_invoices(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
-    logger.info(f"Received request with parameters: skip={skip}, limit={limit}, sort_by={sort_by}, sort_order={sort_order}, group_by={group_by}, invoice_number={invoice_number}, bill_to_name={bill_to_name}, send_to_name={send_to_name}, date_from={date_from}, date_to={date_to}, total_min={total_min}, total_max={total_max}")
+    logger.info(f"Received request with parameters: skip={skip}, limit={limit}, sort_by={sort_by}, sort_order={sort_order}, group_by={group_by}, invoice_number={invoice_number}, bill_to_name={bill_to_name}, send_to_name={send_to_name}, client_type={client_type}, invoice_type={invoice_type}, status={status}, date_from={date_from}, date_to={date_to}, total_min={total_min}, total_max={total_max}")
     
     # Convert empty strings to None
     invoice_number = invoice_number if invoice_number else None
     bill_to_name = bill_to_name if bill_to_name else None
     send_to_name = send_to_name if send_to_name else None
+    client_type = client_type if client_type else None
+    invoice_type = invoice_type if invoice_type else None
+    status = status if status else None
 
     try:
         invoices = await crud.get_invoices(
             db, current_user.id, skip=skip, limit=limit,
             sort_by=sort_by, sort_order=sort_order, group_by=group_by,
             invoice_number=invoice_number, bill_to_name=bill_to_name,
-            send_to_name=send_to_name, date_from=date_from, date_to=date_to,
+            send_to_name=send_to_name, client_type=client_type,
+            invoice_type=invoice_type, status=status,
+            date_from=date_from, date_to=date_to,
             total_min=total_min, total_max=total_max
         )
         return invoices
@@ -103,7 +109,7 @@ async def update_invoice(
         return InvoiceDetail.model_validate(db_invoice)
     except NotFoundError:
         raise NotFoundError("invoice")
-    except BadRequestError:
+    except BadRequestError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error updating invoice: {str(e)}")
@@ -171,9 +177,9 @@ async def regenerate_invoice(
 
 @router.get("/grouped", response_model=dict)
 async def read_grouped_invoices(
-    group_by: list[str] = Query(..., enum=['bill_to', 'send_to', 'month', 'year']),
-    date_from: date | None = None,
-    date_to: date | None = None,
+    group_by: List[str] = Query(..., enum=['bill_to', 'send_to', 'month', 'year', 'status', 'client_type', 'invoice_type']),
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):

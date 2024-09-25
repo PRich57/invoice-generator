@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -32,7 +33,7 @@ async def get_contacts(
     email: str | None = None,
     sort_by: str | None = None, 
     sort_order: str = 'asc'
-) -> list[Contact]:
+) -> List[Contact]:
     try:
         stmt = select(Contact).filter(Contact.user_id == user_id)
 
