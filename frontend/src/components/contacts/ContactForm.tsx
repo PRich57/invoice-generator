@@ -1,15 +1,47 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TextField, Button, Box } from '@mui/material';
 import { useContactForm } from '../../hooks/useContactForm';
-import ErrorMessage from '../common/ErrorMessage';
 import LoadingSpinner from '../common/LoadingSpinner';
+import { MuiTelInput } from 'mui-tel-input';
+import AddressAutocomplete, { AddressAutocompleteValue } from 'mui-address-autocomplete';
+
+const PLACES_API_KEY = process.env.PLACES_API_KEY;
 
 interface ContactFormProps {
     id?: string;
 }
 
+interface AddressComponent {
+    long_name: string;
+    short_name: string;
+    types: string[];
+}
+
 const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
     const { formik, isLoading, isSubmitting } = useContactForm();
+    const [ phone, setPhone ] = useState('')
+    const [ address, setAddress] = useState<AddressAutocompleteValue | null>(null);
+
+    const handlePhoneChange = (newValue: string) => {
+        setPhone(newValue)
+    }
+
+    const handleAddressChange = (newValue: AddressAutocompleteValue | null) => {
+        console.log('AddressAutocompleteValue:', JSON.stringify(newValue, null, 2));
+        setAddress(newValue);
+        if (newValue) {
+            // We'll update this part once we see the actual structure
+            formik.setValues({
+                ...formik.values,
+                // Temporarily comment out these lines until we know the correct structure
+                // street_address: newValue.description || '',
+                // city: '',
+                // state: '',
+                // postal_code: '',
+                // country: '',
+            });
+        }
+    };
 
     if (isLoading) return <LoadingSpinner />;
 
@@ -49,7 +81,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 helperText={formik.touched.email && formik.errors.email}
             />
 
-            <TextField
+            {/* <TextField
                 fullWidth
                 margin="normal"
                 name="phone"
@@ -58,9 +90,19 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 onChange={formik.handleChange}
                 error={formik.touched.phone && Boolean(formik.errors.phone)}
                 helperText={formik.touched.phone && formik.errors.phone}
+            /> */}
+
+            <MuiTelInput
+                value={phone}
+                onChange={handlePhoneChange}
+                defaultCountry='US'
+                fullWidth
+                name='phone'
+                label='Phone'
+                margin='normal'
             />
 
-            <TextField
+            {/* <TextField
                 fullWidth
                 margin="normal"
                 name="street_address"
@@ -69,6 +111,18 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 onChange={formik.handleChange}
                 error={formik.touched.street_address && Boolean(formik.errors.street_address)}
                 helperText={formik.touched.street_address && formik.errors.street_address}
+            /> */}
+
+            <AddressAutocomplete
+                apiKey={PLACES_API_KEY}
+                label='Address'
+                fields={['address_components','geometry']}
+                onChange={(_, value) => handleAddressChange(value)}
+                value={address}
+                sx={{
+                    mt: 2,
+                    mb: 1
+                }}
             />
 
             <TextField
