@@ -141,6 +141,7 @@ class InvoiceSummary(BaseModel):
     invoice_date: date
     total: Decimal
     bill_to_id: int
+    send_to_id: int
     template_id: int
     status: str
     client_type: str

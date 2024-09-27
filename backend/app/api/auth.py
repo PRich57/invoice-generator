@@ -55,7 +55,7 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.post("/refresh")
+@router.post("/refresh", response_model=RefreshToken)
 async def refresh_access_token(response: Response, refresh_token: str = Cookie(None), db: AsyncSession = Depends(get_async_db)):
     if not refresh_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token missing")

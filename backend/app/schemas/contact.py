@@ -1,5 +1,7 @@
 import re
 from datetime import datetime
+import phonenumbers
+from phonenumbers.phonenumberutil import NumberParseException
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -14,12 +16,18 @@ def validate_email(email: str | None) -> str | None:
 
 
 def validate_phone(phone: str | None) -> str | None:
-    if phone is None or phone == "":
+    if phone is None or phone.strip() == "":
         return None
-    pattern = r'^\+?1?\d{9,15}$'
-    if not re.match(pattern, phone):
+    try:
+        parsed_phone = phonenumbers.parse(phone, None)
+        if not phonenumbers.is_possible_number(parsed_phone):
+            raise ValueError('Invalid phone number format')
+        if not phonenumbers.is_valid_number(parsed_phone):
+            raise ValueError('Invalid phone number')
+        formatted_phone = phonenumbers.format_number(parsed_phone, phonenumbers.PhoneNumberFormat.E164)
+        return formatted_phone
+    except NumberParseException:
         raise ValueError('Invalid phone number format')
-    return phone
 
 
 class ContactBase(BaseModel):
