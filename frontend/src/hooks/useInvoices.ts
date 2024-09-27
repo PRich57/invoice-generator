@@ -1,20 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { getInvoices } from '../services/api';
-import { Invoice } from '../types';
+import { getInvoices } from '../services/api/invoices';
+import { Invoice, InvoiceFilters } from '../types';
 import { useErrorHandler } from './useErrorHandler';
-
-interface InvoiceFilters {
-    invoice_number?: string;
-    bill_to_name?: string;
-    send_to_name?: string;
-    client_type?: string;
-    invoice_type?: string;
-    date_from?: string;
-    date_to?: string;
-    total_min?: string;
-    total_max?: string;
-    status?: string;
-}
 
 export const useInvoices = () => {
     const [invoices, setInvoices] = useState<Invoice[]>([]);

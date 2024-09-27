@@ -17,3 +17,12 @@ export interface AuthContextType {
     loading: boolean;
     refreshToken: () => Promise<void>;
 }
+
+export interface LoginResponse {
+    access_token: string;
+    refresh_token: string;
+}
+
+export interface RefreshTokenResponse {
+    access_token: string;
+}

@@ -1,14 +1,30 @@
-import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../constants/apiEndpoints';
-import { refreshToken } from './api/auth';
+import { refreshToken as refreshTokenService } from './api/auth';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true,
 });
 
+// Request interceptor to add Authorization header
+api.interceptors.request.use(
+    (config: InternalAxiosRequestConfig) => {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            config.headers = config.headers || {};
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error: AxiosError) => Promise.reject(error)
+);
+
 let isRefreshing = false;
-let failedQueue: any[] = [];
+let failedQueue: Array<{
+    resolve: (value?: unknown) => void;
+    reject: (error: any) => void;
+}> = [];
 
 const processQueue = (error: any, token: string | null = null) => {
     failedQueue.forEach(prom => {
@@ -22,30 +38,44 @@ const processQueue = (error: any, token: string | null = null) => {
     failedQueue = [];
 };
 
+// Response interceptor to handle 401 errors
 api.interceptors.response.use(
-    (response) => response,
+    (response: AxiosResponse) => response,
     async (error: AxiosError) => {
-        const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
         if (error.response?.status === 401 && !originalRequest._retry) {
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject });
-                }).then(token => {
-                    originalRequest.headers!['Authorization'] = 'Bearer ' + token;
-                    return api(originalRequest);
-                }).catch(err => {
-                    return Promise.reject(err);
-                });
+                })
+                    .then(token => {
+                        if (token) {
+                            originalRequest.headers = originalRequest.headers || {};
+                            originalRequest.headers['Authorization'] = `Bearer ${token}`;
+                            return api(originalRequest);
+                        }
+                        return Promise.reject(error);
+                    })
+                    .catch(err => {
+                        return Promise.reject(err);
+                    });
             }
 
             originalRequest._retry = true;
             isRefreshing = true;
 
             try {
-                const { data } = await refreshToken();
-                api.defaults.headers.common['Authorization'] = 'Bearer ' + data.access_token;
-                originalRequest.headers!['Authorization'] = 'Bearer ' + data.access_token;
-                processQueue(null, data.access_token);
+                const data = await refreshTokenService();
+                const newToken = data.access_token;
+
+                // Update the token in storage
+                localStorage.setItem('access_token', newToken);
+
+                // Update the default Authorization header
+                api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+
+                processQueue(null, newToken);
                 return api(originalRequest);
             } catch (refreshError) {
                 processQueue(refreshError, null);
@@ -60,8 +90,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-
-export * from './api/auth';
-export * from './api/contacts';
-export * from './api/invoices';
-export * from './api/templates';

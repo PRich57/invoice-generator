@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Template } from '../types';
-import { getTemplates } from '../services/api';
+import { getTemplates } from '../services/api/templates';
 import { useErrorHandler } from './useErrorHandler';
 
 export const useTemplates = () => {

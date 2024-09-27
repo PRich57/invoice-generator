@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { User, AuthContextType } from '../types';
-import * as api from '../services/api';
+import { User, AuthContextType } from '../types/user';
+import api from '../services/api';
+import { login as loginApi, logout as logoutApi, getCurrentUser, refreshToken } from '../services/api/auth';
 import { useSnackbar } from 'notistack';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 
@@ -19,10 +20,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const checkAuthStatus = async () => {
         try {
-            const user = await api.getCurrentUser();
-            setUser(user);
+            const userData = await getCurrentUser();
+            setUser(userData);
             setIsAuthenticated(true);
         } catch (error) {
+            console.error('Authentication check failed:', error);
+            enqueueSnackbar('Session expired. Please log in again.', { variant: 'warning' });
             setIsAuthenticated(false);
             setUser(null);
         } finally {
@@ -32,7 +35,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const login = async (email: string, password: string) => {
         try {
-            await api.login(email, password);
+            await loginApi(email, password);
             await checkAuthStatus();
             enqueueSnackbar('Logged in successfully', { variant: 'success' });
         } catch (error) {
@@ -44,7 +47,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const logout = async () => {
         try {
-            await api.logout();
+            await logoutApi();
             setIsAuthenticated(false);
             setUser(null);
             enqueueSnackbar('Logged out successfully', { variant: 'success' });
@@ -53,9 +56,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const refreshToken = async () => {
+    const refreshTokenHandler = async () => {
         try {
-            await api.refreshToken();
+            await refreshToken();
             await checkAuthStatus();
         } catch (error) {
             handleError(error);
@@ -65,7 +68,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading, refreshToken }}>
+        <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading, refreshToken: refreshTokenHandler }}>
             {children}
         </AuthContext.Provider>
     );

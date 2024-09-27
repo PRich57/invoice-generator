@@ -83,7 +83,7 @@ const Dashboard: React.FC = () => {
                             <Typography component="h2" variant="h6" color="primary" gutterBottom>
                                 Templates
                             </Typography>
-                            <Typography component="p" variant="h4" sx={{ mb: 2 }}>
+                            <Typography component="div" variant="h4" sx={{ mb: 2 }}>
                                 {templateCount ? templateCount : <LoadingSpinner />}
                             </Typography>
                             <Typography color="text.secondary" sx={{ flex: 1 }}>
@@ -123,7 +123,7 @@ const Dashboard: React.FC = () => {
                         <Typography component="h2" variant="h6" color="primary" gutterBottom>
                             Unlock Full Potential
                         </Typography>
-                        <Typography sx={{ mb: 2, flex: 1 }}>
+                        <Typography component="div" sx={{ mb: 2, flex: 1 }}>
                             Manage your business effortlessly:
                             <ul style={{ marginLeft: '20px', marginTop: '10px' }}>
                                 <li>Save and organize invoices securely</li>
@@ -134,6 +134,7 @@ const Dashboard: React.FC = () => {
                                 <li>...and much more!</li>
                             </ul>
                         </Typography>
+
                         <Stack direction="row" spacing={2}>
                             <Button
                                 variant='contained'

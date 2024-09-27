@@ -1,14 +1,14 @@
 import { lazy } from 'react';
 
-const Login = lazy(() => import('../pages/Login'));
-const Register = lazy(() => import('../pages/Register'));
-const Dashboard = lazy(() => import('../pages/Dashboard'));
-const InvoicesList = lazy(() => import('../pages/InvoicesList'));
-const InvoiceForm = lazy(() => import('../pages/InvoiceForm'));
-const ContactsList = lazy(() => import('../pages/ContactsList'));
-const ContactForm = lazy(() => import('../pages/ContactForm'));
-const TemplatesList = lazy(() => import('../pages/TemplatesList'));
-const TemplateForm = lazy(() => import('../pages/TemplateForm'));
+const Login = lazy(() => import('../pages/LoginPage'));
+const Register = lazy(() => import('../pages/RegisterPage'));
+const Dashboard = lazy(() => import('../pages/DashboardPage'));
+const InvoicesList = lazy(() => import('../pages/InvoicesListPage'));
+const InvoiceForm = lazy(() => import('../pages/InvoiceFormPage'));
+const ContactsList = lazy(() => import('../pages/ContactsListPage'));
+const ContactForm = lazy(() => import('../pages/ContactFormPage'));
+const TemplatesList = lazy(() => import('../pages/TemplatesListPage'));
+const TemplateForm = lazy(() => import('../pages/TemplateFormPage'));
 
 const routes = [
     { path: '/login', component: Login, protected: false },

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { InvoiceCreate, Template } from '../types';
-import { previewInvoicePDF } from '../services/api';
+import { previewInvoicePDF } from '../services/api/invoices';
 import { useErrorHandler } from './useErrorHandler';
 
 export const usePDFGeneration = () => {

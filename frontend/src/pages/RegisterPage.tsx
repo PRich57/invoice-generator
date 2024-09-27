@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, TextField, Typography, Container, Box } from '@mui/material';
-import { register } from '../services/api';
+import { register } from '../services/api/auth';
 import { useSnackbar } from 'notistack';
 import { isValidEmail } from '../utils/validationHelpers';
 

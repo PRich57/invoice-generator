@@ -72,6 +72,19 @@ export interface GroupedInvoices {
     }
 }
 
+export interface InvoiceFilters {
+    invoice_number?: string;
+    bill_to_name?: string;
+    send_to_name?: string;
+    client_type?: string;
+    invoice_type?: string;
+    date_from?: string;
+    date_to?: string;
+    total_min?: string;
+    total_max?: string;
+    status?: string;
+}
+
 export interface InvoicePreviewProps {
     invoice: Invoice | InvoiceCreate;
     template: Template;

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Contact } from '../types';
-import { getContacts } from '../services/api';
+import { getContacts } from '../services/api/contacts';
 import { useErrorHandler } from './useErrorHandler';
 
 export const useContacts = () => {

@@ -7,7 +7,9 @@ import {
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
 import { useInvoices } from '../hooks/useInvoices';
-import { deleteInvoice, generateInvoicePDF, getContacts, getTemplates } from '../services/api';
+import { deleteInvoice, generateInvoicePDF } from '../services/api/invoices';
+import { getContacts } from '../services/api/contacts';
+import { getTemplates } from '../services/api/templates';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import ConfirmationDialog from '../components/common/ConfirmationDialogue';

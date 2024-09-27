@@ -6,7 +6,7 @@ import ConfirmationDialog from '../components/common/ConfirmationDialogue';
 import ErrorMessage from '../components/common/ErrorMessage';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useContacts } from '../hooks/useContacts';
-import { deleteContact } from '../services/api';
+import { deleteContact } from '../services/api/contacts';
 import { formatCityStateZip } from '../utils/cityStateZipFormatter';
 import { useSnackbar } from 'notistack';
 import { useErrorHandler } from '../hooks/useErrorHandler';
