@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getInvoices } from '../services/api/invoices';
 import { Invoice, InvoiceFilters } from '../types';
 import { useErrorHandler } from './useErrorHandler';
 
 export const useInvoices = () => {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [invoiceCount, setInvoiceCount] = useState<Number>(0);
     const [loading, setLoading] = useState<boolean>(true);
     const { error, setError, handleError } = useErrorHandler();
     const [sortBy, setSortBy] = useState<string>('date');
@@ -75,6 +76,50 @@ export const useInvoices = () => {
         setFilters((prevFilters) => ({ ...prevFilters, ...newFilters }));
     }, []);
 
+    const invoiceCounts = useMemo(() => {
+        return {
+            total: invoices.length,
+            overdue: invoices.filter(inv => inv.status === 'OVERDUE').length,
+            unpaid: invoices.filter(inv => inv.status === 'UNPAID').length,
+            paid: invoices.filter(inv => inv.status === 'PAID').length,
+        };
+    }, [invoices]);
+
+    const invoiceTotals = useMemo(() => {
+        const calculateTotal = (invoices: Invoice[]) => {
+            return invoices.reduce((sum, inv) => {
+                const total = typeof inv.total === 'number' ? inv.total : parseFloat(inv.total);
+                return isNaN(total) ? sum : sum + total;
+            }, 0);
+        };
+
+        return {
+            overdue: calculateTotal(invoices.filter(inv => inv.status === 'OVERDUE')),
+            unpaid: calculateTotal(invoices.filter(inv => inv.status === 'UNPAID')),
+            paid: calculateTotal(invoices.filter(inv => inv.status === 'PAID')),
+        };
+    }, [invoices]);
+
+    const recentInvoices = useMemo(() => {
+        return [...invoices]
+            .sort((a, b) => new Date(b.invoice_date).getTime() - new Date(a.invoice_date).getTime())
+            .slice(0, 5);
+    }, [invoices]);
+
+    const getPaidInvoices = useCallback((period: '30' | '60' | '90' | 'all') => {
+        const currentDate = new Date();
+        const paidInvoices = invoices.filter(invoice => invoice.status === 'PAID');
+
+        if (period === 'all') {
+            return paidInvoices;
+        }
+
+        const daysAgo = parseInt(period);
+        const startDate = new Date(currentDate.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+
+        return paidInvoices.filter(invoice => new Date(invoice.invoice_date) >= startDate);
+    }, [invoices]);
+
     return {
         invoices,
         error,
@@ -87,5 +132,9 @@ export const useInvoices = () => {
         sortOrder,
         groupBy,
         filters,
+        invoiceCounts,
+        invoiceTotals,
+        recentInvoices,
+        getPaidInvoices,
     };
 };

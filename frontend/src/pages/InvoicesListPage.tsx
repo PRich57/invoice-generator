@@ -249,6 +249,7 @@ const InvoicesList: React.FC = () => {
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h4">Invoices</Typography>
                 <Button
+                    id='create-new-invoice-button'
                     variant="contained"
                     color="primary"
                     onClick={() => navigate('/invoices/new')}

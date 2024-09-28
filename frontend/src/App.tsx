@@ -8,7 +8,7 @@ import { SnackbarProvider } from 'notistack';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import theme from './styles/theme';
 import routes from './constants/routes';
-import Layout from './layouts/MainLayout';
+import ResponsiveLayout from './layouts/ResponsiveLayout';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import 'react-toastify/dist/ReactToastify.css'
 import dayjs from 'dayjs';
@@ -44,7 +44,7 @@ const App: React.FC = () => {
                         horizontal: 'right',
                     }}>
                         <Router>
-                            <Layout>
+                            <ResponsiveLayout>
                                 <Suspense fallback={<LoadingSpinner />}>
                                     <Routes>
                                         {routes.map((route) => (
@@ -64,7 +64,7 @@ const App: React.FC = () => {
                                         ))}
                                     </Routes>
                                 </Suspense>
-                            </Layout>
+                            </ResponsiveLayout>
                         </Router>
                     </SnackbarProvider>
                 </LocalizationProvider>
