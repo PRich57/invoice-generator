@@ -1,6 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { User, AuthContextType } from '../types/user';
-import api from '../services/api';
 import { login as loginApi, logout as logoutApi, getCurrentUser, refreshToken } from '../services/api/auth';
 import { useSnackbar } from 'notistack';
 import { useErrorHandler } from '../hooks/useErrorHandler';
@@ -24,8 +23,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUser(userData);
             setIsAuthenticated(true);
         } catch (error) {
-            console.error('Authentication check failed:', error);
-            enqueueSnackbar('Session expired. Please log in again.', { variant: 'warning' });
             setIsAuthenticated(false);
             setUser(null);
         } finally {

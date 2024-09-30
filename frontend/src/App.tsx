@@ -5,7 +5,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsV3';
 import CssBaseline from '@mui/material/CssBaseline';
 import { SnackbarProvider } from 'notistack';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useAuth } from './contexts/AuthContext';
 import theme from './styles/theme';
 import routes from './constants/routes';
 import ResponsiveLayout from './layouts/ResponsiveLayout';
@@ -35,41 +35,39 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const App: React.FC = () => {
     return (
-        <AuthProvider>
-            <ThemeProvider theme={theme}>
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                    <CssBaseline />
-                    <SnackbarProvider maxSnack={3} anchorOrigin={{
-                        vertical: 'bottom',
-                        horizontal: 'right',
-                    }}>
-                        <Router>
-                            <ResponsiveLayout>
-                                <Suspense fallback={<LoadingSpinner />}>
-                                    <Routes>
-                                        {routes.map((route) => (
-                                            <Route 
-                                                key={route.path} 
-                                                path={route.path} 
-                                                element={
-                                                    route.protected ? (
-                                                        <ProtectedRoute>
-                                                            <route.component />
-                                                        </ProtectedRoute>
-                                                    ) : (
+        <ThemeProvider theme={theme}>
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <CssBaseline />
+                <SnackbarProvider maxSnack={3} anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                }}>
+                    <Router>
+                        <ResponsiveLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                                <Routes>
+                                    {routes.map((route) => (
+                                        <Route 
+                                            key={route.path} 
+                                            path={route.path} 
+                                            element={
+                                                route.protected ? (
+                                                    <ProtectedRoute>
                                                         <route.component />
-                                                    )
-                                                } 
-                                            />
-                                        ))}
-                                    </Routes>
-                                </Suspense>
-                            </ResponsiveLayout>
-                        </Router>
-                    </SnackbarProvider>
-                </LocalizationProvider>
-            </ThemeProvider>
-        </AuthProvider>
+                                                    </ProtectedRoute>
+                                                ) : (
+                                                    <route.component />
+                                                )
+                                            } 
+                                        />
+                                    ))}
+                                </Routes>
+                            </Suspense>
+                        </ResponsiveLayout>
+                    </Router>
+                </SnackbarProvider>
+            </LocalizationProvider>
+        </ThemeProvider>
     );
 }
 

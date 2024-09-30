@@ -1,7 +1,7 @@
 export const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 export const API_ENDPOINTS = {
-    LOGIN: `${API_BASE_URL}/auth/token`,
+    LOGIN: `${API_BASE_URL}/auth/login`,
     REGISTER: `${API_BASE_URL}/auth/register`,
     LOGOUT: `${API_BASE_URL}/auth/logout`,
     ME: `${API_BASE_URL}/auth/me`,

@@ -1,23 +1,14 @@
 import api from '../api';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
-import { User, LoginResponse, RefreshTokenResponse } from '../../types/user';
+import { User } from '../../types/user';
 
-export const login = async (email: string, password: string): Promise<LoginResponse> => {
-    const formData = new URLSearchParams();
-    formData.append('username', email);
-    formData.append('password', password);
+export const login = async (email: string, password: string): Promise<void> => {
+    const loginData = {
+        email,
+        password,
+    };
 
-    const response = await api.post<LoginResponse>(API_ENDPOINTS.LOGIN, formData, {
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-    });
-
-    if (response.data.access_token) {
-        localStorage.setItem('access_token', response.data.access_token);
-    }
-
-    return response.data;
+    await api.post(API_ENDPOINTS.LOGIN, loginData);
 };
 
 export const register = async (email: string, password: string): Promise<User> => {
@@ -34,15 +25,6 @@ export const getCurrentUser = async (): Promise<User> => {
     return response.data;
 };
 
-export const refreshToken = async (): Promise<RefreshTokenResponse> => {
-    try {
-        const response = await api.post<RefreshTokenResponse>(API_ENDPOINTS.REFRESH);
-        if (response.data.access_token) {
-            localStorage.setItem('access_token', response.data.access_token);
-        }
-        return response.data;
-    } catch (error) {
-        console.error('Error refreshing token:', error);
-        throw error;
-    }
+export const refreshToken = async (): Promise<void> => {
+    await api.post(API_ENDPOINTS.REFRESH);
 };

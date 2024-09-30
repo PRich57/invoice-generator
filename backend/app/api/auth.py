@@ -1,16 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status, Cookie
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, Response, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from ..core.config import settings
 from ..core.exceptions import AlreadyExistsError, NotFoundError, UnauthorizedError, ValidationError
-from ..core.security import create_access_token, create_refresh_token, get_current_user
+from ..core.security import create_access_token, create_refresh_token
+from ..core.deps import get_current_user_optional
 from ..database import get_async_db
 from ..schemas.user import User, UserCreate
+from ..schemas.auth import LoginRequest
 from ..services.user import crud
-from ..schemas.refresh_token import RefreshToken
 
 router = APIRouter()
-
 
 @router.post("/register", response_model=User)
 async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_db)):
@@ -23,10 +23,13 @@ async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_d
         raise AlreadyExistsError("user")
     return await crud.create_user(db=db, user=user)
 
-
-@router.post("/token")
-async def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_async_db)):
-    user = await crud.authenticate_user(db, form_data.username, form_data.password)
+@router.post("/login")
+async def login_for_access_token(
+    response: Response,
+    login_data: LoginRequest,
+    db: AsyncSession = Depends(get_async_db),
+):
+    user = await crud.authenticate_user(db, login_data.email, login_data.password)
     if not user:
         raise UnauthorizedError()
     
@@ -40,7 +43,7 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
         max_age=settings.access_token_expire_minutes * 60,
         expires=settings.access_token_expire_minutes * 60,
         samesite='lax',
-        secure=settings.PRODUCTION
+        secure=settings.PRODUCTION,
     )
     response.set_cookie(
         key="refresh_token",
@@ -49,14 +52,19 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
         max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
         expires=settings.refresh_token_expire_days * 24 * 60 * 60,
         samesite='lax',
-        secure=settings.PRODUCTION
+        secure=settings.PRODUCTION,
     )
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"message": "Login successful"}
 
 
-@router.post("/refresh", response_model=RefreshToken)
-async def refresh_access_token(response: Response, refresh_token: str = Cookie(None), db: AsyncSession = Depends(get_async_db)):
+@router.post("/refresh")
+async def refresh_access_token(
+    response: Response,
+    request: Request,
+    db: AsyncSession = Depends(get_async_db),
+):
+    refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token missing")
     
@@ -78,7 +86,7 @@ async def refresh_access_token(response: Response, refresh_token: str = Cookie(N
         max_age=settings.access_token_expire_minutes * 60,
         expires=settings.access_token_expire_minutes * 60,
         samesite='lax',
-        secure=settings.PRODUCTION
+        secure=settings.PRODUCTION,
     )
     response.set_cookie(
         key="refresh_token",
@@ -87,20 +95,20 @@ async def refresh_access_token(response: Response, refresh_token: str = Cookie(N
         max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
         expires=settings.refresh_token_expire_days * 24 * 60 * 60,
         samesite='lax',
-        secure=settings.PRODUCTION
+        secure=settings.PRODUCTION,
     )
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"message": "Token refreshed successfully"}
 
 
 @router.post("/logout")
-async def logout(response: Response, db: AsyncSession = Depends(get_async_db), current_user: User = Depends(get_current_user)):
-    await crud.invalidate_refresh_tokens(db, current_user.id)
+async def logout(
+    response: Response,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_optional),
+):
+    if current_user:
+        await crud.invalidate_refresh_tokens(db, current_user.id)
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
     return {"status": "success"}
-
-
-@router.get("/me", response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_user)):
-    return current_user

@@ -65,7 +65,3 @@ async def invalidate_refresh_tokens(db: AsyncSession, user_id: int):
 
 def is_active(user: User) -> bool:
     return True
-
-
-async def get_refresh_token_from_cookie(request):
-    return request.cookies.get("refresh_token")
