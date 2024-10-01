@@ -194,17 +194,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                     ))}
                 </Select>
             </FormControl>
-
-            <Box mt={2}>
-                <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    disabled={isSubmitting}
-                >
-                    {isSubmitting ? 'Submitting...' : 'Submit'}
-                </Button>
-            </Box>
         </Box>
     );
 };

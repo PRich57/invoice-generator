@@ -15,9 +15,12 @@ export const useTemplates = () => {
             setLoading(true);
             const templatesData = await getTemplates();
             setTemplates(templatesData);
-            if (templatesData.length > 0) {
+            setTemplateCount(templatesData.length);
+            const defaultTemplate = templatesData.find(template => template.id === 1);
+            if (defaultTemplate) {
+                setSelectedTemplate(defaultTemplate);
+            } else if (templatesData.length > 0) {
                 setSelectedTemplate(templatesData[0]);
-                setTemplateCount(templatesData.length);
             }
             setError(null);
         } catch (err) {

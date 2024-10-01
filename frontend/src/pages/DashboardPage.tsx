@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Typography, Box, Paper, Button, Stack, Select, MenuItem, SelectChangeEvent } from '@mui/material';
 import { Link } from 'react-router-dom';
 import {
@@ -30,7 +30,11 @@ const Dashboard: React.FC = () => {
         setPaidInvoicesPeriod(event.target.value as '30' | '60' | '90' | 'all');
     };
 
-    getPaidInvoices(paidInvoicesPeriod)
+    useEffect(() => {
+        if (isAuthenticated) {
+            getPaidInvoices(paidInvoicesPeriod);
+        }
+    }, [isAuthenticated, paidInvoicesPeriod, getPaidInvoices]);
 
     const StatCard: React.FC<{ title: string; count: number; amount: number | string; color: string }> = ({ title, count, amount, color }) => (
             <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -79,7 +83,7 @@ const Dashboard: React.FC = () => {
                         <Box flex={1}>
                             <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                                    <Typography variant="h6">Paid</Typography>
+                                    <Typography variant="h6">Paid Invoices</Typography>
                                     <Select
                                         value={paidInvoicesPeriod}
                                         onChange={handlePeriodChange}
@@ -99,7 +103,7 @@ const Dashboard: React.FC = () => {
                         </Box>
                         <Box flex={1}>
                             <StatCard
-                                title="Unpaid"
+                                title="Unpaid Invoices"
                                 count={invoiceCounts.unpaid}
                                 amount={invoiceTotals.unpaid || 0}
                                 color="warning.main"
@@ -107,7 +111,7 @@ const Dashboard: React.FC = () => {
                         </Box>
                         <Box flex={1}>
                             <StatCard
-                                title="Overdue"
+                                title="Overdue Invoices"
                                 count={invoiceCounts.overdue}
                                 amount={invoiceTotals.overdue || 0}
                                 color="error.main"
@@ -160,7 +164,7 @@ const Dashboard: React.FC = () => {
                     <Stack direction="column" spacing={3} sx={{ mb: 4 }}>
                         <ActionCard
                             title="Invoices"
-                            count="Create Now"
+                            count="Generate Invoice"
                             createLink="/invoices/new"
                             manageLink="/invoices"
                         />

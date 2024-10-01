@@ -41,7 +41,7 @@ const Register: React.FC = () => {
                 }}
             >
                 <Typography component="h1" variant="h5">
-                    Register
+                    Create Account
                 </Typography>
                 <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
                     <TextField

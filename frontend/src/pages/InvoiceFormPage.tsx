@@ -10,9 +10,11 @@ import InvoiceForm from '../components/invoices/InvoiceForm';
 import InvoicePreview from '../components/invoices/InvoicePreview';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
+import { useAuth } from '../contexts/AuthContext';
 
 const InvoiceFormPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const { isAuthenticated } = useAuth();
     const { formik, isLoading, isSubmitting } = useInvoiceForm();
     const { contacts, error: contactsError, loading: contactsLoading } = useContacts();
     const { templates, selectedTemplate, setSelectedTemplate } = useTemplates();
@@ -26,7 +28,7 @@ const InvoiceFormPage: React.FC = () => {
 
     if (isLoading || contactsLoading) return <LoadingSpinner />;
     if (contactsError)
-        return <ErrorMessage message={ contactsError || 'An error occurred'} />;
+        return <ErrorMessage message={contactsError || 'An error occurred'} />;
 
     return (
         <FormikProvider value={formik}>
@@ -42,7 +44,17 @@ const InvoiceFormPage: React.FC = () => {
                             isSubmitting={isSubmitting}
                             setSelectedTemplate={setSelectedTemplate}
                         />
-                        <Box mt={2}>
+                        <Box mt={2} display="flex" gap={2}>
+                            {isAuthenticated && (
+                                <Button
+                                    type="submit"
+                                    variant="contained"
+                                    color="primary"
+                                    disabled={isSubmitting}
+                                >
+                                    {isSubmitting ? 'Submitting...' : 'Save Invoice'}
+                                </Button>
+                            )}
                             <Button
                                 onClick={handlePreview}
                                 variant="outlined"

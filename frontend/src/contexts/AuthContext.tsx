@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { User, AuthContextType } from '../types/user';
+import api from '../services/api';
 import { login as loginApi, logout as logoutApi, getCurrentUser, refreshToken } from '../services/api/auth';
 import { useSnackbar } from 'notistack';
 import { useErrorHandler } from '../hooks/useErrorHandler';
@@ -23,6 +24,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUser(userData);
             setIsAuthenticated(true);
         } catch (error) {
+            console.error('Authentication check failed:', error);
             setIsAuthenticated(false);
             setUser(null);
         } finally {
@@ -58,7 +60,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             await refreshToken();
             await checkAuthStatus();
         } catch (error) {
-            handleError(error);
+            console.error('Token refresh failed:', error);
             setIsAuthenticated(false);
             setUser(null);
         }
