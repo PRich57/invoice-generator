@@ -3,10 +3,10 @@ import * as Yup from 'yup';
 export const invoiceValidationSchema = Yup.object().shape({
     invoice_number: Yup.string().required('Invoice number is required'),
     invoice_date: Yup.date().required('Invoice date is required'),
-    bill_to_id: Yup.number()
+    bill_to_id: Yup.number().nullable()
         .required('Bill to contact is required')
         .positive('Bill to contact is required'),
-    send_to_id: Yup.number()
+    send_to_id: Yup.number().nullable()
         .required('Send to contact is required')
         .positive('Send to contact is required'),
     tax_rate: Yup.number()

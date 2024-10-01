@@ -1,3 +1,5 @@
+// src/components/invoices/InvoiceForm.tsx
+
 import React from 'react';
 import {
     TextField,
@@ -33,11 +35,24 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
 }) => {
     const formik = useFormikContext<InvoiceCreate>();
 
-    const handleTemplateChange = (event: SelectChangeEvent<number>) => {
-        const templateId = event.target.value as number;
+    const handleTemplateChange = (event: SelectChangeEvent<string>) => {
+        const value = event.target.value;
+        const templateId = value === '' ? null : Number(value);
         formik.setFieldValue('template_id', templateId);
         const selected = templates.find((t) => t.id === templateId) || null;
         setSelectedTemplate(selected);
+    };
+
+    const handleBillToChange = (event: SelectChangeEvent<string>) => {
+        const value = event.target.value;
+        const billToId = value === '' ? null : Number(value);
+        formik.setFieldValue('bill_to_id', billToId);
+    };
+
+    const handleSendToChange = (event: SelectChangeEvent<string>) => {
+        const value = event.target.value;
+        const sendToId = value === '' ? null : Number(value);
+        formik.setFieldValue('send_to_id', sendToId);
     };
 
     const handleDateChange = (newValue: dayjs.Dayjs | null) => {
@@ -76,13 +91,16 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         <Select
                             labelId="bill-to-label"
                             name="bill_to_id"
-                            value={formik.values.bill_to_id}
-                            onChange={formik.handleChange}
+                            value={formik.values.bill_to_id !== null ? formik.values.bill_to_id.toString() : ''}
+                            onChange={handleBillToChange}
                             error={formik.touched.bill_to_id && Boolean(formik.errors.bill_to_id)}
                             label="Bill To"
                         >
+                            <MenuItem value="">
+                                <em>Select Contact</em>
+                            </MenuItem>
                             {contacts.map((contact) => (
-                                <MenuItem key={contact.id} value={contact.id}>
+                                <MenuItem key={contact.id} value={contact.id.toString()}>
                                     {contact.name}
                                 </MenuItem>
                             ))}
@@ -95,13 +113,16 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         <Select
                             labelId="send-to-label"
                             name="send_to_id"
-                            value={formik.values.send_to_id}
-                            onChange={formik.handleChange}
+                            value={formik.values.send_to_id !== null ? formik.values.send_to_id.toString() : ''}
+                            onChange={handleSendToChange}
                             error={formik.touched.send_to_id && Boolean(formik.errors.send_to_id)}
                             label="Send To"
                         >
+                            <MenuItem value="">
+                                <em>Select Contact</em>
+                            </MenuItem>
                             {contacts.map((contact) => (
-                                <MenuItem key={contact.id} value={contact.id}>
+                                <MenuItem key={contact.id} value={contact.id.toString()}>
                                     {contact.name}
                                 </MenuItem>
                             ))}
@@ -118,7 +139,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 {({ push, remove }) => (
                     <>
                         {formik.values.items.map((item, index) => (
-                            <InvoiceItemFields key={item.id || index} index={index} remove={remove} />
+                            <InvoiceItemFields key={index} index={index} remove={remove} />
                         ))}
                         <Button
                             onClick={() =>
@@ -130,6 +151,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                                     subitems: []
                                 })
                             }
+                            variant="contained"
+                            color="primary"
                         >
                             Add Item
                         </Button>
@@ -182,13 +205,16 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 <Select
                     labelId="template-select-label"
                     name="template_id"
-                    value={formik.values.template_id}
+                    value={formik.values.template_id !== null ? formik.values.template_id.toString() : ''}
                     onChange={handleTemplateChange}
                     error={formik.touched.template_id && Boolean(formik.errors.template_id)}
                     label="Template"
                 >
+                    <MenuItem value="">
+                        <em>Select Template</em>
+                    </MenuItem>
                     {templates.map((template) => (
-                        <MenuItem key={template.id} value={template.id}>
+                        <MenuItem key={template.id} value={template.id.toString()}>
                             {template.name}
                         </MenuItem>
                     ))}

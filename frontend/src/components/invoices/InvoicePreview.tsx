@@ -158,17 +158,13 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, bill
                                     ${formatNumber(calculateLineTotal(item))}
                                 </StyledTableCell>
                             </TableRow>
-                            {item.subitems && item.subitems.length > 0 && (
-                                <TableRow className="invoice-subitem">
-                                    <StyledTableCell template={template} colSpan={4} style={{ paddingLeft: '2em' }}>
-                                        <ul style={{ margin: 0, paddingLeft: '1em', color: template.colors.secondary }}>
-                                            {item.subitems.map((subitem, subIndex) => (
-                                                <li key={subIndex}>{subitem.description}</li>
-                                            ))}
-                                        </ul>
+                            {item.subitems && item.subitems.length > 0 && item.subitems.map((subitem, subIndex) => (
+                                <TableRow key={`subitem-${subIndex}`} className="invoice-subitem">
+                                    <StyledTableCell template={template} colSpan={4} style={{ paddingLeft: '2em', color: template.colors.secondary }}>
+                                        - {subitem.description}
                                     </StyledTableCell>
                                 </TableRow>
-                            )}
+                            ))}
                         </React.Fragment>
                     ))}
                 </TableBody>

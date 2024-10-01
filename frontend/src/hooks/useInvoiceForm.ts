@@ -19,8 +19,8 @@ export const useInvoiceForm = () => {
     const initialValues: InvoiceCreate = {
         invoice_number: '',
         invoice_date: formatDateForAPI(new Date()),
-        bill_to_id: 0,
-        send_to_id: 0,
+        bill_to_id: null,
+        send_to_id: null,
         tax_rate: 0,
         discount_percentage: 0,
         notes: '',
@@ -33,7 +33,7 @@ export const useInvoiceForm = () => {
                 subitems: [],
             },
         ],
-        template_id: 0,
+        template_id: null,
     };
 
     const { data: invoiceData, isLoading, refetch } = useFetch<Invoice | null>(

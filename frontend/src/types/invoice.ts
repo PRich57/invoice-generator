@@ -33,13 +33,13 @@ export interface InvoiceItem {
 export interface InvoiceCreate {
     invoice_number: string;
     invoice_date: string;
-    bill_to_id: number;
-    send_to_id: number;
+    bill_to_id: number | null;
+    send_to_id: number | null;
     tax_rate: number;
     discount_percentage: number;
     notes?: string;
     items: InvoiceItemCreate[];
-    template_id: number;
+    template_id: number | null;
 }
 
 export interface Invoice {
@@ -90,6 +90,11 @@ export interface InvoicePreviewProps {
     template: Template;
     billToContact?: Contact | null;
     sendToContact?: Contact | null;
+}
+
+export interface InvoiceItemFieldsProps {
+    index: number;
+    remove: (index: number) => void;
 }
 
 export type InvoiceFormErrors = {
