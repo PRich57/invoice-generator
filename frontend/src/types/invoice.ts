@@ -13,9 +13,9 @@ export interface InvoiceSubItem {
 export interface InvoiceItemCreate {
     id?: number;
     description: string;
-    quantity: number;
-    unit_price: number;
-    discount_percentage: number;
+    quantity: number | null;
+    unit_price: number | null;
+    discount_percentage: number | null;
     subitems: InvoiceSubItemCreate[];
 }
 
@@ -23,9 +23,9 @@ export interface InvoiceItem {
     id: number;
     invoice_id: number;
     description: string;
-    quantity: number;
-    unit_price: number;
-    discount_percentage: number;
+    quantity: number | null;
+    unit_price: number | null;
+    discount_percentage: number | null;
     subitems: InvoiceSubItem[];
     line_total: number;
 }
@@ -95,6 +95,13 @@ export interface InvoicePreviewProps {
 export interface InvoiceItemFieldsProps {
     index: number;
     remove: (index: number) => void;
+}
+
+export interface InvoiceFormProps {
+    contacts: Contact[];
+    templates: Template[];
+    isSubmitting: boolean;
+    setSelectedTemplate: (template: Template | null) => void;
 }
 
 export type InvoiceFormErrors = {

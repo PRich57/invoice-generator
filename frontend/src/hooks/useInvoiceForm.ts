@@ -33,7 +33,7 @@ export const useInvoiceForm = () => {
                 subitems: [],
             },
         ],
-        template_id: null,
+        template_id: 1,
     };
 
     const { data: invoiceData, isLoading, refetch } = useFetch<Invoice | null>(

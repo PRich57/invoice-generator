@@ -13,24 +13,17 @@ import {
     SelectChangeEvent,
 } from '@mui/material';
 import { useFormikContext, FieldArray } from 'formik';
-import { InvoiceCreate, Contact, Template } from '../../types';
+import { InvoiceCreate, Contact, Template, InvoiceFormProps } from '../../types';
 import InvoiceItemFields from './InvoiceItemFields';
 import { formatDateForAPI } from '../../utils/dateFormatter';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
-
-interface InvoiceFormProps {
-    contacts: Contact[];
-    templates: Template[];
-    isSubmitting: boolean;
-    setSelectedTemplate: (template: Template | null) => void;
-}
+import NumericTextField from '../common/NumericTextField';
 
 const InvoiceForm: React.FC<InvoiceFormProps> = ({
     contacts,
     templates,
-    isSubmitting,
     setSelectedTemplate
 }) => {
     const formik = useFormikContext<InvoiceCreate>();
@@ -162,27 +155,30 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
             <Box display="flex" flexWrap="wrap" gap={2} sx={{ mt: 2 }}>
                 <Box flex="1 1 45%">
-                    <TextField
+                    <NumericTextField
                         fullWidth
                         name="tax_rate"
                         label="Tax Rate (%)"
-                        type="number"
-                        value={formik.values.tax_rate}
+                        placeholder='8.00'
+                        // value={formik.values.tax_rate}
                         onChange={formik.handleChange}
                         error={formik.touched.tax_rate && Boolean(formik.errors.tax_rate)}
                         helperText={formik.touched.tax_rate && formik.errors.tax_rate}
+                        slotProps={{ inputLabel: { shrink: true } }}
+                        endAdornment="%"
                     />
                 </Box>
                 <Box flex="1 1 45%">
-                    <TextField
+                    <NumericTextField
                         fullWidth
                         name="discount_percentage"
                         label="Discount (%)"
-                        type="number"
-                        value={formik.values.discount_percentage}
+                        placeholder={`${formik.values.discount_percentage}.00`}
                         onChange={formik.handleChange}
                         error={formik.touched.discount_percentage && Boolean(formik.errors.discount_percentage)}
                         helperText={formik.touched.discount_percentage && formik.errors.discount_percentage}
+                        slotProps={{ inputLabel: { shrink: true } }}
+                        endAdornment="%"
                     />
                 </Box>
             </Box>

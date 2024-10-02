@@ -9,6 +9,7 @@ import {
     InvoiceItemCreate,
     InvoiceSubItemCreate
 } from '../../types';
+import NumericTextField from '../common/NumericTextField';
 
 interface InvoiceItemFieldsProps {
     index: number;
@@ -121,11 +122,26 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
 
     // Handler for Quantity field keydown events
     const handleQuantityKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === 'Enter') {
+        const input = event.target as HTMLInputElement;
+        const { selectionStart, selectionEnd, value } = input;
+    
+        if (event.key === 'ArrowLeft') {
+            if (selectionStart === 0 && selectionEnd === 0) {
+                event.preventDefault();
+                descriptionRef.current?.focus();
+            }
+        } else if (event.key === 'ArrowRight') {
+            if (selectionStart === value.length && selectionEnd === value.length) {
+                event.preventDefault();
+                unitPriceRef.current?.focus();
+            }
+        } else if (event.key === 'Enter') {
             event.preventDefault();
             unitPriceRef.current?.focus();
         } else if (event.key === 'Backspace') {
-            if (item.quantity === 1) { // Assuming 1 is the default value
+            if (value === '1' && selectionStart === 1 && selectionEnd === 1) {
+                setFieldValue(`items[${index}].quantity`, '');
+            } else if (value === '') {
                 event.preventDefault();
                 if (index > 0) {
                     remove(index);
@@ -133,15 +149,8 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
                     focusElementById(prevItemRef);
                 }
             }
-        } else if (event.key === 'ArrowLeft') {
-            event.preventDefault();
-            descriptionRef.current?.focus();
-        } else if (event.key === 'ArrowRight') {
-            event.preventDefault();
-            unitPriceRef.current?.focus();
         } else if (event.key === 'ArrowDown') {
             event.preventDefault();
-            // Move focus to the same field in the next item
             const nextItemIndex = index + 1;
             if (nextItemIndex < values.items.length) {
                 const nextQuantityRef = `item-${nextItemIndex}-quantity`;
@@ -149,7 +158,6 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
             }
         } else if (event.key === 'ArrowUp') {
             event.preventDefault();
-            // Move focus to the same field in the previous item
             const prevItemIndex = index - 1;
             if (prevItemIndex >= 0) {
                 const prevQuantityRef = `item-${prevItemIndex}-quantity`;
@@ -158,13 +166,27 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
         }
     };
 
-    // Handler for Unit Price field keydown events
     const handleUnitPriceKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === 'Enter') {
+        const input = event.target as HTMLInputElement;
+        const { selectionStart, selectionEnd, value } = input;
+    
+        if (event.key === 'ArrowLeft') {
+            if (selectionStart === 0 && selectionEnd === 0) {
+                event.preventDefault();
+                quantityRef.current?.focus();
+            }
+        } else if (event.key === 'ArrowRight') {
+            if (selectionStart === value.length && selectionEnd === value.length) {
+                event.preventDefault();
+                discountRef.current?.focus();
+            }
+        } else if (event.key === 'Enter') {
             event.preventDefault();
             discountRef.current?.focus();
         } else if (event.key === 'Backspace') {
-            if (item.unit_price === 0) { // Assuming 0 is the default value
+            if (value === '0' && selectionStart === 1 && selectionEnd === 1) {
+                setFieldValue(`items[${index}].unit_price`, '');
+            } else if (value === '') {
                 event.preventDefault();
                 if (index > 0) {
                     remove(index);
@@ -172,15 +194,8 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
                     focusElementById(prevItemRef);
                 }
             }
-        } else if (event.key === 'ArrowLeft') {
-            event.preventDefault();
-            quantityRef.current?.focus();
-        } else if (event.key === 'ArrowRight') {
-            event.preventDefault();
-            discountRef.current?.focus();
         } else if (event.key === 'ArrowDown') {
             event.preventDefault();
-            // Move focus to the same field in the next item
             const nextItemIndex = index + 1;
             if (nextItemIndex < values.items.length) {
                 const nextUnitPriceRef = `item-${nextItemIndex}-unit_price`;
@@ -188,7 +203,6 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
             }
         } else if (event.key === 'ArrowUp') {
             event.preventDefault();
-            // Move focus to the same field in the previous item
             const prevItemIndex = index - 1;
             if (prevItemIndex >= 0) {
                 const prevUnitPriceRef = `item-${prevItemIndex}-unit_price`;
@@ -199,7 +213,39 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
 
     // Handler for Discount field keydown events
     const handleDiscountKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === 'Enter') {
+        const input = event.target as HTMLInputElement;
+        const { selectionStart, selectionEnd, value } = input;
+    
+        if (event.key === 'ArrowLeft') {
+            if (selectionStart === 0 && selectionEnd === 0) {
+                event.preventDefault();
+                unitPriceRef.current?.focus();
+            }
+        } else if (event.key === 'ArrowRight') {
+            if (selectionStart === value.length && selectionEnd === value.length) {
+                event.preventDefault();
+                // Focus on next item's description or add new item
+                const nextItemIndex = index + 1;
+                if (nextItemIndex < values.items.length) {
+                    focusElementById(`item-${nextItemIndex}-description`);
+                } else {
+                    // Add new item
+                    setFieldValue('items', [
+                        ...values.items,
+                        {
+                            description: '',
+                            quantity: 1,
+                            unit_price: 0,
+                            discount_percentage: 0,
+                            subitems: []
+                        }
+                    ]);
+                    setTimeout(() => {
+                        focusElementById(`item-${nextItemIndex}-description`);
+                    }, 0);
+                }
+            }
+        } else if (event.key === 'Enter') {
             event.preventDefault();
             // Add new main item
             setFieldValue('items', [
@@ -213,8 +259,16 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
                 },
                 ...values.items.slice(index + 1)
             ]);
+            // Focus on the new item's Description field after state update
+            setTimeout(() => {
+                const newItemIndex = index + 1;
+                const newItemDescriptionRef = `item-${newItemIndex}-description`;
+                focusElementById(newItemDescriptionRef);
+            }, 0);
         } else if (event.key === 'Backspace') {
-            if (item.discount_percentage === 0) { // Assuming 0 is the default value
+            if (value === '0' && selectionStart === 1 && selectionEnd === 1) {
+                setFieldValue(`items[${index}].discount_percentage`, '');
+            } else if (value === '') {
                 event.preventDefault();
                 if (index > 0) {
                     remove(index);
@@ -222,15 +276,8 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
                     focusElementById(prevItemRef);
                 }
             }
-        } else if (event.key === 'ArrowLeft') {
-            event.preventDefault();
-            unitPriceRef.current?.focus();
-        } else if (event.key === 'ArrowRight') {
-            event.preventDefault();
-            // No field to the right of Discount
         } else if (event.key === 'ArrowDown') {
             event.preventDefault();
-            // Move focus to the same field in the next item
             const nextItemIndex = index + 1;
             if (nextItemIndex < values.items.length) {
                 const nextDiscountRef = `item-${nextItemIndex}-discount_percentage`;
@@ -238,7 +285,6 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
             }
         } else if (event.key === 'ArrowUp') {
             event.preventDefault();
-            // Move focus to the same field in the previous item
             const prevItemIndex = index - 1;
             if (prevItemIndex >= 0) {
                 const prevDiscountRef = `item-${prevItemIndex}-discount_percentage`;
@@ -367,41 +413,43 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
                     inputRef={descriptionRef}
                     aria-label={`Item ${index + 1} Description`}
                 />
-                <TextField
+                <NumericTextField
                     id={`item-${index}-quantity`} // Ensure this matches the focus target
                     name={`items[${index}].quantity`}
                     label="Quantity"
-                    type="number"
-                    value={item.quantity}
+                    placeholder={`${item.quantity}`}
                     onChange={(e) => setFieldValue(`items[${index}].quantity`, Number(e.target.value))}
                     onKeyDown={handleQuantityKeyDown}
                     inputRef={quantityRef} // Keep this ref if needed elsewhere
                     sx={{ width: '100px' }}
                     aria-label={`Item ${index + 1} Quantity`}
+                    slotProps={{ inputLabel: { shrink: true } }}
                 />
-                <TextField
+                <NumericTextField
                     id={`item-${index}-unit_price`}
                     name={`items[${index}].unit_price`}
                     label="Unit Price"
-                    type="number"
-                    value={item.unit_price}
+                    placeholder={`${item.unit_price}`}
                     onChange={(e) => setFieldValue(`items[${index}].unit_price`, Number(e.target.value))}
                     onKeyDown={handleUnitPriceKeyDown}
                     inputRef={unitPriceRef}
                     sx={{ width: '120px' }}
                     aria-label={`Item ${index + 1} Unit Price`}
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    startAdornment="$"
                 />
-                <TextField
+                <NumericTextField
                     id={`item-${index}-discount_percentage`}
                     name={`items[${index}].discount_percentage`}
                     label="Discount (%)"
-                    type="number"
-                    value={item.discount_percentage}
+                    placeholder={`${item.discount_percentage}`}
                     onChange={(e) => setFieldValue(`items[${index}].discount_percentage`, Number(e.target.value))}
                     onKeyDown={handleDiscountKeyDown}
                     inputRef={discountRef}
                     sx={{ width: '120px' }}
                     aria-label={`Item ${index + 1} Discount Percentage`}
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    endAdornment="%"
                 />
                 <IconButton onClick={() => remove(index)} aria-label={`Remove Item ${index + 1}`}>
                     <RemoveCircleOutline />

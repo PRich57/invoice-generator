@@ -1,5 +1,3 @@
-// src/pages/InvoiceFormPage.tsx
-
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { Box, Typography, Button } from '@mui/material';
@@ -67,7 +65,7 @@ const InvoiceFormPage: React.FC = () => {
                             </Button>
                         </Box>
                     </Box>
-                    <Box sx={{ flex: 1, pl: 2 }}>
+                    {/* <Box sx={{ flex: 1, pl: 2 }}>
                         {selectedTemplate && (
                             <InvoicePreview
                                 invoice={formik.values}
@@ -76,7 +74,7 @@ const InvoiceFormPage: React.FC = () => {
                                 sendToContact={contacts.find(c => c.id === formik.values.send_to_id) || null}
                             />
                         )}
-                    </Box>
+                    </Box> */}
                 </Box>
             </Box>
         </FormikProvider>
