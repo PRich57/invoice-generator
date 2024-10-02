@@ -102,6 +102,10 @@ export interface InvoiceFormProps {
     templates: Template[];
     isSubmitting: boolean;
     setSelectedTemplate: (template: Template | null) => void;
+    isAuthenticated: boolean;
+    handlePreview: () => void;
+    isPDFGenerating: boolean;
+    selectedTemplate: Template | null;
 }
 
 export type InvoiceFormErrors = {

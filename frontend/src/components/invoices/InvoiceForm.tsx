@@ -24,7 +24,12 @@ import NumericTextField from '../common/NumericTextField';
 const InvoiceForm: React.FC<InvoiceFormProps> = ({
     contacts,
     templates,
-    setSelectedTemplate
+    isSubmitting,
+    setSelectedTemplate,
+    isAuthenticated,
+    handlePreview,
+    isPDFGenerating,
+    selectedTemplate,
 }) => {
     const formik = useFormikContext<InvoiceCreate>();
 
@@ -66,6 +71,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         onChange={formik.handleChange}
                         error={formik.touched.invoice_number && Boolean(formik.errors.invoice_number)}
                         helperText={formik.touched.invoice_number && formik.errors.invoice_number}
+                        size='small'
                     />
                 </Box>
                 <Box flex="1 1 45%">
@@ -74,13 +80,13 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                             label="Invoice Date"
                             value={formik.values.invoice_date ? dayjs(formik.values.invoice_date) : null}
                             onChange={handleDateChange}
-                            slotProps={{ textField: { fullWidth: true } }}
+                            slotProps={{ textField: { fullWidth: true, size: "small" } }}
                         />
                     </LocalizationProvider>
                 </Box>
                 <Box flex="1 1 45%">
                     <FormControl fullWidth>
-                        <InputLabel id="bill-to-label">Bill To</InputLabel>
+                        <InputLabel size='small' id="bill-to-label">Bill To</InputLabel>
                         <Select
                             labelId="bill-to-label"
                             name="bill_to_id"
@@ -88,6 +94,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                             onChange={handleBillToChange}
                             error={formik.touched.bill_to_id && Boolean(formik.errors.bill_to_id)}
                             label="Bill To"
+                            size='small'
                         >
                             <MenuItem value="">
                                 <em>Select Contact</em>
@@ -102,7 +109,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 </Box>
                 <Box flex="1 1 45%">
                     <FormControl fullWidth>
-                        <InputLabel id="send-to-label">Send To</InputLabel>
+                        <InputLabel size='small' id="send-to-label">Send To</InputLabel>
                         <Select
                             labelId="send-to-label"
                             name="send_to_id"
@@ -110,6 +117,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                             onChange={handleSendToChange}
                             error={formik.touched.send_to_id && Boolean(formik.errors.send_to_id)}
                             label="Send To"
+                            size='small'
+
                         >
                             <MenuItem value="">
                                 <em>Select Contact</em>
@@ -166,6 +175,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         helperText={formik.touched.tax_rate && formik.errors.tax_rate}
                         slotProps={{ inputLabel: { shrink: true } }}
                         endAdornment="%"
+                        size='small'
                     />
                 </Box>
                 <Box flex="1 1 45%">
@@ -179,6 +189,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         helperText={formik.touched.discount_percentage && formik.errors.discount_percentage}
                         slotProps={{ inputLabel: { shrink: true } }}
                         endAdornment="%"
+                        size='small'
                     />
                 </Box>
             </Box>
@@ -194,10 +205,11 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 onChange={formik.handleChange}
                 error={formik.touched.notes && Boolean(formik.errors.notes)}
                 helperText={formik.touched.notes && formik.errors.notes}
+                size='small'
             />
 
             <FormControl fullWidth margin="normal">
-                <InputLabel id="template-select-label">Template</InputLabel>
+                <InputLabel size='small' id="template-select-label">Template</InputLabel>
                 <Select
                     labelId="template-select-label"
                     name="template_id"
@@ -205,6 +217,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                     onChange={handleTemplateChange}
                     error={formik.touched.template_id && Boolean(formik.errors.template_id)}
                     label="Template"
+                    size='small'
                 >
                     <MenuItem value="">
                         <em>Select Template</em>
@@ -216,6 +229,26 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                     ))}
                 </Select>
             </FormControl>
+            <Box mt={2} display="flex" gap={2}>
+                {isAuthenticated && (
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        color="primary"
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? 'Submitting...' : 'Save Invoice'}
+                    </Button>
+                )}
+                <Button
+                    onClick={handlePreview}
+                    variant="outlined"
+                    color="secondary"
+                    disabled={isPDFGenerating || !selectedTemplate}
+                >
+                    {isPDFGenerating ? 'Generating PDF...' : 'PDF Preview'}
+                </Button>
+            </Box>
         </Box>
     );
 };

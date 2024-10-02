@@ -1,8 +1,9 @@
+// NumericTextField.tsx
 import React, { useState, forwardRef } from 'react';
 import TextField, { TextFieldProps } from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
 
-interface NumericTextFieldProps extends Omit<TextFieldProps, 'onChange'> {
+interface NumericTextFieldProps extends Omit<TextFieldProps, 'onChange' | 'ref'> {
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   startAdornment?: React.ReactNode;
   endAdornment?: React.ReactNode;
@@ -15,7 +16,8 @@ const NumericTextField = forwardRef<HTMLInputElement, NumericTextFieldProps>((pr
     onKeyDown,
     startAdornment,
     endAdornment,
-    slotProps,
+    slotProps = {},
+    slots = {},
     ...otherProps
   } = props;
 
@@ -23,8 +25,7 @@ const NumericTextField = forwardRef<HTMLInputElement, NumericTextFieldProps>((pr
 
   const handleInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
-    
-    // Allow digits and one decimal point, but no negative numbers
+
     if (/^\d*\.?\d*$/.test(newValue)) {
       setValue(newValue);
       if (onChange) {
@@ -39,19 +40,28 @@ const NumericTextField = forwardRef<HTMLInputElement, NumericTextFieldProps>((pr
       value={value}
       onChange={handleInput}
       onKeyDown={onKeyDown}
-      inputRef={ref}
       slotProps={{
         ...slotProps,
         input: {
-          ...slotProps?.input,
+          ...slotProps.input,
+          ref: ref,
           inputMode: 'decimal',
-          startAdornment: startAdornment ? (
-            <InputAdornment position="start">{startAdornment}</InputAdornment>
-          ) : undefined,
-          endAdornment: endAdornment ? (
-            <InputAdornment position="end">{endAdornment}</InputAdornment>
-          ) : undefined,
         },
+        ...(startAdornment && {
+          adornmentStart: {
+            children: startAdornment,
+          },
+        }),
+        ...(endAdornment && {
+          adornmentEnd: {
+            children: endAdornment,
+          },
+        }),
+      }}
+      slots={{
+        ...slots,
+        ...(startAdornment && { adornmentStart: InputAdornment }),
+        ...(endAdornment && { adornmentEnd: InputAdornment }),
       }}
     />
   );

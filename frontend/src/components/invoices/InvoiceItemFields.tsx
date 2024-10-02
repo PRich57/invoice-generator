@@ -62,26 +62,39 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
             ]);
         } else if (event.key === 'Tab' && !event.shiftKey) {
             event.preventDefault();
-            // Indent to subitem
-            setFieldValue(`items[${index}].subitems`, [
-                ...item.subitems,
-                { description: '' }
-            ]);
-            // Set focus to the new subitem's Description field after state update
-            setTimeout(() => {
-                const newSubitemIndex = item.subitems.length;
-                if (subitemRefs.current[newSubitemIndex]) {
-                    subitemRefs.current[newSubitemIndex]?.focus();
-                }
-            }, 0);
+            if (index > 0) {
+                // Remove current item from main items array
+                const newItems = [...values.items];
+                const [currentItem] = newItems.splice(index, 1);
+
+                // Add current item as a subitem to the previous item
+                const prevItem = newItems[index - 1];
+                prevItem.subitems = prevItem.subitems || [];
+                prevItem.subitems.push(currentItem);
+
+                // Update the form values
+                setFieldValue('items', newItems);
+
+                // Focus on the new subitem's Description field
+                setTimeout(() => {
+                    const newSubitemIndex = prevItem.subitems.length - 1;
+                    const subitemRefId = `item-${index - 1}-subitem-${newSubitemIndex}-description`;
+                    focusElementById(subitemRefId);
+                }, 0);
+            }
         } else if (event.key === 'Backspace') {
             if (item.description === '') { // If Description is empty
                 event.preventDefault();
-                if (index > 0) {
+                if (values.items.length > 1) { // Ensure more than one item exists
                     remove(index);
-                    // Focus the Description field of the previous item
-                    const prevItemRef = `item-${index - 1}-description`;
-                    focusElementById(prevItemRef);
+                    // Focus the Description field of the previous item or next item if first
+                    if (index > 0) {
+                        const prevItemRef = `item-${index - 1}-description`;
+                        focusElementById(prevItemRef);
+                    } else {
+                        const nextItemRef = `item-${index}-description`; // After removal, the next item shifts to current index
+                        focusElementById(nextItemRef);
+                    }
                 }
             }
         } else if (event.key === 'ArrowDown') {
@@ -124,31 +137,23 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
     const handleQuantityKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         const input = event.target as HTMLInputElement;
         const { selectionStart, selectionEnd, value } = input;
-    
+
         if (event.key === 'ArrowLeft') {
             if (selectionStart === 0 && selectionEnd === 0) {
                 event.preventDefault();
+                console.log("DESCRIPTION_REF:", descriptionRef);
+
                 descriptionRef.current?.focus();
             }
         } else if (event.key === 'ArrowRight') {
             if (selectionStart === value.length && selectionEnd === value.length) {
                 event.preventDefault();
+                console.log("UNIT_PRICE_REF:", unitPriceRef);
                 unitPriceRef.current?.focus();
             }
         } else if (event.key === 'Enter') {
             event.preventDefault();
             unitPriceRef.current?.focus();
-        } else if (event.key === 'Backspace') {
-            if (value === '1' && selectionStart === 1 && selectionEnd === 1) {
-                setFieldValue(`items[${index}].quantity`, '');
-            } else if (value === '') {
-                event.preventDefault();
-                if (index > 0) {
-                    remove(index);
-                    const prevItemRef = `item-${index - 1}-discount_percentage`;
-                    focusElementById(prevItemRef);
-                }
-            }
         } else if (event.key === 'ArrowDown') {
             event.preventDefault();
             const nextItemIndex = index + 1;
@@ -169,31 +174,24 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
     const handleUnitPriceKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         const input = event.target as HTMLInputElement;
         const { selectionStart, selectionEnd, value } = input;
-    
+
         if (event.key === 'ArrowLeft') {
             if (selectionStart === 0 && selectionEnd === 0) {
                 event.preventDefault();
+                console.log("QUANTITY_REF:", quantityRef);
+
                 quantityRef.current?.focus();
             }
         } else if (event.key === 'ArrowRight') {
             if (selectionStart === value.length && selectionEnd === value.length) {
                 event.preventDefault();
+                console.log("DISCOUNT_REF:", discountRef);
+
                 discountRef.current?.focus();
             }
         } else if (event.key === 'Enter') {
             event.preventDefault();
             discountRef.current?.focus();
-        } else if (event.key === 'Backspace') {
-            if (value === '0' && selectionStart === 1 && selectionEnd === 1) {
-                setFieldValue(`items[${index}].unit_price`, '');
-            } else if (value === '') {
-                event.preventDefault();
-                if (index > 0) {
-                    remove(index);
-                    const prevItemRef = `item-${index - 1}-unit_price`;
-                    focusElementById(prevItemRef);
-                }
-            }
         } else if (event.key === 'ArrowDown') {
             event.preventDefault();
             const nextItemIndex = index + 1;
@@ -215,7 +213,7 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
     const handleDiscountKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         const input = event.target as HTMLInputElement;
         const { selectionStart, selectionEnd, value } = input;
-    
+
         if (event.key === 'ArrowLeft') {
             if (selectionStart === 0 && selectionEnd === 0) {
                 event.preventDefault();
@@ -265,17 +263,6 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
                 const newItemDescriptionRef = `item-${newItemIndex}-description`;
                 focusElementById(newItemDescriptionRef);
             }, 0);
-        } else if (event.key === 'Backspace') {
-            if (value === '0' && selectionStart === 1 && selectionEnd === 1) {
-                setFieldValue(`items[${index}].discount_percentage`, '');
-            } else if (value === '') {
-                event.preventDefault();
-                if (index > 0) {
-                    remove(index);
-                    const prevItemRef = `item-${index - 1}-description`;
-                    focusElementById(prevItemRef);
-                }
-            }
         } else if (event.key === 'ArrowDown') {
             event.preventDefault();
             const nextItemIndex = index + 1;
@@ -318,40 +305,31 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
             }, 0);
         } else if (event.key === 'Tab' && event.shiftKey) {
             event.preventDefault();
-            if (subitem.description.trim() !== '') {
-                // Convert subitem to main item
-                const newSubitems = item.subitems.filter((_, i: number) => i !== subIndex);
-                const newItem: InvoiceItemCreate = {
-                    description: subitem.description,
-                    quantity: 1,
-                    unit_price: 0,
-                    discount_percentage: 0,
-                    subitems: []
-                };
-                const newItems = [
-                    ...values.items.slice(0, index), // Items before current item
-                    {
-                        ...item,
-                        subitems: newSubitems
-                    }, // Updated current item with subitem removed
-                    newItem, // New main item
-                    ...values.items.slice(index + 1) // Items after current item
-                ];
-                setFieldValue('items', newItems);
-                // Focus on the new item's Description field after state update
-                setTimeout(() => {
-                    const newItemIndex = index + 1;
-                    const newItemDescriptionRef = `item-${newItemIndex}-description`;
-                    focusElementById(newItemDescriptionRef);
-                }, 0);
-            } else {
-                // If subitem's description is empty, remove it
-                const newSubitems = item.subitems.filter((_, i: number) => i !== subIndex);
-                setFieldValue(`items[${index}].subitems`, newSubitems);
-                // Focus on the main item's Description field
-                const mainDescriptionRef = `item-${index}-description`;
-                focusElementById(mainDescriptionRef);
-            }
+            // Convert subitem to main item, regardless of whether it's empty or not
+            const newSubitems = item.subitems.filter((_, i: number) => i !== subIndex);
+            const newItem: InvoiceItemCreate = {
+                description: subitem.description, // This will be empty for empty subitems
+                quantity: 1,
+                unit_price: 0,
+                discount_percentage: 0,
+                subitems: []
+            };
+            const newItems = [
+                ...values.items.slice(0, index), // Items before current item
+                {
+                    ...item,
+                    subitems: newSubitems
+                }, // Updated current item with subitem removed
+                newItem, // New main item (empty or with content)
+                ...values.items.slice(index + 1) // Items after current item
+            ];
+            setFieldValue('items', newItems);
+            // Focus on the new item's Description field after state update
+            setTimeout(() => {
+                const newItemIndex = index + 1;
+                const newItemDescriptionRef = `item-${newItemIndex}-description`;
+                focusElementById(newItemDescriptionRef);
+            }, 0);
         } else if (event.key === 'Backspace') {
             if (subitem.description.trim() === '') { // Check if subitem description is empty
                 event.preventDefault();
@@ -403,7 +381,8 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
         <Box mb={2}>
             <Box display="flex" alignItems="center" gap={1}>
                 <TextField
-                    fullWidth
+                    // fullWidth
+                    sx={{ width: '70%' }}
                     id={`item-${index}-description`}
                     name={`items[${index}].description`}
                     label="Description"
@@ -412,6 +391,7 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
                     onKeyDown={handleItemDescriptionKeyDown}
                     inputRef={descriptionRef}
                     aria-label={`Item ${index + 1} Description`}
+                    size='small'
                 />
                 <NumericTextField
                     id={`item-${index}-quantity`} // Ensure this matches the focus target
@@ -421,9 +401,10 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
                     onChange={(e) => setFieldValue(`items[${index}].quantity`, Number(e.target.value))}
                     onKeyDown={handleQuantityKeyDown}
                     inputRef={quantityRef} // Keep this ref if needed elsewhere
-                    sx={{ width: '100px' }}
+                    sx={{ width: '8%' }}
                     aria-label={`Item ${index + 1} Quantity`}
                     slotProps={{ inputLabel: { shrink: true } }}
+                    size='small'
                 />
                 <NumericTextField
                     id={`item-${index}-unit_price`}
@@ -433,10 +414,11 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
                     onChange={(e) => setFieldValue(`items[${index}].unit_price`, Number(e.target.value))}
                     onKeyDown={handleUnitPriceKeyDown}
                     inputRef={unitPriceRef}
-                    sx={{ width: '120px' }}
+                    sx={{ width: '12%' }}
                     aria-label={`Item ${index + 1} Unit Price`}
                     slotProps={{ inputLabel: { shrink: true } }}
                     startAdornment="$"
+                    size='small'
                 />
                 <NumericTextField
                     id={`item-${index}-discount_percentage`}
@@ -446,10 +428,11 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
                     onChange={(e) => setFieldValue(`items[${index}].discount_percentage`, Number(e.target.value))}
                     onKeyDown={handleDiscountKeyDown}
                     inputRef={discountRef}
-                    sx={{ width: '120px' }}
+                    sx={{ width: '10%' }}
                     aria-label={`Item ${index + 1} Discount Percentage`}
                     slotProps={{ inputLabel: { shrink: true } }}
                     endAdornment="%"
+                    size='small'
                 />
                 <IconButton onClick={() => remove(index)} aria-label={`Remove Item ${index + 1}`}>
                     <RemoveCircleOutline />
@@ -466,7 +449,7 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
                                         fullWidth
                                         id={`item-${index}-subitem-${subIndex}-description`}
                                         name={`items[${index}].subitems[${subIndex}].description`}
-                                        label="Subitem Description"
+                                        label="Subitem"
                                         value={subitem.description || ''} // Ensure value is always a string
                                         onChange={(e) =>
                                             setFieldValue(
@@ -479,19 +462,20 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = ({ index, remove }) 
                                         // Style for subitems
                                         sx={{ fontSize: '0.9rem', color: 'gray' }}
                                         aria-label={`Item ${index + 1} Subitem ${subIndex + 1} Description`}
+                                        size='small'
                                     />
                                     <IconButton onClick={() => removeSubitem(subIndex)} aria-label={`Remove Subitem ${subIndex + 1}`}>
                                         <RemoveCircleOutline />
                                     </IconButton>
                                 </Box>
                             ))}
-                            <Button
+                            {/* <Button
                                 onClick={() => pushSubitem({ description: '' })}
                                 size="small"
                                 sx={{ ml: 2, mt: 1 }}
                             >
                                 Add Subitem
-                            </Button>
+                            </Button> */}
                         </Box>
                     )}
                 </FieldArray>

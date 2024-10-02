@@ -43,6 +43,10 @@ const InvoiceFormPage: React.FC = () => {
                             templates={templates}
                             isSubmitting={isSubmitting}
                             setSelectedTemplate={setSelectedTemplate}
+                            isAuthenticated={isAuthenticated}
+                            handlePreview={handlePreview}
+                            isPDFGenerating={isPDFGenerating}
+                            selectedTemplate={selectedTemplate}
                         />
                         <Box mt={2} display="flex" gap={2}>
                             {isAuthenticated && (
@@ -65,7 +69,7 @@ const InvoiceFormPage: React.FC = () => {
                             </Button>
                         </Box>
                     </Box>
-                    {/* <Box sx={{ flex: 1, pl: 2 }}>
+                    <Box sx={{ flex: 1, pl: 2 }}>
                         {selectedTemplate && (
                             <InvoicePreview
                                 invoice={formik.values}
@@ -74,7 +78,7 @@ const InvoiceFormPage: React.FC = () => {
                                 sendToContact={contacts.find(c => c.id === formik.values.send_to_id) || null}
                             />
                         )}
-                    </Box> */}
+                    </Box>
                 </Box>
             </Box>
         </FormikProvider>
