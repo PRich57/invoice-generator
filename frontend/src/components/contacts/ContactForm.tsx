@@ -4,9 +4,6 @@ import { useSnackbar } from 'notistack';
 import React, { useEffect, useRef, useState } from 'react';
 import { useContactForm } from '../../hooks/useContactForm';
 import LoadingSpinner from '../common/LoadingSpinner';
-import { styled } from '@mui/material/styles';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
 import { Loader } from '@googlemaps/js-api-loader';
 import ListboxComponent from '../common/ListboxComponent';
 

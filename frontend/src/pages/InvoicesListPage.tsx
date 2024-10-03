@@ -56,12 +56,14 @@ const InvoicesList: React.FC = () => {
                     }, {} as Record<number, string>)
                 );
             } catch (err) {
-                console.error('Failed to fetch contacts or templates:', err);
-                handleError(err);
+                // console.error('Failed to fetch contacts or templates:', err);
+                enqueueSnackbar('Failed to fetch contacts and/or templates. Please try again.',
+                    { variant: 'error' }
+                )
             }
         };
         fetchData();
-    }, [handleError]);
+    }, []);
 
     const handleFilterChange = useCallback(
         (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>) => {

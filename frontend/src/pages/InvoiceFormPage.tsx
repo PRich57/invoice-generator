@@ -9,8 +9,8 @@ import { usePDFGeneration } from '../hooks/usePDFGeneration';
 import InvoiceForm from '../components/invoices/InvoiceForm';
 import InvoicePreview from '../components/invoices/InvoicePreview';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import ErrorMessage from '../components/common/ErrorMessage';
 import { useAuth } from '../contexts/AuthContext';
+import { useSnackbar } from 'notistack';
 
 const InvoiceFormPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -19,6 +19,7 @@ const InvoiceFormPage: React.FC = () => {
     const { contacts, error: contactsError, loading: contactsLoading } = useContacts();
     const { templates, selectedTemplate, setSelectedTemplate } = useTemplates();
     const { handlePreviewPDF, isGenerating: isPDFGenerating } = usePDFGeneration();
+    const { enqueueSnackbar } = useSnackbar();
 
     const handlePreview = () => {
         if (selectedTemplate) {
@@ -27,8 +28,11 @@ const InvoiceFormPage: React.FC = () => {
     };
 
     if (isLoading || contactsLoading) return <LoadingSpinner />;
-    if (contactsError)
-        return <ErrorMessage message={contactsError || 'An error occurred'} />;
+    if (contactsError) {
+        enqueueSnackbar("Failed to load contacts. Please try again.", 
+            { variant: 'error' }
+        );
+    };
 
     return (
         <FormikProvider value={formik}>

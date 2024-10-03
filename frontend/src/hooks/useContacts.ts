@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Contact } from '../types';
 import { getContacts } from '../services/api/contacts';
 import { useErrorHandler } from './useErrorHandler';
+import { useSnackbar } from 'notistack';
 
 export const useContacts = () => {
     const [contacts, setContacts] = useState<Contact[]>([]);
@@ -9,6 +10,7 @@ export const useContacts = () => {
     const [contactCount, setContactCount] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const { error, setError, handleError } = useErrorHandler();
+    const { enqueueSnackbar } = useSnackbar();
 
     const fetchContacts = useCallback(async () => {
         try {
@@ -22,6 +24,9 @@ export const useContacts = () => {
             setError(null);
         } catch (err) {
             handleError(err);
+            enqueueSnackbar("Failed to fetch contacts. Please try again.",
+                { variant: "error" }
+            )
         } finally {
             setLoading(false);
         }

@@ -60,7 +60,9 @@ export const useContactForm = () => {
                 );
                 navigate('/contacts');
             } catch (err) {
-                handleError(err);
+                enqueueSnackbar("Failed to submit contact form. Please try again.",
+                    { variant: 'error' }
+                )
             } finally {
                 setIsSubmitting(false);
             }
