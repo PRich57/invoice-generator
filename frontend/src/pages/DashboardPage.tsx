@@ -146,17 +146,43 @@ const Dashboard: React.FC = () => {
                         </Box>
                     </Stack>
 
-                    <Box sx={{ mb: 4 }}>
-                        <Typography variant="h5" gutterBottom sx={{ mt: 4, mb: 2 }}>Recent Invoices</Typography>
-                        <Stack spacing={2}>
-                            {recentInvoices.map((invoice) => (
-                                <Paper key={invoice.id} sx={{ p: 2 }}>
-                                    <Typography variant="subtitle1">{invoice.invoice_number}</Typography>
-                                    <Typography variant="body2" color="text.secondary">Due: invoice.due_date</Typography>
-                                    <Typography variant="h6" color="primary.main">${invoice.total}</Typography>
-                                </Paper>
-                            ))}
-                        </Stack>
+                    <Box display="flex" sx={{ p: 2, justifyContent: 'space-between' }}>
+                        <Box flex={1} sx={{ mr: 2 }}>
+                        <Typography variant="h5" gutterBottom sx={{ mt: 4, mb: 2 }}>Recently Created:</Typography>
+                            <Stack spacing={2}>
+                                {recentInvoices.map((invoice) => (
+                                    <Paper key={invoice.id} sx={{ p: 2 }}>
+                                        <Typography variant="subtitle1">{invoice.invoice_number}</Typography>
+                                        <Typography variant="body2" color="text.secondary">Due: invoice.due_date</Typography>
+                                        <Typography variant="h6" color="primary.main">${invoice.total}</Typography>
+                                    </Paper>
+                                ))}
+                            </Stack>
+                        </Box>
+                        <Box flex={1} sx={{ ml: 1, mr: 1 }}>
+                            <Typography variant="h5" gutterBottom sx={{ mt: 4, mb: 2 }}>Send Reminder:</Typography>
+                            <Stack spacing={2}>
+                                {recentInvoices.map((invoice) => (
+                                    <Paper key={invoice.id} sx={{ p: 2 }}>
+                                        <Typography variant="subtitle1">{invoice.invoice_number}</Typography>
+                                        <Typography variant="body2" color="text.secondary">Due: invoice.due_date</Typography>
+                                        <Typography variant="h6" color="primary.main">${invoice.total}</Typography>
+                                    </Paper>
+                                ))}
+                            </Stack>
+                        </Box>
+                        <Box flex={1} sx={{ ml: 2 }}>
+                            <Typography variant="h5" gutterBottom sx={{ mt: 4, mb: 2 }}>Overdue:</Typography>
+                            <Stack spacing={2}>
+                                {recentInvoices.map((invoice) => (
+                                    <Paper key={invoice.id} sx={{ p: 2 }}>
+                                        <Typography variant="subtitle1">{invoice.invoice_number}</Typography>
+                                        <Typography variant="body2" color="text.secondary">Due: invoice.due_date</Typography>
+                                        <Typography variant="h6" color="primary.main">${invoice.total}</Typography>
+                                    </Paper>
+                                ))}
+                            </Stack>
+                        </Box>
                     </Box>
                 </Box>
             ) : (
