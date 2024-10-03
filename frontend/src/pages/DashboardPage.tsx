@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, Box, Paper, Button, Stack, Select, MenuItem, SelectChangeEvent } from '@mui/material';
+import { Typography, Box, Paper, Button, Stack, Select, MenuItem, SelectChangeEvent, Collapse } from '@mui/material';
 import { Link } from 'react-router-dom';
 import {
     AccountCircle,
     AddOutlined,
     Description,
-    Login
+    Login,
+    ExpandMore,
+    ExpandLess
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useContacts } from '../hooks/useContacts';
@@ -25,9 +27,18 @@ const Dashboard: React.FC = () => {
     const { templateCount } = useTemplates();
 
     const [paidInvoicesPeriod, setPaidInvoicesPeriod] = useState<'30' | '60' | '90' | 'all'>('30');
+    const [expandedSections, setExpandedSections] = useState({
+        recentlyCreated: true,
+        sendReminder: true,
+        overdue: true
+    });
 
     const handlePeriodChange = (event: SelectChangeEvent<string>) => {
         setPaidInvoicesPeriod(event.target.value as '30' | '60' | '90' | 'all');
+    };
+
+    const toggleSection = (section: 'recentlyCreated' | 'sendReminder' | 'overdue') => {
+        setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
     useEffect(() => {
@@ -37,11 +48,11 @@ const Dashboard: React.FC = () => {
     }, [isAuthenticated, paidInvoicesPeriod, getPaidInvoices]);
 
     const StatCard: React.FC<{ title: string; count: number; amount: number | string; color: string }> = ({ title, count, amount, color }) => (
-            <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <Typography variant="h6" sx={{ pb: 2 }}>{title}</Typography>
-                <Typography variant="h5" color={color}>{count} invoices</Typography>
-                <Typography variant="h5" color={color}>{formatCurrency(amount)}</Typography>
-            </Paper>
+        <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <Typography variant="h6" sx={{ pb: 2 }}>{title}</Typography>
+            <Typography variant="h5" color={color}>{count} invoices</Typography>
+            <Typography variant="h5" color={color}>{formatCurrency(amount)}</Typography>
+        </Paper>
     );
 
     const ActionCard: React.FC<{ title: string, count: number | string, createLink: string, manageLink: string }> = ({ title, count, createLink, manageLink }) => (
@@ -73,13 +84,33 @@ const Dashboard: React.FC = () => {
         </Paper>
     );
 
+    const InvoiceSection: React.FC<{ title: string; invoices: any[]; expanded: boolean; onToggle: () => void }> = ({ title, invoices, expanded, onToggle }) => (
+        <Box>
+            <Button onClick={onToggle} sx={{ justifyContent: 'space-between', width: '100%', mb: 2 }}>
+                <Typography variant="h6">{title}</Typography>
+                {expanded ? <ExpandLess /> : <ExpandMore />}
+            </Button>
+            <Collapse in={expanded}>
+                <Stack spacing={2}>
+                    {invoices.map((invoice) => (
+                        <Paper key={invoice.id} sx={{ p: 2 }}>
+                            <Typography variant="subtitle1">{invoice.invoice_number}</Typography>
+                            <Typography variant="body2" color="text.secondary">Due: {invoice.invoice_date}</Typography>
+                            <Typography variant="h6" color="primary.main">${invoice.total}</Typography>
+                        </Paper>
+                    ))}
+                </Stack>
+            </Collapse>
+        </Box>
+    );
+
     return (
         <Box sx={{ p: { xs: 2, sm: 3 }, pb: { xs: 10, sm: 3 } }}>
-            <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>Dashboard</Typography>
+            <Typography variant="h4" gutterBottom>Dashboard</Typography>
 
             {isAuthenticated ? (
-                <Box>
-                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ mb: 4 }}>
+                <>
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
                         <Box flex={1}>
                             <ActionCard
                                 title="Invoices"
@@ -106,7 +137,7 @@ const Dashboard: React.FC = () => {
                         </Box>
                     </Stack>
 
-                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ mb: 4 }}>
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} marginTop={3} marginBottom={3}>
                         <Box flex={1}>
                             <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
@@ -146,48 +177,36 @@ const Dashboard: React.FC = () => {
                         </Box>
                     </Stack>
 
-                    <Box display="flex" sx={{ p: 2, justifyContent: 'space-between' }}>
-                        <Box flex={1} sx={{ mr: 2 }}>
-                        <Typography variant="h5" gutterBottom sx={{ mt: 4, mb: 2 }}>Recently Created:</Typography>
-                            <Stack spacing={2}>
-                                {recentInvoices.map((invoice) => (
-                                    <Paper key={invoice.id} sx={{ p: 2 }}>
-                                        <Typography variant="subtitle1">{invoice.invoice_number}</Typography>
-                                        <Typography variant="body2" color="text.secondary">Due: invoice.due_date</Typography>
-                                        <Typography variant="h6" color="primary.main">${invoice.total}</Typography>
-                                    </Paper>
-                                ))}
-                            </Stack>
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
+                        <Box flex={1}>
+                            <InvoiceSection
+                                title="Recently Created"
+                                invoices={recentInvoices}
+                                expanded={expandedSections.recentlyCreated}
+                                onToggle={() => toggleSection('recentlyCreated')}
+                            />
                         </Box>
-                        <Box flex={1} sx={{ ml: 1, mr: 1 }}>
-                            <Typography variant="h5" gutterBottom sx={{ mt: 4, mb: 2 }}>Send Reminder:</Typography>
-                            <Stack spacing={2}>
-                                {recentInvoices.map((invoice) => (
-                                    <Paper key={invoice.id} sx={{ p: 2 }}>
-                                        <Typography variant="subtitle1">{invoice.invoice_number}</Typography>
-                                        <Typography variant="body2" color="text.secondary">Due: invoice.due_date</Typography>
-                                        <Typography variant="h6" color="primary.main">${invoice.total}</Typography>
-                                    </Paper>
-                                ))}
-                            </Stack>
+                        <Box flex={1}>
+                            <InvoiceSection
+                                title="Send Reminder"
+                                invoices={recentInvoices}
+                                expanded={expandedSections.sendReminder}
+                                onToggle={() => toggleSection('sendReminder')}
+                            />
                         </Box>
-                        <Box flex={1} sx={{ ml: 2 }}>
-                            <Typography variant="h5" gutterBottom sx={{ mt: 4, mb: 2 }}>Overdue:</Typography>
-                            <Stack spacing={2}>
-                                {recentInvoices.map((invoice) => (
-                                    <Paper key={invoice.id} sx={{ p: 2 }}>
-                                        <Typography variant="subtitle1">{invoice.invoice_number}</Typography>
-                                        <Typography variant="body2" color="text.secondary">Due: invoice.due_date</Typography>
-                                        <Typography variant="h6" color="primary.main">${invoice.total}</Typography>
-                                    </Paper>
-                                ))}
-                            </Stack>
+                        <Box flex={1}>
+                            <InvoiceSection
+                                title="Overdue"
+                                invoices={recentInvoices}
+                                expanded={expandedSections.overdue}
+                                onToggle={() => toggleSection('overdue')}
+                            />
                         </Box>
-                    </Box>
-                </Box>
+                    </Stack>
+                </>
             ) : (
-                <Box sx={{ maxWidth: '600px', margin: '0 auto' }}>
-                    <Stack direction="column" spacing={3} sx={{ mb: 4 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                    <Stack spacing={3} sx={{ width: '100%', maxWidth: { xs: '100%', sm: '600px' } }}>
                         <ActionCard
                             title="Invoices"
                             count="Generate Invoice"
@@ -208,7 +227,7 @@ const Dashboard: React.FC = () => {
                             </Typography>
                             <Typography component="div" sx={{ mb: 2 }}>
                                 Manage your business effortlessly:
-                                <ul style={{ marginLeft: '20px', marginTop: '10px' }}>
+                                <ul style={{ marginLeft: '10px', marginTop: '10px', paddingLeft: '15px' }}>
                                     <li>Save and organize invoices securely</li>
                                     <li>Manage contacts and client information</li>
                                     <li>Create and customize professional templates</li>
@@ -218,7 +237,7 @@ const Dashboard: React.FC = () => {
                                 </ul>
                             </Typography>
 
-                            <Stack direction="row" spacing={2}>
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                                 <Button
                                     variant='contained'
                                     component={Link}
@@ -240,13 +259,12 @@ const Dashboard: React.FC = () => {
                                 </Button>
                             </Stack>
                         </Paper>
+                        <Box>
+                            <Typography variant="body1" align="center" color="text.secondary">
+                                Create a free account to access all features and start managing your invoices efficiently.
+                            </Typography>
+                        </Box>
                     </Stack>
-
-                    <Box mt={3}>
-                        <Typography variant="body1" align="center" color="text.secondary">
-                            Create a free account to access all features and start managing your invoices efficiently.
-                        </Typography>
-                    </Box>
                 </Box>
             )}
         </Box>
