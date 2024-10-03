@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { FormikProvider } from 'formik';
 import { useInvoiceForm } from '../hooks/useInvoiceForm';
 import { useTemplates } from '../hooks/useTemplates';
@@ -48,26 +48,6 @@ const InvoiceFormPage: React.FC = () => {
                             isPDFGenerating={isPDFGenerating}
                             selectedTemplate={selectedTemplate}
                         />
-                        <Box mt={2} display="flex" gap={2}>
-                            {isAuthenticated && (
-                                <Button
-                                    type="submit"
-                                    variant="contained"
-                                    color="primary"
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? 'Submitting...' : 'Save Invoice'}
-                                </Button>
-                            )}
-                            <Button
-                                onClick={handlePreview}
-                                variant="outlined"
-                                color="secondary"
-                                disabled={isPDFGenerating || !selectedTemplate}
-                            >
-                                {isPDFGenerating ? 'Generating PDF...' : 'PDF Preview'}
-                            </Button>
-                        </Box>
                     </Box>
                     <Box sx={{ flex: 1, pl: 2 }}>
                         {selectedTemplate && (

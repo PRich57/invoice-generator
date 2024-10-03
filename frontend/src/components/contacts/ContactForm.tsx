@@ -1,10 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { TextField, Button, Box, Autocomplete } from '@mui/material';
+import { Autocomplete, Box, Button, TextField } from '@mui/material';
+import { MuiTelInput } from 'mui-tel-input';
+import { useSnackbar } from 'notistack';
+import React, { useEffect, useRef, useState } from 'react';
 import { useContactForm } from '../../hooks/useContactForm';
 import LoadingSpinner from '../common/LoadingSpinner';
-import { MuiTelInput } from 'mui-tel-input';
+import { styled } from '@mui/material/styles';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import { Loader } from '@googlemaps/js-api-loader';
+import ListboxComponent from '../common/ListboxComponent';
 
 const PLACES_API_KEY = process.env.PLACES_API_KEY;
+
+interface ContactFormProps {
+    id?: string;
+}
 
 function loadScript(src: string) {
     return new Promise<void>((resolve, reject) => {
@@ -15,6 +25,7 @@ function loadScript(src: string) {
         const script = document.createElement('script');
         script.src = src;
         script.async = true;
+        script.defer = true;
         script.onload = () => {
             resolve();
         };
@@ -25,24 +36,25 @@ function loadScript(src: string) {
     });
 }
 
-interface ContactFormProps {
-    id?: string;
-}
-
 const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
     const { formik, isLoading, isSubmitting } = useContactForm();
     const [phone, setPhone] = useState('');
+    const { enqueueSnackbar } = useSnackbar();
+    const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
     const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
     const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
     const placesService = useRef<google.maps.places.PlacesService | null>(null);
 
-    const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
     useEffect(() => {
-        const src = `https://maps.googleapis.com/maps/api/js?key=${PLACES_API_KEY}&libraries=places`;
+        const loader = new Loader({
+            apiKey: PLACES_API_KEY!,
+            libraries: ['places'],
+            version: 'weekly',
+        });
 
-        loadScript(src)
+        loader.importLibrary('places')
             .then(() => {
                 autocompleteService.current = new google.maps.places.AutocompleteService();
                 placesService.current = new google.maps.places.PlacesService(document.createElement('div'));
@@ -50,8 +62,9 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
             })
             .catch((err) => {
                 console.error('Error loading Google Maps script:', err);
+                enqueueSnackbar('Failed to load address autocomplete. Please enter address manually.', { variant: 'error' });
             });
-    }, []);
+    }, [enqueueSnackbar]);
 
     const handlePhoneChange = (newValue: string) => {
         setPhone(newValue);
@@ -65,19 +78,30 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
             return;
         }
 
-        if (!autocompleteService.current) return;
+        if (!autocompleteService.current) {
+            enqueueSnackbar('Address autocomplete is not available. Please enter address manually.',
+                { variant: 'warning' }
+            );
+            return;
+        }
 
         autocompleteService.current.getPlacePredictions({ input: value }, (predictions, status) => {
             if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
                 setPredictions(predictions);
             } else {
                 setPredictions([]);
+                if (status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+                    enqueueSnackbar('Error fetching address suggestions. Please try again or enter manually.', { variant: 'error' });
+                }
             }
         });
     };
 
     const handleAddressSelect = (value: google.maps.places.AutocompletePrediction | null) => {
-        if (!value || !placesService.current) return;
+        if (!value || !placesService.current) {
+            enqueueSnackbar('Unable to fetch address details. Please enter manually.', { variant: 'warning' });
+            return;
+        }
 
         const placeId = value.place_id;
         const request = {
@@ -119,6 +143,9 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 });
             } else {
                 console.error('Error getting place details:', status);
+                enqueueSnackbar('Failed to fetch address details. Please enter manually.',
+                    { variant: 'error' }
+                );
             }
         });
     };
@@ -185,6 +212,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                             handleAddressSelect(value);
                         }
                     }}
+                    ListboxComponent={ListboxComponent}
                     renderInput={(params) => (
                         <TextField
                             {...params}

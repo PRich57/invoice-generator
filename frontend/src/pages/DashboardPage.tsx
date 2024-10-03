@@ -81,6 +81,33 @@ const Dashboard: React.FC = () => {
                 <Box>
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ mb: 4 }}>
                         <Box flex={1}>
+                            <ActionCard
+                                title="Invoices"
+                                count={invoiceCounts.unpaid + invoiceCounts.overdue}
+                                createLink="/invoices/new"
+                                manageLink="/invoices"
+                            />
+                        </Box>
+                        <Box flex={1}>
+                            <ActionCard
+                                title="Contacts"
+                                count={contactCount}
+                                createLink="/contacts/new"
+                                manageLink="/contacts"
+                            />
+                        </Box>
+                        <Box flex={1}>
+                            <ActionCard
+                                title="Templates"
+                                count={templateCount}
+                                createLink="/templates/new"
+                                manageLink="/templates"
+                            />
+                        </Box>
+                    </Stack>
+
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ mb: 4 }}>
+                        <Box flex={1}>
                             <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                                     <Typography variant="h6">Paid Invoices</Typography>
@@ -115,33 +142,6 @@ const Dashboard: React.FC = () => {
                                 count={invoiceCounts.overdue}
                                 amount={invoiceTotals.overdue || 0}
                                 color="error.main"
-                            />
-                        </Box>
-                    </Stack>
-
-                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ mb: 4 }}>
-                        <Box flex={1}>
-                            <ActionCard
-                                title="Invoices"
-                                count={invoiceCounts.unpaid + invoiceCounts.overdue}
-                                createLink="/invoices/new"
-                                manageLink="/invoices"
-                            />
-                        </Box>
-                        <Box flex={1}>
-                            <ActionCard
-                                title="Contacts"
-                                count={contactCount}
-                                createLink="/contacts/new"
-                                manageLink="/contacts"
-                            />
-                        </Box>
-                        <Box flex={1}>
-                            <ActionCard
-                                title="Templates"
-                                count={templateCount}
-                                createLink="/templates/new"
-                                manageLink="/templates"
                             />
                         </Box>
                     </Stack>
