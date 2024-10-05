@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button, TextField, Typography, Container, Box } from '@mui/material';
+import { useNavigate, Link } from 'react-router-dom';
+import { Button, TextField, Typography, Container, Box, Stack } from '@mui/material';
 import { register } from '../services/api/auth';
 import { useSnackbar } from 'notistack';
 import { isValidEmail } from '../utils/validationHelpers';
@@ -31,16 +31,16 @@ const Register: React.FC = () => {
     };
 
     return (
-        <Container component="main" maxWidth="xs">
+        <Container component="main" maxWidth="xs" sx={{ p: { xs: 2, md: 3 } }}>
             <Box
                 sx={{
-                    marginTop: 8,
+                    marginTop: { xs: 4, md: 8 },
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                 }}
             >
-                <Typography component="h1" variant="h5">
+                <Typography component="h1" variant="h5" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
                     Create Account
                 </Typography>
                 <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
@@ -72,10 +72,15 @@ const Register: React.FC = () => {
                         type="submit"
                         fullWidth
                         variant="contained"
-                        sx={{ mt: 3, mb: 2 }}
+                        sx={{ mt: 3, mb: 2, py: { xs: 1, md: 2 } }}
                     >
                         Register
                     </Button>
+                    <Stack direction="row" justifyContent="center">
+                        <Link to="/login" style={{ textDecoration: 'none', color: 'inherit' }}>
+                            {"Already have an account? Sign in"}
+                        </Link>
+                    </Stack>
                 </Box>
             </Box>
         </Container>
