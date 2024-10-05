@@ -77,8 +77,11 @@ const Register: React.FC = () => {
                         Register
                     </Button>
                     <Stack direction="row" justifyContent="center">
-                        <Link to="/login" style={{ textDecoration: 'none', color: 'inherit' }}>
-                            {"Already have an account? Sign in"}
+                        <Typography sx={{ marginRight: '4px' }}>
+                            Already have an account?
+                        </Typography>
+                        <Link to="/login" style={{ textDecoration: 'none', color: '#b68efe' }}>
+                            Sign In
                         </Link>
                     </Stack>
                 </Box>
