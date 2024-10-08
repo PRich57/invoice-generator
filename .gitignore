@@ -7,6 +7,7 @@ __pycache__/
 *config.yaml
 *company_data.json
 *.git
+*.VSCodeCounter
 
 # Personal invoices
 */invoices

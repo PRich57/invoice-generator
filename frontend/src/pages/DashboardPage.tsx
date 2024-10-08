@@ -14,6 +14,7 @@ import { useContacts } from '../hooks/useContacts';
 import { useInvoices } from '../hooks/useInvoices';
 import { useTemplates } from '../hooks/useTemplates';
 import { formatCurrency } from '../utils/currencyFormatter';
+import { formatDateForDisplay } from '../utils/dateFormatter';
 
 const Dashboard: React.FC = () => {
     const { isAuthenticated } = useAuth();
@@ -95,8 +96,8 @@ const Dashboard: React.FC = () => {
                     {invoices.map((invoice) => (
                         <Paper key={invoice.id} sx={{ p: 2 }}>
                             <Typography variant="subtitle1">{invoice.invoice_number}</Typography>
-                            <Typography variant="body2" color="text.secondary">Due: {invoice.invoice_date}</Typography>
-                            <Typography variant="h6" color="primary.main">${invoice.total}</Typography>
+                            <Typography variant="body2" color="text.secondary">Due: {formatDateForDisplay(invoice.invoice_date)}</Typography>
+                            <Typography variant="h6" color="primary.main">{formatCurrency(invoice.total)}</Typography>
                         </Paper>
                     ))}
                 </Stack>
