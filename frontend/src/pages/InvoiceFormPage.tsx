@@ -43,11 +43,16 @@ const InvoiceFormPage: React.FC = () => {
 
     return (
         <FormikProvider value={formik}>
-            <Stack spacing={3} sx={{ p: { xs: 2, sm: 3 }, pb: { xs: 10, sm: 3 } }}>
-                <Typography variant="h4" gutterBottom>
+            <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'column', lg: 'row' }, 
+                p: { xs: 2, sm: 3 }, 
+                pb: { xs: 10, sm: 3 } 
+            }}>
+                <Box sx={{ flex: 1, pr: { lg: 2 } }}>
+                <Typography variant="h4" gutterBottom sx={{ width: '100%' }}>
                     {id ? 'Edit Invoice' : 'Create New Invoice'}
                 </Typography>
-                <Box>
                     <InvoiceForm
                         contacts={contacts}
                         templates={templates}
@@ -59,34 +64,10 @@ const InvoiceFormPage: React.FC = () => {
                         selectedTemplate={selectedTemplate}
                     />
                 </Box>
-                <Button 
-                    variant="contained" 
-                    color="secondary" 
-                    onClick={handlePreview}
-                    disabled={!selectedTemplate || isPDFGenerating}
-                >
-                    {isPDFGenerating ? 'Generating Preview...' : 'Preview Invoice'}
-                </Button>
-            </Stack>
-
-            <Modal
-                open={previewOpen}
-                onClose={handleClosePreview}
-                aria-labelledby="invoice-preview-modal"
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
                 <Box sx={{ 
-                    bgcolor: 'background.paper', 
-                    boxShadow: 24, 
-                    p: 4, 
-                    width: '90%', 
-                    maxWidth: '800px',
-                    maxHeight: '90vh',
-                    overflowY: 'auto'
+                    flex: 1, 
+                    pl: { lg: 2 }, 
+                    display: { xs: 'none', lg: 'block' } 
                 }}>
                     {selectedTemplate && (
                         <InvoicePreview
@@ -96,9 +77,8 @@ const InvoiceFormPage: React.FC = () => {
                             sendToContact={contacts.find(c => c.id === formik.values.send_to_id) || null}
                         />
                     )}
-                    <Button onClick={handleClosePreview} sx={{ mt: 2 }}>Close Preview</Button>
                 </Box>
-            </Modal>
+            </Box>
         </FormikProvider>
     );
 };
