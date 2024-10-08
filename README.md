@@ -1,5 +1,7 @@
 # Invoice Generator
 
+## ** This README is outdated. I am currently in the process of converting this CLI application into a full stack application and will update this README to reflect these changes soon. **
+
 ## Description
 
 This is a command-line invoice generator that allows you to create, manage, and customize invoices. It features template customization, PDF generation, and data persistence.
