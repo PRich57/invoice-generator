@@ -14,7 +14,7 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({ children }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', marginBottom: '5rem' }}>
             <Header />
             <Box sx={{ display: 'flex', flex: 1 }}>
                 {!isMobile && <Sidebar />}

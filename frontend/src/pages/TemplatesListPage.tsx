@@ -46,7 +46,7 @@ const TemplatesList: React.FC = () => {
     return (
         <Box>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h4">Templates</Typography>
+                <Typography variant="h4" color="primary">Templates</Typography>
                 <Button
                     variant="contained"
                     color="primary"

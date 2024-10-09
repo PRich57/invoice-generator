@@ -36,23 +36,23 @@ const InvoiceFormPage: React.FC = () => {
 
     if (isLoading || contactsLoading) return <LoadingSpinner />;
     if (contactsError) {
-        enqueueSnackbar("Failed to load contacts. Please try again.", 
+        enqueueSnackbar("Failed to load contacts. Please try again.",
             { variant: 'error' }
         );
     }
 
     return (
         <FormikProvider value={formik}>
-            <Box sx={{ 
-                display: 'flex', 
-                flexDirection: { xs: 'column', lg: 'row' }, 
-                p: { xs: 2, sm: 3 }, 
-                pb: { xs: 10, sm: 3 } 
+            <Typography variant="h4" gutterBottom color="primary">
+                {id ? 'Edit Invoice' : 'Create New Invoice'}
+            </Typography>
+            <Box sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', lg: 'row' },
+                p: { xs: 2, sm: 3 },
+                pb: { xs: 10, sm: 3 }
             }}>
                 <Box sx={{ flex: 1, pr: { lg: 2 } }}>
-                <Typography variant="h4" gutterBottom sx={{ width: '100%' }}>
-                    {id ? 'Edit Invoice' : 'Create New Invoice'}
-                </Typography>
                     <InvoiceForm
                         contacts={contacts}
                         templates={templates}
@@ -64,10 +64,10 @@ const InvoiceFormPage: React.FC = () => {
                         selectedTemplate={selectedTemplate}
                     />
                 </Box>
-                <Box sx={{ 
-                    flex: 1, 
-                    pl: { lg: 2 }, 
-                    display: { xs: 'none', lg: 'block' } 
+                <Box sx={{
+                    flex: 1,
+                    pl: { lg: 2 },
+                    display: { xs: 'none', lg: 'block' }
                 }}>
                     {selectedTemplate && (
                         <InvoicePreview

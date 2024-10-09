@@ -5,10 +5,10 @@ import ContactForm from '../components/contacts/ContactForm';
 
 const ContactFormPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    
+
     return (
         <Box>
-            <Typography variant="h4" gutterBottom>
+            <Typography variant="h4" gutterBottom color="primary">
                 {id ? 'Edit Contact' : 'Create New Contact'}
             </Typography>
             <ContactForm id={id} />

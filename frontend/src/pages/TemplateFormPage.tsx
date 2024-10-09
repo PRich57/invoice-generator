@@ -13,7 +13,7 @@ const TemplateFormPage: React.FC = () => {
 
     return (
         <Box>
-            <Typography variant="h4" gutterBottom>
+            <Typography variant="h4" gutterBottom color="primary">
                 {id ? 'Edit Template' : 'Create New Template'}
             </Typography>
             <TemplateForm

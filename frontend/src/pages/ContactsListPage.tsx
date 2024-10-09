@@ -51,8 +51,9 @@ const ContactsList: React.FC = () => {
     return (
         <Box>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h4">Contacts</Typography>
+                <Typography variant="h4" color="primary">Contacts</Typography>
                 <Button
+                    id='create-new-contact-button'
                     variant="contained"
                     color="primary"
                     onClick={() => navigate('/contacts/new')}

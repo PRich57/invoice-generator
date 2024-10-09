@@ -66,10 +66,11 @@ export interface Invoice {
 }
 
 export interface GroupedInvoices {
-    [groupKey: string]: {
+    [key: string]: {
+        invoices: Invoice[];
         invoice_count: number;
         total_amount: number;
-    }
+    };
 }
 
 export interface InvoiceFilters {

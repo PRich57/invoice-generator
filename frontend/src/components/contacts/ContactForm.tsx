@@ -1,7 +1,7 @@
-import { Autocomplete, Box, Button, TextField } from '@mui/material';
+import React, { useEffect, useRef, useState } from 'react';
+import { Autocomplete, Box, Button, TextField, Typography, useTheme, useMediaQuery } from '@mui/material';
 import { MuiTelInput } from 'mui-tel-input';
 import { useSnackbar } from 'notistack';
-import React, { useEffect, useRef, useState } from 'react';
 import { useContactForm } from '../../hooks/useContactForm';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { Loader } from '@googlemaps/js-api-loader';
@@ -38,11 +38,12 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
     const [phone, setPhone] = useState('');
     const { enqueueSnackbar } = useSnackbar();
     const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
     const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
     const placesService = useRef<google.maps.places.PlacesService | null>(null);
-
 
     useEffect(() => {
         const loader = new Loader({
@@ -65,7 +66,6 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
 
     const handlePhoneChange = (newValue: string) => {
         setPhone(newValue);
-        // const parsedNumber = parsedNumber(newValue);
         formik.setFieldValue('phone', newValue);
     };
 
@@ -108,7 +108,6 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
 
         placesService.current.getDetails(request, (place, status) => {
             if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-                // Parse the address components and update formik values
                 const addressComponents = place.address_components || [];
 
                 const streetNumber = addressComponents.find((component) =>
@@ -150,7 +149,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
     if (isLoading) return <LoadingSpinner />;
 
     return (
-        <Box component="form" onSubmit={formik.handleSubmit} sx={{ maxWidth: 600, margin: 'auto' }}>
+        <Box component="form" onSubmit={formik.handleSubmit}  sx={{ maxWidth: 700, margin: 'auto' }}>            
             <TextField
                 fullWidth
                 margin="normal"
@@ -309,7 +308,10 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 type="submit"
                 variant="contained"
                 color="primary"
-                sx={{ mt: 2 }}
+                sx={{ 
+                    mt: 3,
+                    width: isMobile ? '100%' : 'auto',
+                }}
                 disabled={isSubmitting}
             >
                 {isSubmitting ? 'Submitting...' : id ? 'Update Contact' : 'Create Contact'}

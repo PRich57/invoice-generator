@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextField, Button, Typography, Box } from '@mui/material';
+import { TextField, Button, Typography, Box, useTheme, useMediaQuery } from '@mui/material';
 import { SketchPicker } from 'react-color';
 import { FormikProps } from 'formik';
 import { TemplateCreate } from '../../types/template';
@@ -12,9 +12,14 @@ interface TemplateFormProps {
 
 const TemplateForm: React.FC<TemplateFormProps> = ({ formik, isSubmitting }) => {
     const { colorPickerOpen, toggleColorPicker, colorPickerRef } = useColorPicker();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     return (
-        <Box component="form" onSubmit={formik.handleSubmit} sx={{ maxWidth: 600, margin: 'auto' }}>
+        <Box component="form" onSubmit={formik.handleSubmit} sx={{ 
+            maxWidth: 600, 
+            margin: 'auto'
+        }}>
             <TextField
                 fullWidth
                 margin="normal"
@@ -29,7 +34,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ formik, isSubmitting }) => 
             {/* Color pickers */}
             {Object.entries(formik.values.colors).map(([key, value]) => (
                 <Box key={key} sx={{ mb: 2 }}>
-                    <Typography>{key.charAt(0).toUpperCase() + key.slice(1)} Color</Typography>
+                    <Typography color="textSecondary">{key.charAt(0).toUpperCase() + key.slice(1)} Color</Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <TextField
                             fullWidth
@@ -39,7 +44,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ formik, isSubmitting }) => 
                             error={formik.touched.colors?.[key as keyof typeof formik.values.colors] && Boolean(formik.errors.colors?.[key as keyof typeof formik.values.colors])}
                             helperText={formik.touched.colors?.[key as keyof typeof formik.values.colors] && formik.errors.colors?.[key as keyof typeof formik.values.colors]}
                         />
-                        <Button onClick={() => toggleColorPicker(key)}>
+                        <Button onClick={() => toggleColorPicker(key)} sx={{ ml: 1 }}>
                             Pick Color
                         </Button>
                     </Box>
@@ -132,7 +137,16 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ formik, isSubmitting }) => 
                 helperText={formik.touched.custom_css && formik.errors.custom_css}
             />
 
-            <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }} disabled={isSubmitting}>
+            <Button 
+                type="submit" 
+                variant="contained" 
+                color="primary" 
+                sx={{ 
+                    mt: 3,
+                    width: isMobile ? '100%' : 'auto',
+                }} 
+                disabled={isSubmitting}
+            >
                 {isSubmitting ? 'Submitting...' : 'Submit'}
             </Button>
         </Box>

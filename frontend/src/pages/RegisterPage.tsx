@@ -40,7 +40,7 @@ const Register: React.FC = () => {
                     alignItems: 'center',
                 }}
             >
-                <Typography component="h1" variant="h5" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
+                <Typography component="h1" variant="h5" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }} color="primary">
                     Create Account
                 </Typography>
                 <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>

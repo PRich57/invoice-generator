@@ -1,11 +1,27 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-    Button, Typography, Box, TextField, FormControl, Select, MenuItem,
-    Chip, InputLabel, SelectChangeEvent, OutlinedInput, Checkbox, ListItemText
+    Box,
+    Button,
+    Typography,
+    useTheme,
+    useMediaQuery,
+    Stack,
+    Chip,
+    Drawer,
+    IconButton,
+    List,
+    ListItem,
+    ListItemText,
+    SelectChangeEvent,
+    AccordionDetails,
+    FormGroup,
+    Accordion,
+    Checkbox,
+    FormControlLabel,
+    AccordionSummary,
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
+import { FilterList as FilterListIcon, GroupWork as GroupIcon, Close as CloseIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { useInvoices } from '../hooks/useInvoices';
 import { deleteInvoice, generateInvoicePDF } from '../services/api/invoices';
 import { getContacts } from '../services/api/contacts';
@@ -13,14 +29,24 @@ import { getTemplates } from '../services/api/templates';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import ConfirmationDialog from '../components/common/ConfirmationDialogue';
-import { formatCurrency } from '../utils/currencyFormatter';
-import { Invoice, GroupedInvoices } from '../types';
+import { Invoice, InvoiceFilters, GroupedInvoices } from '../types';
 import { useSnackbar } from 'notistack';
 import { useErrorHandler } from '../hooks/useErrorHandler';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs from 'dayjs';
+import InvoiceFiltersComponent from '../components/invoices/InvoiceFilters';
+import InvoiceGroupBy from '../components/invoices/InvoiceGroupBy';
+import InvoiceList from '../components/invoices/InvoiceList';
+import { formatCurrency } from '../utils/currencyFormatter';
+
+const groupOptions = [
+    { value: 'bill_to', label: 'Bill To' },
+    { value: 'send_to', label: 'Send To' },
+    { value: 'month', label: 'Month' },
+    { value: 'year', label: 'Year' },
+    { value: 'status', label: 'Status' },
+    { value: 'client_type', label: 'Client Type' },
+    { value: 'invoice_type', label: 'Invoice Type' },
+];
 
 const InvoicesList: React.FC = () => {
     const navigate = useNavigate();
@@ -35,6 +61,10 @@ const InvoicesList: React.FC = () => {
     const { enqueueSnackbar } = useSnackbar();
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [invoiceToDelete, setInvoiceToDelete] = useState<number | null>(null);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+    const [groupDrawerOpen, setGroupDrawerOpen] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -56,43 +86,69 @@ const InvoicesList: React.FC = () => {
                     }, {} as Record<number, string>)
                 );
             } catch (err) {
-                // console.error('Failed to fetch contacts or templates:', err);
                 enqueueSnackbar('Failed to fetch contacts and/or templates. Please try again.',
                     { variant: 'error' }
                 )
             }
         };
         fetchData();
-    }, []);
+    }, [enqueueSnackbar]);
 
     const handleFilterChange = useCallback(
         (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>) => {
-        const { name, value } = event.target;
-        updateFilters({ [name]: value });
+            const { name, value } = event.target;
+            updateFilters({ [name]: value });
+        }, [updateFilters]);
+
+    const handleUpdateGrouping = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+        const { value, checked } = event.target;
+        if (checked) {
+            updateGrouping([...groupBy, value]);
+        } else {
+            updateGrouping(groupBy.filter(item => item !== value));
+        }
+    }, [groupBy, updateGrouping]);
+
+    const groupedInvoices = useMemo(() => {
+        if (groupBy.length === 0) return null;
+
+        const grouped: GroupedInvoices = {};
+        invoices.forEach((invoice) => {
+            let key = 'Others';
+            if (groupBy.includes('bill_to')) {
+                key = contacts[invoice.bill_to_id] || 'Unknown';
+            } else if (groupBy.includes('send_to')) {
+                key = contacts[invoice.send_to_id] || 'Unknown';
+            } else if (groupBy.includes('month')) {
+                key = dayjs(invoice.invoice_date).format('MMMM');
+            } else if (groupBy.includes('year')) {
+                key = dayjs(invoice.invoice_date).format('YYYY');
+            } else if (groupBy.includes('status')) {
+                key = invoice.status || 'Unknown';
+            } else if (groupBy.includes('client_type')) {
+                key = invoice.client_type || 'Unknown';
+            } else if (groupBy.includes('invoice_type')) {
+                key = invoice.invoice_type || 'Unknown';
+            }
+
+            if (!grouped[key]) {
+                grouped[key] = { invoices: [], invoice_count: 0, total_amount: 0 };
+            }
+            grouped[key].invoices.push(invoice);
+            grouped[key].invoice_count += 1;
+            grouped[key].total_amount += parseFloat(invoice.total.toString());
+        });
+
+        return grouped;
+    }, [invoices, groupBy, contacts]);
+
+    const handleDateChange = useCallback((field: 'date_from' | 'date_to', value: string | null) => {
+        updateFilters({ [field]: value });
     }, [updateFilters]);
-
-    const handleGroup = useCallback((event: SelectChangeEvent<string[]>) => {
-        const {
-            target: { value },
-        } = event;
-        updateGrouping(typeof value === 'string' ? value.split(',') : value);
-    }, [updateGrouping]);
-
-    const handleSort = useCallback((column: string) => {
-        updateSorting(column);
-    }, [updateSorting]);
 
     const handleEdit = useCallback((id: number) => {
         navigate(`/invoices/edit/${id}`);
     }, [navigate]);
-
-    const handleDateChange = useCallback((dateType: 'date_from' | 'date_to') => (newValue: dayjs.Dayjs | null) => {
-        if (newValue) {
-            updateFilters({ [dateType]: newValue.format('YYYY-MM-DD') });
-        } else {
-            updateFilters({ [dateType]: undefined });
-        }
-    }, [updateFilters]);
 
     const handleDeleteClick = useCallback((id: number) => {
         setInvoiceToDelete(id);
@@ -129,290 +185,233 @@ const InvoicesList: React.FC = () => {
         }
     }, [enqueueSnackbar, handleError]);
 
-    const groupOptions = [
-        { value: 'bill_to', label: 'Bill To' },
-        { value: 'send_to', label: 'Send To' },
-        { value: 'month', label: 'Month' },
-        { value: 'year', label: 'Year' },
-        { value: 'status', label: 'Status' },
-        { value: 'client_type', label: 'Client Type' },
-        { value: 'invoice_type', label: 'Invoice Type' },
+    const quickFilters = [
+        { label: 'All', filter: {} },
+        { label: 'Unpaid', filter: { status: 'UNPAID' } },
+        { label: 'Overdue', filter: { status: 'OVERDUE' } },
+        { label: 'This Month', filter: { date_from: dayjs().startOf('month').format('YYYY-MM-DD'), date_to: dayjs().endOf('month').format('YYYY-MM-DD') } },
+        { label: 'Last Month', filter: { date_from: dayjs().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'), date_to: dayjs().subtract(1, 'month').endOf('month').format('YYYY-MM-DD') } },
     ];
 
-    const renderInvoices = useMemo(() => {
-        // If grouped, render grouped data
-        if (groupBy.length > 0) {
-            const grouped: GroupedInvoices = invoices.reduce((acc: GroupedInvoices, invoice: Invoice) => {
-                let key = 'Others';
-                if (groupBy.includes('bill_to')) {
-                    key = contacts[invoice.bill_to_id] || 'Unknown';
-                } else if (groupBy.includes('send_to')) {
-                    key = contacts[invoice.send_to_id] || 'Unknown';
-                } else if (groupBy.includes('month')) {
-                    key = dayjs(invoice.invoice_date).format('MMMM');
-                } else if (groupBy.includes('year')) {
-                    key = dayjs(invoice.invoice_date).format('YYYY');
-                } else if (groupBy.includes('status')) {
-                    key = invoice.status || 'Unknown';
-                } else if (groupBy.includes('client_type')) {
-                    key = invoice.client_type || 'Unknown';
-                } else if (groupBy.includes('invoice_type')) {
-                    key = invoice.invoice_type || 'Unknown';
-                }
+    const handleQuickFilter = useCallback((filter: Partial<InvoiceFilters>) => {
+        updateFilters(filter);
+    }, [updateFilters]);
 
-                if (!acc[key]) acc[key] = { invoice_count: 0, total_amount: 0 };
-                acc[key].invoice_count += 1;
-                acc[key].total_amount += parseFloat(invoice.total.toString());
-                return acc;
-            }, {});
+    const activeFilters = Object.entries(filters).filter(([_, value]) => value !== '' && value !== undefined);
 
-            return Object.entries(grouped).map(([group, data]) => (
-                <React.Fragment key={`group-${group}`}>
-                    <TableRow>
-                        <TableCell colSpan={6}>
-                            <Typography variant="h6">
-                                {group} &nbsp;
-                                <Typography variant="subtitle2" component="span">
-                                    ({data.invoice_count} invoices, Total: {formatCurrency(data.total_amount)})
-                                </Typography>
-                            </Typography>
-                        </TableCell>
-                    </TableRow>
-                    {invoices.filter(invoice => {
-                        let key = 'Others';
-                        if (groupBy.includes('bill_to')) {
-                            key = contacts[invoice.bill_to_id] || 'Unknown';
-                        } else if (groupBy.includes('send_to')) {
-                            key = contacts[invoice.send_to_id] || 'Unknown';
-                        } else if (groupBy.includes('month')) {
-                            key = dayjs(invoice.invoice_date).format('MMMM');
-                        } else if (groupBy.includes('year')) {
-                            key = dayjs(invoice.invoice_date).format('YYYY');
-                        } else if (groupBy.includes('status')) {
-                            key = invoice.status || 'Unknown';
-                        } else if (groupBy.includes('client_type')) {
-                            key = invoice.client_type || 'Unknown';
-                        } else if (groupBy.includes('invoice_type')) {
-                            key = invoice.invoice_type || 'Unknown';
-                        }
-                        return key === group;
-                    }).map((invoice: Invoice) => (
-                        <TableRow key={invoice.id}>
-                            <TableCell>{invoice.invoice_number}</TableCell>
-                            <TableCell>{dayjs(invoice.invoice_date).format('MM/DD/YYYY')}</TableCell>
-                            <TableCell>{contacts[invoice.bill_to_id] || 'Unknown'}</TableCell>
-                            <TableCell>{formatCurrency(invoice.total)}</TableCell>
-                            <TableCell>{templates[invoice.template_id] || 'Unknown'}</TableCell>
-                            <TableCell>
-                                <Button startIcon={<EditIcon />} onClick={() => handleEdit(invoice.id)}>
-                                    Edit
-                                </Button>
-                                <Button startIcon={<DeleteIcon />} onClick={() => handleDeleteClick(invoice.id)}>
-                                    Delete
-                                </Button>
-                                <Button startIcon={<PdfIcon />} onClick={() => handleDownloadPDF(invoice)}>
-                                    Download PDF
-                                </Button>
-                            </TableCell>
-                        </TableRow>
+    const handleRemoveFilter = useCallback((key: string) => {
+        updateFilters({ [key]: undefined });
+    }, [updateFilters]);
+
+    const renderQuickFilters = (
+        <Stack
+            direction={isMobile ? 'column' : 'row'}
+            spacing={1}
+            sx={{ mb: 2 }}
+        >
+            {quickFilters.map((qf, index) => (
+                <Button
+                    key={index}
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleQuickFilter(qf.filter)}
+                    fullWidth={isMobile}
+                >
+                    {qf.label}
+                </Button>
+            ))}
+        </Stack>
+    );
+
+    const renderFilters = (
+        <Box>
+            <InvoiceFiltersComponent
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                onDateChange={handleDateChange}
+            />
+        </Box>
+    );
+
+    const renderGroupBy = (
+        <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography>Group</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+                <FormGroup>
+                    {groupOptions.map((option) => (
+                        <FormControlLabel
+                            key={option.value}
+                            control={
+                                <Checkbox
+                                    checked={groupBy.includes(option.value)}
+                                    onChange={handleUpdateGrouping}
+                                    value={option.value}
+                                />
+                            }
+                            label={option.label}
+                        />
                     ))}
-                </React.Fragment>
-            ));
-        }
+                </FormGroup>
+            </AccordionDetails>
+        </Accordion>
+    );
 
-        // Default rendering without grouping
-        return invoices.map((invoice: Invoice) => (
-            <TableRow key={invoice.id}>
-                <TableCell>{invoice.invoice_number}</TableCell>
-                <TableCell>{dayjs(invoice.invoice_date).format('MM/DD/YYYY')}</TableCell>
-                <TableCell>{contacts[invoice.bill_to_id] || 'Unknown'}</TableCell>
-                <TableCell>{formatCurrency(invoice.total)}</TableCell>
-                <TableCell>{templates[invoice.template_id] || 'Unknown'}</TableCell>
-                <TableCell>
-                    <Button startIcon={<EditIcon />} onClick={() => handleEdit(invoice.id)}>
-                        Edit
-                    </Button>
-                    <Button startIcon={<DeleteIcon />} onClick={() => handleDeleteClick(invoice.id)}>
-                        Delete
-                    </Button>
-                    <Button startIcon={<PdfIcon />} onClick={() => handleDownloadPDF(invoice)}>
-                        Download PDF
-                    </Button>
-                </TableCell>
-            </TableRow>
+    const renderActiveFilters = (
+        <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
+            {activeFilters.map(([key, value]) => (
+                <Chip
+                    key={key}
+                    label={`${key}: ${value}`}
+                    onDelete={() => handleRemoveFilter(key)}
+                />
+            ))}
+        </Stack>
+    );
+
+    const renderGroupedInvoices = useMemo(() => {
+        if (!groupedInvoices) return null;
+
+        return Object.entries(groupedInvoices).map(([group, data]) => (
+            <Box key={group} sx={{ mb: 4 }}>
+                <Typography variant="h6" color="primary" gutterBottom>
+                    {group}
+                </Typography>
+                <Typography variant="subtitle2" gutterBottom>
+                    {data.invoice_count} invoices, Total: {formatCurrency(data.total_amount)}
+                </Typography>
+                <InvoiceList
+                    invoices={data.invoices}
+                    contacts={contacts}
+                    templates={templates}
+                    isMobile={isMobile}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteClick}
+                    onDownloadPDF={handleDownloadPDF}
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    onSort={updateSorting}
+                />
+            </Box>
         ));
-    }, [invoices, groupBy, contacts, templates, handleEdit, handleDeleteClick, handleDownloadPDF]);
+    }, [groupedInvoices, contacts, templates, isMobile, handleEdit, handleDeleteClick, handleDownloadPDF, sortBy, sortOrder, updateSorting]);
 
     if (loading && invoices.length === 0) return <LoadingSpinner />;
     if (error) return <ErrorMessage message={error} />;
 
     return (
         <Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h4">Invoices</Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h4" color='primary'>Invoices</Typography>
                 <Button
-                    id='create-new-invoice-button'
                     variant="contained"
                     color="primary"
                     onClick={() => navigate('/invoices/new')}
                 >
                     Create New Invoice
                 </Button>
-            </Box>
+            </Stack>
 
-            <Box mb={2} display="flex" flexDirection="column" gap={2}>
-                {/* Group By */}
-                <FormControl fullWidth>
-                    <InputLabel>Group By</InputLabel>
-                    <Select
-                        multiple
-                        name="groupBy"
-                        value={groupBy}
-                        onChange={handleGroup}
-                        input={<OutlinedInput label="Group By" />}
-                        renderValue={(selected) => (
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                {(selected as string[]).map((value) => (
-                                    <Chip key={value} label={groupOptions.find(opt => opt.value === value)?.label || value} />
-                                ))}
-                            </Box>
-                        )}
+            {renderQuickFilters}
+            {activeFilters.length > 0 && renderActiveFilters}
+
+            {isMobile ? (
+                <Stack display='flex' justifyContent='space-between' direction="row" spacing={2} sx={{ mb: 2 }}>
+                    <Button
+                        startIcon={<FilterListIcon />}
+                        onClick={() => setFilterDrawerOpen(true)}
+                        variant="outlined"
                     >
-                        {groupOptions.map((option) => (
-                            <MenuItem key={option.value} value={option.value}>
-                                <Checkbox checked={groupBy.indexOf(option.value) > -1} />
-                                <ListItemText primary={option.label} />
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
+                        Filters
+                    </Button>
+                    <Button
+                        startIcon={<GroupIcon />}
+                        onClick={() => setGroupDrawerOpen(true)}
+                        variant="outlined"
+                    >
+                        Group
+                    </Button>
+                </Stack>
+            ) : (
+                <Stack direction='row' spacing={2} sx={{ mb: 3 }} width='50%'>
+                    <Box width='70%'>
+                        <Accordion>
+                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                <Typography>Filters</Typography>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                                {renderFilters}
+                            </AccordionDetails>
+                        </Accordion>
+                    </Box>
+                    <Box width='30%'>
+                        {renderGroupBy}
+                    </Box>
+                </Stack>
+            )}
 
-                {/* Filters */}
-                <Box display="flex" flexWrap="wrap" gap={2}>
-                    <TextField
-                        name="invoice_number"
-                        label="Invoice Number"
-                        value={filters.invoice_number}
-                        onChange={handleFilterChange}
-                        sx={{ minWidth: 200 }}
-                    />
-                    <TextField
-                        name="bill_to_name"
-                        label="Bill To Name"
-                        value={filters.bill_to_name}
-                        onChange={handleFilterChange}
-                        sx={{ minWidth: 200 }}
-                    />
-                    <TextField
-                        name="send_to_name"
-                        label="Send To Name"
-                        value={filters.send_to_name}
-                        onChange={handleFilterChange}
-                        sx={{ minWidth: 200 }}
-                    />
-                    <FormControl sx={{ minWidth: 200 }}>
-                        <InputLabel>Client Type</InputLabel>
-                        <Select
-                            name="client_type"
-                            value={filters.client_type}
-                            onChange={handleFilterChange}
-                            label="Client Type"
-                        >
-                            <MenuItem value=""><em>None</em></MenuItem>
-                            <MenuItem value="INDIVIDUAL">Individual</MenuItem>
-                            <MenuItem value="BUSINESS">Business</MenuItem>
-                            {/* Add more client types as needed */}
-                        </Select>
-                    </FormControl>
-                    <FormControl sx={{ minWidth: 200 }}>
-                        <InputLabel>Invoice Type</InputLabel>
-                        <Select
-                            name="invoice_type"
-                            value={filters.invoice_type}
-                            onChange={handleFilterChange}
-                            label="Invoice Type"
-                        >
-                            <MenuItem value=""><em>None</em></MenuItem>
-                            <MenuItem value="SERVICE">Service</MenuItem>
-                            <MenuItem value="PRODUCT">Product</MenuItem>
-                            {/* Add more invoice types as needed */}
-                        </Select>
-                    </FormControl>
-                    <FormControl sx={{ minWidth: 200 }}>
-                        <InputLabel>Status</InputLabel>
-                        <Select
-                            name="status"
-                            value={filters.status}
-                            onChange={handleFilterChange}
-                            label="Status"
-                        >
-                            <MenuItem value=""><em>None</em></MenuItem>
-                            <MenuItem value="PAID">Paid</MenuItem>
-                            <MenuItem value="UNPAID">Unpaid</MenuItem>
-                            <MenuItem value="OVERDUE">Overdue</MenuItem>
-                            {/* Add more statuses as needed */}
-                        </Select>
-                    </FormControl>
-                    <TextField
-                        name="total_min"
-                        label="Min Total"
-                        type="number"
-                        value={filters.total_min || ''}
-                        onChange={handleFilterChange}
-                        sx={{ minWidth: 150 }}
-                    />
-                    <TextField
-                        name="total_max"
-                        label="Max Total"
-                        type="number"
-                        value={filters.total_max || ''}
-                        onChange={handleFilterChange}
-                        sx={{ minWidth: 150 }}
-                    />
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DatePicker
-                            label="From Date"
-                            value={filters.date_from ? dayjs(filters.date_from) : null}
-                            onChange={handleDateChange('date_from')}
-                            slotProps={{ textField: { sx: { minWidth: 180 } } }}
-                        />
-                        <DatePicker
-                            label="To Date"
-                            value={filters.date_to ? dayjs(filters.date_to) : null}
-                            onChange={handleDateChange('date_to')}
-                            slotProps={{ textField: { sx: { minWidth: 180 } } }}
-                        />
-                    </LocalizationProvider>
+            {groupedInvoices ? renderGroupedInvoices : (
+                <InvoiceList
+                    invoices={invoices}
+                    contacts={contacts}
+                    templates={templates}
+                    isMobile={isMobile}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteClick}
+                    onDownloadPDF={handleDownloadPDF}
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    onSort={updateSorting}
+                />
+            )}
+
+            <Drawer
+                anchor="right"
+                open={filterDrawerOpen}
+                onClose={() => setFilterDrawerOpen(false)}
+            >
+                <Box sx={{ width: 300, p: 2 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                        <Typography variant="h6">Filters</Typography>
+                        <IconButton onClick={() => setFilterDrawerOpen(false)}>
+                            <CloseIcon />
+                        </IconButton>
+                    </Stack>
+                    {renderFilters}
                 </Box>
-            </Box>
+            </Drawer>
 
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell onClick={() => handleSort('invoice_number')} sx={{ cursor: 'pointer' }}>
-                                Invoice Number {sortBy === 'invoice_number' && (sortOrder === 'asc' ? '▲' : '▼')}
-                            </TableCell>
-                            <TableCell onClick={() => handleSort('date')} sx={{ cursor: 'pointer' }}>
-                                Date {sortBy === 'date' && (sortOrder === 'asc' ? '▲' : '▼')}
-                            </TableCell>
-                            <TableCell onClick={() => handleSort('bill_to_name')} sx={{ cursor: 'pointer' }}>
-                                Bill To {sortBy === 'bill_to_name' && (sortOrder === 'asc' ? '▲' : '▼')}
-                            </TableCell>
-                            <TableCell onClick={() => handleSort('total')} sx={{ cursor: 'pointer' }}>
-                                Total {sortBy === 'total' && (sortOrder === 'asc' ? '▲' : '▼')}
-                            </TableCell>
-                            <TableCell onClick={() => handleSort('template_name')} sx={{ cursor: 'pointer' }}>
-                                Template {sortBy === 'template_name' && (sortOrder === 'asc' ? '▲' : '▼')}
-                            </TableCell>
-                            <TableCell>Actions</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {renderInvoices}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+            <Drawer
+                anchor="right"
+                open={groupDrawerOpen}
+                onClose={() => setGroupDrawerOpen(false)}
+            >
+                <Box sx={{ width: 300, p: 2 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                        <Typography variant="h6">Group</Typography>
+                        <IconButton onClick={() => setGroupDrawerOpen(false)}>
+                            <CloseIcon />
+                        </IconButton>
+                    </Stack>
+                    <FormGroup>
+                        {groupOptions.map((option) => (
+                            <FormControlLabel
+                                key={option.value}
+                                control={
+                                    <Checkbox
+                                        checked={groupBy.includes(option.value)}
+                                        onChange={handleUpdateGrouping}
+                                        value={option.value}
+                                    />
+                                }
+                                label={option.label}
+                            />
+                        ))}
+                    </FormGroup>
+                </Box>
+            </Drawer>
+
             <ConfirmationDialog
                 open={deleteConfirmOpen}
                 title="Confirm Delete"
@@ -422,7 +421,6 @@ const InvoicesList: React.FC = () => {
             />
         </Box>
     );
-
 };
 
 export default InvoicesList;

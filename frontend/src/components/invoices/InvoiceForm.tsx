@@ -63,7 +63,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     return (
         <Box component="form" onSubmit={formik.handleSubmit}>
             <Stack spacing={2}>
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} >
                     <TextField
                         fullWidth
                         name="invoice_number"
