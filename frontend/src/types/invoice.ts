@@ -129,7 +129,7 @@ export type InvoiceFormErrors = {
 };
 
 export interface InvoiceListResponse {
-    data: Invoice[];
+    items: Invoice[];
     total: number;
 }
 

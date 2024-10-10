@@ -14,7 +14,7 @@ export const useInvoices = () => {
         sortOrder: 'desc'
     });
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(25);
+    const [pageSize, setPageSize] = useState(5);
     const [totalCount, setTotalCount] = useState(0);
 
     const fetchInvoices = useCallback(async () => {
@@ -37,7 +37,7 @@ export const useInvoices = () => {
                 skip: (page - 1) * pageSize, 
                 limit: pageSize,
             });
-            setInvoices(response.data || []);
+            setInvoices(response.items || []);
             setTotalCount(response.total || 0);
             setError(null);
         } catch (err) {

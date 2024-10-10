@@ -31,7 +31,7 @@ export const getInvoices = async (params: {
     }, {} as Record<string, any>);    
 
     try {
-        const response = await api.get<InvoiceListResponse>(API_ENDPOINTS.INVOICES, { params: cleanParams });
+        const response = await api.get<InvoiceListResponse>(API_ENDPOINTS.INVOICES, { params });
         return response.data;
     } catch (error) {
         throw error;
