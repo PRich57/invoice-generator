@@ -10,9 +10,6 @@ import {
     Chip,
     Drawer,
     IconButton,
-    List,
-    ListItem,
-    ListItemText,
     SelectChangeEvent,
     AccordionDetails,
     FormGroup,
@@ -34,9 +31,9 @@ import { useSnackbar } from 'notistack';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import dayjs from 'dayjs';
 import InvoiceFiltersComponent from '../components/invoices/InvoiceFilters';
-import InvoiceGroupBy from '../components/invoices/InvoiceGroupBy';
 import InvoiceList from '../components/invoices/InvoiceList';
 import { formatCurrency } from '../utils/currencyFormatter';
+import Pagination from '../components/common/CustomPagination'
 
 const groupOptions = [
     { value: 'bill_to', label: 'Bill To' },
@@ -53,7 +50,8 @@ const InvoicesList: React.FC = () => {
     const {
         invoices, error, loading, fetchInvoices,
         updateSorting, updateGrouping, updateFilters,
-        sortBy, sortOrder, groupBy, filters
+        sortBy, sortOrder, groupBy, filters, page,
+        pageSize, totalCount, updatePage, updatePageSize
     } = useInvoices();
     const [contacts, setContacts] = useState<Record<number, string>>({});
     const [templates, setTemplates] = useState<Record<number, string>>({});
@@ -93,6 +91,14 @@ const InvoicesList: React.FC = () => {
         };
         fetchData();
     }, [enqueueSnackbar]);
+
+    const handlePageChange = useCallback((newPage: number) => {
+        updatePage(newPage);
+    }, [updatePage]);
+
+    const handlePageSizeChange = useCallback((newPageSize: number) => {
+        updatePageSize(newPageSize);
+    }, [updatePageSize]);
 
     const handleFilterChange = useCallback(
         (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>) => {
@@ -167,6 +173,10 @@ const InvoicesList: React.FC = () => {
         }
         setDeleteConfirmOpen(false);
     }, [invoiceToDelete, enqueueSnackbar, fetchInvoices, handleError]);
+
+    const handleSort = useCallback((column: string) => {
+        updateSorting(column);
+    }, [updateSorting]);
 
     const handleDownloadPDF = useCallback(async (invoice: Invoice) => {
         try {
@@ -352,18 +362,27 @@ const InvoicesList: React.FC = () => {
             )}
 
             {groupedInvoices ? renderGroupedInvoices : (
-                <InvoiceList
-                    invoices={invoices}
-                    contacts={contacts}
-                    templates={templates}
-                    isMobile={isMobile}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteClick}
-                    onDownloadPDF={handleDownloadPDF}
-                    sortBy={sortBy}
-                    sortOrder={sortOrder}
-                    onSort={updateSorting}
-                />
+                <>
+                    <InvoiceList
+                        invoices={invoices}
+                        contacts={contacts}
+                        templates={templates}
+                        isMobile={isMobile}
+                        onEdit={handleEdit}
+                        onDelete={handleDeleteClick}
+                        onDownloadPDF={handleDownloadPDF}
+                        sortBy={sortBy}
+                        sortOrder={sortOrder}
+                        onSort={handleSort}
+                    />
+                    <Pagination
+                        page={page}
+                        pageSize={pageSize}
+                        totalItems={totalCount}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                    />
+                </>
             )}
 
             <Drawer

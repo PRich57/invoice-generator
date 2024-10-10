@@ -16,22 +16,9 @@ import {
     Stack,
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
-import { Invoice } from '../../types';
+import { InvoiceListProps } from '../../types';
 import { formatCurrency } from '../../utils/currencyFormatter';
 import dayjs from 'dayjs';
-
-interface InvoiceListProps {
-    invoices: Invoice[];
-    contacts: Record<number, string>;
-    templates: Record<number, string>;
-    isMobile: boolean;
-    onEdit: (id: number) => void;
-    onDelete: (id: number) => void;
-    onDownloadPDF: (invoice: Invoice) => void;
-    sortBy: string;
-    sortOrder: 'asc' | 'desc';
-    onSort: (column: string) => void;
-}
 
 const InvoiceList: React.FC<InvoiceListProps> = ({
     invoices,
@@ -82,7 +69,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
     return (
         <TableContainer component={Paper}>
             <Table>
-                <TableHead>
+            <TableHead>
                     <TableRow>
                         <TableCell onClick={() => onSort('invoice_number')} sx={{ cursor: 'pointer' }}>
                             Invoice Number {sortBy === 'invoice_number' && (sortOrder === 'asc' ? '▲' : '▼')}

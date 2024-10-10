@@ -127,3 +127,29 @@ export type InvoiceFormErrors = {
         }[];
     }[];
 };
+
+export interface InvoiceListResponse {
+    data: Invoice[];
+    total: number;
+}
+
+export interface InvoiceTotals {
+    total_count: number;
+    total_amount: number;
+    status_counts: {
+        [key: string]: number;
+    };
+}
+
+export interface InvoiceListProps {
+    invoices: Invoice[];
+    contacts: Record<number, string>;
+    templates: Record<number, string>;
+    isMobile: boolean;
+    onEdit: (id: number) => void;
+    onDelete: (id: number) => void;
+    onDownloadPDF: (invoice: Invoice) => void;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+    onSort: (column: string) => void;
+}

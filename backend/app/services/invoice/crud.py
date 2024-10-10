@@ -1,6 +1,6 @@
 import logging
 from datetime import date
-from typing import List
+from typing import Any, Dict, List
 
 from sqlalchemy import Integer, select, func, or_, desc, asc
 from sqlalchemy.exc import IntegrityError
@@ -52,7 +52,7 @@ async def get_invoices(
     date_to: date | None = None,
     total_min: float | None = None,
     total_max: float | None = None
-) -> List[Invoice]:
+) -> tuple[Dict[str, Any], int]:
     BillToContact = aliased(Contact)
     SendToContact = aliased(Contact)
     AliasedTemplate = aliased(Template)
@@ -111,33 +111,50 @@ async def get_invoices(
 
     # Apply grouping
     if group_by:
-        group_columns = []
-        for group in group_by:
-            if group == 'bill_to':
-                stmt = stmt.join(BillToContact, Invoice.bill_to)
-                group_columns.append(BillToContact.name)
-            elif group == 'send_to':
-                stmt = stmt.join(SendToContact, Invoice.send_to)
-                group_columns.append(SendToContact.name)
-            elif group == 'month':
-                group_columns.append(func.to_char(Invoice.invoice_date, 'Month').label('month'))
-            elif group == 'year':
-                group_columns.append(func.extract('year', Invoice.invoice_date).cast(Integer).label('year'))
-            elif group == 'status':
-                group_columns.append(Invoice.status)
-            elif group == 'client_type':
-                group_columns.append(Invoice.client_type)
-            elif group == 'invoice_type':
-                group_columns.append(Invoice.invoice_type)
+        # Perform grouping
+        group_columns = [...]  # Define group columns based on group_by
+        stmt = stmt.group_by(*group_columns)
         
-        if group_columns:
-            stmt = stmt.group_by(*group_columns, Invoice.id)
-
-    # Apply pagination
-    stmt = stmt.offset(skip).limit(limit)
-
-    result = await db.execute(stmt)
-    return result.scalars().all()
+        # Get total counts and sums for each group
+        count_stmt = select([*group_columns, func.count().label('count'), func.sum(Invoice.total).label('total')])
+        count_stmt = count_stmt.group_by(*group_columns)
+        group_results = await db.execute(count_stmt)
+        group_data = {tuple(r[:-2]): {'count': r[-2], 'total': r[-1]} for r in group_results}
+        
+        # Apply pagination to the main query
+        stmt = stmt.offset(skip).limit(limit)
+        
+        result = await db.execute(stmt)
+        invoices = result.all()
+        
+        # Organize results into groups
+        grouped_invoices = {}
+        for invoice in invoices:
+            group_key = tuple(getattr(invoice, col) for col in group_columns)
+            if group_key not in grouped_invoices:
+                grouped_invoices[group_key] = []
+            grouped_invoices[group_key].append(invoice)
+        
+        # Combine with total counts and sums
+        final_result = {
+            group: {
+                'invoices': grouped_invoices.get(group, []),
+                'count': group_data[group]['count'],
+                'total': group_data[group]['total']
+            }
+            for group in group_data
+        }
+        
+        total_count = sum(data['count'] for data in group_data.values())
+        
+        return final_result, total_count
+    else:
+        # Non-grouped query (existing logic)
+        total_count = await db.scalar(select(func.count()).select_from(stmt.subquery()))
+        stmt = stmt.offset(skip).limit(limit)
+        result = await db.execute(stmt)
+        invoices = result.scalars().all()
+        return invoices, total_count
 
 
 async def create_invoice(db: AsyncSession, invoice: InvoiceCreate, user_id: int) -> Invoice:

@@ -1,6 +1,6 @@
 import api from '../api';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
-import { Invoice, InvoiceCreate } from '../../types';
+import { Invoice, InvoiceCreate, InvoiceListResponse, InvoiceTotals } from '../../types';
 
 export const getInvoices = async (params: {
     skip?: number;
@@ -31,7 +31,16 @@ export const getInvoices = async (params: {
     }, {} as Record<string, any>);    
 
     try {
-        const response = await api.get<Invoice[]>(API_ENDPOINTS.INVOICES, { params: cleanParams });
+        const response = await api.get<InvoiceListResponse>(API_ENDPOINTS.INVOICES, { params: cleanParams });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const getInvoiceTotals = async (): Promise<InvoiceTotals> => {
+    try {
+        const response = await api.get<InvoiceTotals>(`${API_ENDPOINTS.INVOICES}/totals`);
         return response.data;
     } catch (error) {
         throw error;

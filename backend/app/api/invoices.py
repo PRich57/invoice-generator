@@ -3,8 +3,12 @@ from datetime import date
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.app.models.invoice import Invoice, InvoiceStatusEnum
 from backend.app.services.invoice.pdf import \
     generate_invoice_pdf as generate_invoice_pdf_file
 from backend.app.services.invoice.pdf import \
@@ -15,7 +19,7 @@ from ..core.deps import get_current_user
 from ..core.exceptions import (AlreadyExistsError, BadRequestError,
                                NotFoundError, ValidationError)
 from ..database import get_async_db
-from ..schemas.invoice import InvoiceCreate, InvoiceDetail, InvoiceSummary
+from ..schemas.invoice import InvoiceCreate, InvoiceDetail, InvoiceListResponse, InvoiceSummary, InvoiceTotals
 from ..schemas.user import User
 from ..services.invoice import crud
 
@@ -39,7 +43,7 @@ async def create_invoice(
         raise AlreadyExistsError("invoice_number")
 
 
-@router.get("/", response_model=List[InvoiceSummary])
+@router.get("/", response_model=InvoiceListResponse)
 async def read_invoices(
     skip: int = 0,
     limit: int = 100,
@@ -59,18 +63,8 @@ async def read_invoices(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
-    logger.info(f"Received request with parameters: skip={skip}, limit={limit}, sort_by={sort_by}, sort_order={sort_order}, group_by={group_by}, invoice_number={invoice_number}, bill_to_name={bill_to_name}, send_to_name={send_to_name}, client_type={client_type}, invoice_type={invoice_type}, status={status}, date_from={date_from}, date_to={date_to}, total_min={total_min}, total_max={total_max}")
-    
-    # Convert empty strings to None
-    invoice_number = invoice_number if invoice_number else None
-    bill_to_name = bill_to_name if bill_to_name else None
-    send_to_name = send_to_name if send_to_name else None
-    client_type = client_type if client_type else None
-    invoice_type = invoice_type if invoice_type else None
-    status = status if status else None
-
     try:
-        invoices = await crud.get_invoices(
+        invoices, total_count = await crud.get_invoices(
             db, current_user.id, skip=skip, limit=limit,
             sort_by=sort_by, sort_order=sort_order, group_by=group_by,
             invoice_number=invoice_number, bill_to_name=bill_to_name,
@@ -79,9 +73,34 @@ async def read_invoices(
             date_from=date_from, date_to=date_to,
             total_min=total_min, total_max=total_max
         )
-        return invoices
+        
+        return InvoiceListResponse(items=invoices, total=total_count)
     except Exception as e:
-        logger.error(f"Error in read_invoices: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/totals", response_model=InvoiceTotals)
+async def get_invoice_totals(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        total_count = await db.scalar(select(func.count()).where(Invoice.user_id == current_user.id))
+        total_amount = await db.scalar(select(func.sum(Invoice.total)).where(Invoice.user_id == current_user.id))
+        
+        status_counts = {}
+        for status in InvoiceStatusEnum:
+            count = await db.scalar(
+                select(func.count()).where(Invoice.user_id == current_user.id).where(Invoice.status == status)
+            )
+            status_counts[status.value] = count
+
+        return InvoiceTotals(
+            total_count=total_count,
+            total_amount=total_amount,
+            status_counts=status_counts
+        )
+    except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 

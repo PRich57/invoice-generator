@@ -1,35 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { getInvoices } from '../services/api/invoices';
 import { Invoice, InvoiceFilters } from '../types';
 import { useErrorHandler } from './useErrorHandler';
 
 export const useInvoices = () => {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
-    const [invoiceCount, setInvoiceCount] = useState<Number>(0);
-    const [loading, setLoading] = useState<boolean>(true);
+    const [loading, setLoading] = useState(true);
     const { error, setError, handleError } = useErrorHandler();
-    const [sortBy, setSortBy] = useState<string>('date');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [filters, setFilters] = useState<InvoiceFilters>({});
     const [groupBy, setGroupBy] = useState<string[]>([]);
-    const [filters, setFilters] = useState<InvoiceFilters>({
-        invoice_number: '',
-        bill_to_name: '',
-        send_to_name: '',
-        client_type: '',
-        invoice_type: '',
-        status: '',
-        date_from: '',
-        date_to: '',
-        total_min: '',
-        total_max: '',
+    const [sorting, setSorting] = useState<{ sortBy: string; sortOrder: 'asc' | 'desc' }>({
+        sortBy: 'date',
+        sortOrder: 'desc'
     });
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
+    const [totalCount, setTotalCount] = useState(0);
 
     const fetchInvoices = useCallback(async () => {
+        setLoading(true);
         try {
-            setLoading(true);
-            const invoicesData = await getInvoices({
-                sort_by: sortBy,
-                sort_order: sortOrder,
+            const response = await getInvoices({
+                sort_by: sorting.sortBy,
+                sort_order: sorting.sortOrder,
                 group_by: groupBy,
                 invoice_number: filters.invoice_number || undefined,
                 bill_to_name: filters.bill_to_name || undefined,
@@ -41,53 +34,65 @@ export const useInvoices = () => {
                 date_to: filters.date_to || undefined,
                 total_min: filters.total_min ? parseFloat(filters.total_min) : undefined,
                 total_max: filters.total_max ? parseFloat(filters.total_max) : undefined,
-                skip: 0, 
-                limit: 25,
+                skip: (page - 1) * pageSize, 
+                limit: pageSize,
             });
-            setInvoices(invoicesData);
+            setInvoices(response.data || []);
+            setTotalCount(response.total || 0);
             setError(null);
         } catch (err) {
             handleError(err);
+            setInvoices([]);
+            setTotalCount(0);
         } finally {
             setLoading(false);
         }
-    }, [sortBy, sortOrder, groupBy, handleError, filters]);
+    }, [sorting, groupBy, filters, page, pageSize, handleError]);
 
     useEffect(() => {
         fetchInvoices();
     }, [fetchInvoices]);
 
-    const updateSorting = useCallback((newSortBy: string) => {
-        setSortBy((prevSortBy) => {
-            if (newSortBy === prevSortBy) {
-                setSortOrder((prevOrder) => (prevOrder === 'desc' ? 'asc' : 'desc'));
-            } else {
-                setSortOrder('desc');
-            }
-            return newSortBy;
-        });
+    const updateFilters = useCallback((newFilters: Partial<InvoiceFilters>) => {
+        setFilters(prevFilters => ({ ...prevFilters, ...newFilters }));
+        setPage(1);
+    }, []);
+
+    const updateSorting = useCallback((column: string) => {
+        setSorting(prevSorting => ({
+            sortBy: column,
+            sortOrder: 
+                prevSorting.sortBy === column 
+                    ? prevSorting.sortOrder === 'asc' ? 'desc' : 'asc'
+                    : 'desc'
+        }));
     }, []);
 
     const updateGrouping = useCallback((newGroupBy: string[]) => {
         setGroupBy(newGroupBy);
     }, []);
 
-    const updateFilters = useCallback((newFilters: Partial<InvoiceFilters>) => {
-        setFilters((prevFilters) => ({ ...prevFilters, ...newFilters }));
+    const updatePage = useCallback((newPage: number) => {
+        setPage(newPage);
+    }, []);
+
+    const updatePageSize = useCallback((newPageSize: number) => {
+        setPageSize(newPageSize);
+        setPage(1);
     }, []);
 
     const invoiceCounts = useMemo(() => {
         return {
-            total: invoices.length,
+            total: totalCount,
             overdue: invoices.filter(inv => inv.status === 'OVERDUE').length,
             unpaid: invoices.filter(inv => inv.status === 'UNPAID').length,
             paid: invoices.filter(inv => inv.status === 'PAID').length,
         };
-    }, [invoices]);
+    }, [invoices, totalCount]);
 
     const invoiceTotals = useMemo(() => {
-        const calculateTotal = (invoices: Invoice[]) => {
-            return invoices.reduce((sum, inv) => {
+        const calculateTotal = (filteredInvoices: Invoice[]) => {
+            return filteredInvoices.reduce((sum, inv) => {
                 const total = typeof inv.total === 'number' ? inv.total : parseFloat(inv.total);
                 return isNaN(total) ? sum : sum + total;
             }, 0);
@@ -128,13 +133,18 @@ export const useInvoices = () => {
         updateSorting,
         updateGrouping,
         updateFilters,
-        sortBy,
-        sortOrder,
+        sortBy: sorting.sortBy,
+        sortOrder: sorting.sortOrder,
         groupBy,
         filters,
         invoiceCounts,
         invoiceTotals,
         recentInvoices,
         getPaidInvoices,
+        page,
+        pageSize,
+        totalCount,
+        updatePage,
+        updatePageSize,
     };
 };

@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 from enum import Enum
-from typing import Optional, List
+from typing import Dict, Optional, List
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -147,4 +147,17 @@ class InvoiceSummary(BaseModel):
     client_type: str
     invoice_type: str
     
+    model_config = ConfigDict(from_attributes=True)
+
+
+class InvoiceListResponse(BaseModel):
+    items: List[InvoiceSummary]
+    total: int
+
+
+class InvoiceTotals(BaseModel):
+    total_count: int
+    total_amount: Decimal
+    status_counts: Dict[str, int]
+
     model_config = ConfigDict(from_attributes=True)
