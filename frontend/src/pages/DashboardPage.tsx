@@ -43,6 +43,7 @@ const Dashboard: React.FC = () => {
     };
 
     useEffect(() => {
+        console.log(invoiceCounts)
         if (isAuthenticated) {
             getPaidInvoices(paidInvoicesPeriod);
         }
@@ -116,7 +117,7 @@ const Dashboard: React.FC = () => {
                             <Box flex={1}>
                                 <ActionCard
                                     title="Invoices"
-                                    count={invoiceCounts.unpaid + invoiceCounts.overdue}
+                                    count={invoiceCounts.total}
                                     createLink="/invoices/new"
                                     manageLink="/invoices"
                                 />

@@ -14,7 +14,7 @@ export const useInvoices = () => {
         sortOrder: 'desc'
     });
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(5);
+    const [pageSize, setPageSize] = useState(25);
     const [totalCount, setTotalCount] = useState(0);
 
     const fetchInvoices = useCallback(async () => {
