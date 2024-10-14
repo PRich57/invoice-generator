@@ -8,6 +8,7 @@ import { useFetch } from './useFetch';
 import { formatDateForAPI } from '../utils/dateFormatter';
 import { API_ENDPOINTS } from '../constants/apiEndpoints';
 import { useSnackbar } from 'notistack';
+import { getNextInvoiceNumber } from '../services/api/invoices';
 
 export const useInvoiceForm = () => {
     const navigate = useNavigate();
@@ -48,8 +49,15 @@ export const useInvoiceForm = () => {
     useEffect(() => {
         if (id) {
             refetch();
+        } else {
+            // Fetch next invoice number when creating a new invoice
+            getNextInvoiceNumber()
+                .then(nextNumber => {
+                    formik.setFieldValue('invoice_number', nextNumber);
+                })
+                .catch(handleError);
         }
-    }, []);
+    }, [id]);
 
     const formik = useFormik<InvoiceCreate>({
         initialValues: invoiceData || initialValues,

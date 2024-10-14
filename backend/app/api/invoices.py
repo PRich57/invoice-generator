@@ -104,6 +104,28 @@ async def get_invoice_totals(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.get("/next-invoice-number")
+async def get_next_invoice_number(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(
+        select(func.max(Invoice.invoice_number))
+        .filter(Invoice.user_id == current_user.id)
+    )
+    highest_number = result.scalar()
+    
+    if not highest_number:
+        return {"next_invoice_number": "INV0001"}
+    
+    prefix = ''.join(filter(str.isalpha, highest_number))
+    number = int(''.join(filter(str.isdigit, highest_number))) + 1
+    
+    next_number = f"{prefix}{number:04d}"
+    
+    return {"next_invoice_number": next_number}
+
+
 @router.get("/{invoice_id}", response_model=InvoiceDetail)
 async def read_invoice(
     invoice_id: int,

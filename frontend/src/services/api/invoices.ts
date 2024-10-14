@@ -28,7 +28,7 @@ export const getInvoices = async (params: {
             acc[key] = value;
         }
         return acc;
-    }, {} as Record<string, any>);    
+    }, {} as Record<string, any>);
 
     try {
         const response = await api.get<InvoiceListResponse>(API_ENDPOINTS.INVOICES, { params });
@@ -47,7 +47,16 @@ export const getInvoiceTotals = async (): Promise<InvoiceTotals> => {
     }
 };
 
-export const getInvoice = async (id: number) => {
+export const getNextInvoiceNumber = async (): Promise<string> => {
+    try {
+        const response = await api.get<{ next_invoice_number: string }>(`${API_ENDPOINTS.INVOICES}/next-invoice-number`);
+        return response.data.next_invoice_number;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const getInvoice = async (id: number): Promise<Invoice> => {
     try {
         const response = await api.get<Invoice>(`${API_ENDPOINTS.INVOICES}/${id}`);
         return response.data;
@@ -58,7 +67,6 @@ export const getInvoice = async (id: number) => {
 
 export const createInvoice = async (data: InvoiceCreate) => {
     try {
-
         const response = await api.post<Invoice>(API_ENDPOINTS.INVOICES, data);
         return response.data;
     } catch (error) {

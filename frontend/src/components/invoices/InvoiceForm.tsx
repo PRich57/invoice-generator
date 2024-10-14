@@ -1,5 +1,3 @@
-// src/components/invoices/InvoiceForm.tsx
-
 import React from 'react';
 import {
     TextField,
@@ -21,6 +19,10 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import NumericTextField from '../common/NumericTextField';
+import { createInvoice, getNextInvoiceNumber } from '../../services/api/invoices';
+import { useSnackbar } from 'notistack';
+import axios, { AxiosError } from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const InvoiceForm: React.FC<InvoiceFormProps> = ({
     contacts,
@@ -31,8 +33,11 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     handlePreview,
     isPDFGenerating,
     selectedTemplate,
+    isEditing,
 }) => {
     const formik = useFormikContext<InvoiceCreate>();
+    const { enqueueSnackbar } = useSnackbar();
+    const navigate = useNavigate();
 
     const handleTemplateChange = (event: SelectChangeEvent<string>) => {
         const value = event.target.value;
@@ -57,6 +62,37 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     const handleDateChange = (newValue: dayjs.Dayjs | null) => {
         if (newValue) {
             formik.setFieldValue('invoice_date', formatDateForAPI(newValue.toDate()));
+        }
+    };
+
+    const handleSaveAsNew = async () => {
+        try {
+            const nextInvoiceNumber = await getNextInvoiceNumber();
+            const newInvoiceData = {
+                ...formik.values,
+                id: undefined,
+                invoice_number: nextInvoiceNumber,
+                items: formik.values.items.map(item => ({
+                    ...item,
+                    id: undefined,
+                    invoice_id: undefined,
+                    subitems: item.subitems.map(subitem => ({
+                        ...subitem,
+                        id: undefined,
+                    }))
+                }))
+            };
+            await createInvoice(newInvoiceData);
+            navigate('/invoices')
+            enqueueSnackbar('Successfully saved as a new invoice.', { variant: 'success' });
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response) {
+                console.error('Error response:', error.response.data);
+                enqueueSnackbar(`Failed to save invoice as new: ${error.response.data.message}`, { variant: 'error' });
+            } else {
+                console.error('Unexpected error:', error);
+                enqueueSnackbar('Failed to save invoice as new. Please try again.', { variant: 'error' });
+            }
         }
     };
 
@@ -207,10 +243,20 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         variant="outlined"
                         color="secondary"
                         disabled={isPDFGenerating || !selectedTemplate}
-                        // sx={{ display: { xs: 'inline-flex', lg: 'none' } }}
+                    // sx={{ display: { xs: 'inline-flex', lg: 'none' } }}
                     >
                         {isPDFGenerating ? 'Generating PDF...' : 'PDF Preview'}
                     </Button>
+                    {isEditing && (
+                        <Button
+                            onClick={handleSaveAsNew}
+                            variant="outlined"
+                            color="primary"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? 'Submitting...' : 'Save as New'}
+                        </Button>
+                    )}
                 </Stack>
             </Stack>
         </Box>

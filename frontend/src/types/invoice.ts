@@ -107,6 +107,7 @@ export interface InvoiceFormProps {
     handlePreview: () => void;
     isPDFGenerating: boolean;
     selectedTemplate: Template | null;
+    isEditing: boolean;
 }
 
 export type InvoiceFormErrors = {

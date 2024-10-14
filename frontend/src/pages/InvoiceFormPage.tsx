@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Box, Typography, Stack, Button, Modal } from '@mui/material';
 import { FormikProvider } from 'formik';
 import { useInvoiceForm } from '../hooks/useInvoiceForm';
@@ -14,6 +14,7 @@ import { useSnackbar } from 'notistack';
 
 const InvoiceFormPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
     const { formik, isLoading, isSubmitting } = useInvoiceForm();
     const { contacts, error: contactsError, loading: contactsLoading } = useContacts();
@@ -62,6 +63,7 @@ const InvoiceFormPage: React.FC = () => {
                         handlePreview={handlePreview}
                         isPDFGenerating={isPDFGenerating}
                         selectedTemplate={selectedTemplate}
+                        isEditing={!!id}
                     />
                 </Box>
                 <Box sx={{
@@ -69,14 +71,14 @@ const InvoiceFormPage: React.FC = () => {
                     pl: { lg: 2 },
                     display: { xs: 'none', lg: 'block' }
                 }}>
-                    {selectedTemplate && (
+                    {/* {selectedTemplate && (
                         <InvoicePreview
                             invoice={formik.values}
                             template={selectedTemplate}
                             billToContact={contacts.find(c => c.id === formik.values.bill_to_id) || null}
                             sendToContact={contacts.find(c => c.id === formik.values.send_to_id) || null}
                         />
-                    )}
+                    )} */}
                 </Box>
             </Box>
         </FormikProvider>
