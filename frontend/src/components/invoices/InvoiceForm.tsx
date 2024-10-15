@@ -21,8 +21,9 @@ import dayjs from 'dayjs';
 import NumericTextField from '../common/NumericTextField';
 import { createInvoice, getNextInvoiceNumber } from '../../services/api/invoices';
 import { useSnackbar } from 'notistack';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import KeybindGuide from './KeybindGuide';
 
 const InvoiceForm: React.FC<InvoiceFormProps> = ({
     contacts,
@@ -83,7 +84,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 }))
             };
             await createInvoice(newInvoiceData);
-            navigate('/invoices')
+            navigate('/invoices');
             enqueueSnackbar('Successfully saved as a new invoice.', { variant: 'success' });
         } catch (error) {
             if (axios.isAxiosError(error) && error.response) {
@@ -165,13 +166,32 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                                     key={index}
                                     index={index}
                                     remove={remove}
+                                    totalItems={formik.values.items.length}
                                 />
                             ))}
+                            {/* Add Button to Add New Item */}
+                            <Button
+                                variant="outlined"
+                                onClick={() => push({
+                                    description: '',
+                                    quantity: 1,
+                                    unit_price: 0,
+                                    discount_percentage: 0,
+                                    subitems: []
+                                })}
+                            >
+                                Add Item
+                            </Button>
                         </Stack>
                     )}
                 </FieldArray>
 
-                <Typography variant="h6" gutterBottom></Typography>
+                {/* User Guide */}
+                <Box sx={{ mt: 1 }}>
+                    <KeybindGuide />
+                </Box>
+
+                {/* Tax, Discount, and Notes */}
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                     <NumericTextField
                         fullWidth
@@ -227,6 +247,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                     </Select>
                 </FormControl>
 
+                {/* Action Buttons */}
                 <Stack direction="row" spacing={2}>
                     {isAuthenticated && (
                         <Button
@@ -243,7 +264,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         variant="outlined"
                         color="secondary"
                         disabled={isPDFGenerating || !selectedTemplate}
-                    // sx={{ display: { xs: 'inline-flex', lg: 'none' } }}
                     >
                         {isPDFGenerating ? 'Generating PDF...' : 'PDF Preview'}
                     </Button>
@@ -261,6 +281,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             </Stack>
         </Box>
     );
-};
+}
 
 export default InvoiceForm;
