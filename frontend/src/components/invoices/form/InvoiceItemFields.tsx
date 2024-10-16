@@ -146,7 +146,7 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = React.memo(
 
                         return (
                             <Box mb={0}>
-                                <Box display="flex" alignItems="center" gap={1}>
+                                <Box display="flex" alignItems="center" mt={1} mb={0}>
                                     {/* Drag Handle */}
                                     <Tooltip title='Drag and Drop' placement='top' arrow>
                                         <IconButton {...listeners} sx={{ cursor: 'grab' }}>

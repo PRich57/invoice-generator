@@ -197,6 +197,7 @@ const InvoicesList: React.FC = () => {
 
     const quickFilters = [
         { label: 'All', filter: {} },
+        { label: 'Paid', filter: { status: 'PAID' }},
         { label: 'Unpaid', filter: { status: 'UNPAID' } },
         { label: 'Overdue', filter: { status: 'OVERDUE' } },
         { label: 'This Month', filter: { date_from: dayjs().startOf('month').format('YYYY-MM-DD'), date_to: dayjs().endOf('month').format('YYYY-MM-DD') } },
@@ -204,7 +205,24 @@ const InvoicesList: React.FC = () => {
     ];
 
     const handleQuickFilter = useCallback((filter: Partial<InvoiceFilters>) => {
-        updateFilters(filter);
+        if (Object.keys(filter).length === 0) {
+            // This is the "All" filter
+            const clearFilters: InvoiceFilters = {
+                invoice_number: undefined,
+                bill_to_name: undefined,
+                send_to_name: undefined,
+                client_type: undefined,
+                invoice_type: undefined,
+                status: undefined,
+                date_from: undefined,
+                date_to: undefined,
+                total_min: undefined,
+                total_max: undefined
+            };
+            updateFilters(clearFilters);
+        } else {
+            updateFilters(filter);
+        }
     }, [updateFilters]);
 
     const activeFilters = Object.entries(filters).filter(([_, value]) => value !== '' && value !== undefined);

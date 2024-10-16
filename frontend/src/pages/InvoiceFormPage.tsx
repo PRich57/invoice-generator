@@ -66,7 +66,7 @@ const InvoiceFormPage: React.FC = () => {
                         isEditing={!!id}
                     />
                 </Box>
-                <Box sx={{
+                {/* <Box sx={{
                     flex: 1,
                     pl: { lg: 2 },
                     display: { xs: 'none', lg: 'block' }
@@ -79,7 +79,7 @@ const InvoiceFormPage: React.FC = () => {
                             sendToContact={contacts.find(c => c.id === formik.values.send_to_id) || null}
                         />
                     )}
-                </Box>
+                </Box> */}
             </Box>
         </FormikProvider>
     );

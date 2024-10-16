@@ -14,7 +14,7 @@ export const useInvoices = () => {
         sortOrder: 'desc'
     });
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(25);
+    const [pageSize, setPageSize] = useState(10);
     const [totalCount, setTotalCount] = useState(0);
 
     const fetchInvoices = useCallback(async () => {
@@ -24,14 +24,12 @@ export const useInvoices = () => {
                 sort_by: sorting.sortBy,
                 sort_order: sorting.sortOrder,
                 group_by: groupBy,
-                invoice_number: filters.invoice_number || undefined,
-                bill_to_name: filters.bill_to_name || undefined,
-                send_to_name: filters.send_to_name || undefined,
-                client_type: filters.client_type || undefined,
-                invoice_type: filters.invoice_type || undefined,
-                status: filters.status || undefined,
-                date_from: filters.date_from || undefined,
-                date_to: filters.date_to || undefined,
+                ...(Object.entries(filters) as [keyof InvoiceFilters, string | undefined][]).reduce((acc, [key, value]) => {
+                    if (value !== undefined) {
+                        acc[key] = value;
+                    }
+                    return acc;
+                }, {} as Partial<InvoiceFilters>),
                 total_min: filters.total_min ? parseFloat(filters.total_min) : undefined,
                 total_max: filters.total_max ? parseFloat(filters.total_max) : undefined,
                 skip: (page - 1) * pageSize, 
@@ -54,10 +52,21 @@ export const useInvoices = () => {
     }, [fetchInvoices]);
 
     const updateFilters = useCallback((newFilters: Partial<InvoiceFilters>) => {
-        setFilters(prevFilters => ({ ...prevFilters, ...newFilters }));
+        setFilters(prevFilters => {
+            const updatedFilters = { ...prevFilters };
+            (Object.keys(newFilters) as Array<keyof InvoiceFilters>).forEach(key => {
+                const value = newFilters[key];
+                if (value === undefined) {
+                    delete updatedFilters[key];
+                } else {
+                    updatedFilters[key] = value;
+                }
+            });
+            return updatedFilters;
+        });
         setPage(1);
     }, []);
-
+    
     const updateSorting = useCallback((column: string) => {
         setSorting(prevSorting => ({
             sortBy: column,
