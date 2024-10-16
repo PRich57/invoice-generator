@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useCallback } from 'react';
 import { FieldArray } from 'formik';
 import { Box, IconButton, Tooltip } from '@mui/material';
 import { RemoveCircleOutline, DragHandle, AddCircleOutline } from '@mui/icons-material';
-import { InvoiceItemCreate } from '../../types';
+import { InvoiceItemCreate } from '../../../types';
 import SubitemFields from './SubitemFields';
 import ItemDescriptionField from './ItemDescriptionField';
 import ItemQuantityField from './ItemQuantityField';
@@ -142,13 +142,17 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = React.memo(
                             }, 0);
                         };
 
+                        const label = totalItems <= 1 ? `Cannot delete the only item` : `Remove Item ${index + 1}`
+
                         return (
                             <Box mb={0}>
                                 <Box display="flex" alignItems="center" gap={1}>
                                     {/* Drag Handle */}
-                                    <IconButton {...listeners} sx={{ cursor: 'grab' }}>
-                                        <DragHandle sx={{ opacity: '30%' }} />
-                                    </IconButton>
+                                    <Tooltip title='Drag and Drop' placement='top' arrow>
+                                        <IconButton {...listeners} sx={{ cursor: 'grab' }}>
+                                            <DragHandle sx={{ opacity: '30%' }} />
+                                        </IconButton>
+                                    </Tooltip>
                                     {/* Rest of the item fields */}
                                     <ItemDescriptionField
                                         index={index}
@@ -173,27 +177,29 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = React.memo(
                                         insert={insert}
                                     />
                                     <Box>
-                                        <Tooltip title={`Remove Item ${index + 1}`} placement='right' arrow>
-                                            <IconButton
-                                                onClick={() => {
-                                                    if (totalItems > 1) {
-                                                        remove(index);
-                                                    }
-                                                }}
-                                                aria-label={`Remove Item ${index + 1}`}
-                                                disabled={totalItems <= 1}
-                                                size='small'
-                                            >
-                                                <RemoveCircleOutline
-                                                    sx={{ opacity: totalItems <= 1 ? '0%' : '50%' }}
-                                                    fontSize='small'
-                                                    color='error'
-                                                />
-                                            </IconButton>
+                                        <Tooltip title={label} placement='right' arrow>
+                                            <span>
+                                                <IconButton
+                                                    onClick={() => {
+                                                        if (totalItems > 1) {
+                                                            remove(index);
+                                                        }
+                                                    }}
+                                                    aria-label={label}
+                                                    disabled={totalItems <= 1}
+                                                    size='small'
+                                                >
+                                                    <RemoveCircleOutline
+                                                        sx={{ opacity: totalItems <= 1 ? '20%' : '70%' }}
+                                                        fontSize='small'
+                                                        color='error'
+                                                    />
+                                                </IconButton>
+                                            </span>
                                         </Tooltip>
                                         <Tooltip title='Add Subitem' placement='right' arrow>
                                             <IconButton onClick={handleAddSubitem} size="small">
-                                                <AddCircleOutline fontSize="small" sx={{ opacity: '50%' }} color='secondary' />
+                                                <AddCircleOutline fontSize="small" sx={{ opacity: '70%' }} color='secondary' />
                                             </IconButton>
                                         </Tooltip>
                                     </Box>

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableHead, TableRow, styled } from '@mui/material';
-import { Template, InvoiceItem, Contact, InvoicePreviewProps, InvoiceItemCreate, Invoice, InvoiceCreate } from '../../types';
+import { Template, InvoiceItem, Contact, InvoicePreviewProps, InvoiceItemCreate } from '../../../types';
+import { formatCurrency, formatNumber } from '../../../utils/currencyFormatter';
 
 const PreviewContainer = styled(Box)(({ theme }) => ({
     width: '210mm',
@@ -77,9 +78,9 @@ const calculateDiscountAmount = (subtotal: number, discountPercentage: number): 
     return subtotal * (discountPercentage / 100);
 };
 
-const formatNumber = (value: number): string => {
-    return value.toFixed(2);
-};
+// const formatNumber = (value: number): string => {
+//     return value.toFixed(2);
+// };
 
 const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, billToContact, sendToContact }) => {
     const calculatedValues = useMemo(() => {
@@ -146,16 +147,16 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, bill
                             <TableRow className="invoice-item">
                                 <StyledTableCell template={template}>
                                     {item.description}
-                                    {Number(item.discount_percentage) > 0 && ` (${Number(item.discount_percentage)}% Discount)`}
+                                    {Number(item.discount_percentage) > 0 && ` (${formatNumber(Number(item.discount_percentage))}% Discount)`}
                                 </StyledTableCell>
                                 <StyledTableCell template={template} align="right">
-                                    {Number(item.quantity)}
+                                    {formatNumber(Number(item.quantity))}
                                 </StyledTableCell>
                                 <StyledTableCell template={template} align="right">
-                                    ${formatNumber(Number(item.unit_price))}
+                                    {formatCurrency(Number(item.unit_price))}
                                 </StyledTableCell>
                                 <StyledTableCell template={template} align="right">
-                                    ${formatNumber(calculateLineTotal(item))}
+                                    {formatCurrency(calculateLineTotal(item))}
                                 </StyledTableCell>
                             </TableRow>
                             {item.subitems && item.subitems.length > 0 && item.subitems.map((subitem, subIndex) => (
@@ -176,33 +177,33 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, template, bill
                         color: template.colors.text,
                         fontFamily: template.fonts.main,
                         fontSize: `${template.font_sizes.normal_text}px`,
-                    }}>Subtotal: ${formatNumber(subtotal)}</Typography>
+                    }}>Subtotal: {formatCurrency(subtotal)}</Typography>
                     {discountPercentage > 0 && (
                         <>
                             <Typography align="right" style={{
                                 color: template.colors.text,
                                 fontFamily: template.fonts.main,
                                 fontSize: `${template.font_sizes.normal_text}px`,
-                            }}>Discount ({discountPercentage}%): -${formatNumber(discountAmount)}</Typography>
+                            }}>Discount ({formatNumber(discountPercentage)}%): -{formatCurrency(discountAmount)}</Typography>
                             <Typography align="right" style={{
                                 color: template.colors.accent,
                                 fontFamily: template.fonts.main,
                                 fontSize: `${template.font_sizes.normal_text}px`,
-                            }}>Discounted Subtotal: ${formatNumber(subtotal - discountAmount)}</Typography>
+                            }}>Discounted Subtotal: {formatCurrency(subtotal - discountAmount)}</Typography>
                         </>
                     )}
                     <Typography align="right" style={{
                         color: template.colors.text,
                         fontFamily: template.fonts.main,
                         fontSize: `${template.font_sizes.normal_text}px`,
-                    }}>Tax ({taxRate}%): ${formatNumber(tax)}</Typography>
+                    }}>Tax ({formatNumber(taxRate)}%): {formatCurrency(tax)}</Typography>
                     <Typography align="right" style={{
                         color: template.colors.primary,
                         fontFamily: template.fonts.accent,
                         fontSize: `${template.font_sizes.invoice_number}px`,
                         fontWeight: 'bold',
                     }}>
-                        Total: ${formatNumber(total)}
+                        Total: {formatCurrency(total)}
                     </Typography>
                 </Box>
             </Box>

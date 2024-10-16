@@ -21,14 +21,14 @@ const KeybindGuide = () => {
 
   return (
     <Box sx={{ mt: 0, ml: 1 }}>
-      <Tooltip title="Show Keybind Guide" placement='top'>
+      <Tooltip title="Keybind Guide" placement='right' arrow>
         <IconButton
           onClick={handleToggle}
           aria-label="toggle keybind guide"
           size="small"
           sx={{ p: 0, opacity: '50%' }}
         >
-          {open ? <ExpandLessIcon /> : <InfoIcon />}
+          {open ? <ExpandLessIcon /> : <InfoIcon fontSize='small'/>}
         </IconButton>
       </Tooltip>
       <Collapse in={open} timeout="auto" unmountOnExit>
@@ -48,13 +48,13 @@ const KeybindGuide = () => {
               <ListItem
                 disableGutters
                 sx={{
-                  paddingTop: 1,
+                  py: 0,
                 }}
               >
                 <ListItemText
                   primary={
                     <>
-                      <strong>Ctrl+Space</strong>: Indent or outdent items (convert items to subitems and vice versa).
+                      <strong>Enter</strong>: Add a new Item or Subitem.
                       <Typography
                         component="span"
                         variant="caption"
@@ -62,11 +62,10 @@ const KeybindGuide = () => {
                         sx={{
                           display: 'block',
                           ml: 4,
-                          mt: 0,
-                          mb: 0
+                          mt: 0
                         }}
                       >
-                        <strong>**Note:</strong> This shortcut doesn't work on the topmost item as subitems can only exist beneath a parent item.
+                        **Item or Subitem is determined by the current field in focus **
                       </Typography>
                     </>
                   }
@@ -81,7 +80,19 @@ const KeybindGuide = () => {
                 <ListItemText
                   primary={
                     <>
-                      <strong>Tab</strong>: Move focus to the next field.
+                      <strong>Backspace</strong>: Delete an empty item or subitem field.
+                      <Typography
+                        component="span"
+                        variant="caption"
+                        color="primary"
+                        sx={{
+                          display: 'block',
+                          ml: 4,
+                          mt: 0
+                        }}
+                      >
+                        **This does not work if no other items exist**
+                      </Typography>
                     </>
                   }
                 />
@@ -95,7 +106,20 @@ const KeybindGuide = () => {
                 <ListItemText
                   primary={
                     <>
-                      <strong>Shift+Tab</strong>: Move focus to the previous field.
+                      <strong>Ctrl+Space</strong>: Convert items to subitems and vice versa.
+                      <Typography
+                        component="span"
+                        variant="caption"
+                        color="primary"
+                        sx={{
+                          display: 'block',
+                          ml: 4,
+                          mt: 0,
+                          mb: 0
+                        }}
+                      >
+                        **This shortcut doesn't work on the topmost item as subitems can only exist beneath a parent item**
+                      </Typography>
                     </>
                   }
                 />
@@ -110,34 +134,6 @@ const KeybindGuide = () => {
                   primary={
                     <>
                       <strong>Arrow Keys</strong>: Navigate between fields.
-                    </>
-                  }
-                />
-              </ListItem>
-              <ListItem
-                disableGutters
-                sx={{
-                  py: 0,
-                }}
-              >
-                <ListItemText
-                  primary={
-                    <>
-                      <strong>Enter</strong>: Add a new item or subitem depending on the current field in focus.
-                    </>
-                  }
-                />
-              </ListItem>
-              <ListItem
-                disableGutters
-                sx={{
-                  py: 0,
-                }}
-              >
-                <ListItemText
-                  primary={
-                    <>
-                      <strong>Backspace</strong>: Delete an empty item or subitem.
                       <Typography
                         component="span"
                         variant="caption"
@@ -148,8 +144,22 @@ const KeybindGuide = () => {
                           mt: 0
                         }}
                       >
-                        <strong>**Note:</strong> This does not work if no other items exist.
+                        **<strong>Tab</strong> and <strong>Shift+Tab</strong> work as well**
                       </Typography>
+                    </>
+                  }
+                />
+              </ListItem>
+              <ListItem
+                disableGutters
+                sx={{
+                  py: 0,
+                }}
+              >
+                <ListItemText
+                  primary={
+                    <>
+                      <strong>Drag & Drop</strong>: Rearrange items and subitems with the icon to the left of each field.
                     </>
                   }
                 />

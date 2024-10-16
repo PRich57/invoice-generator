@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     TextField,
     Button,
@@ -14,14 +14,14 @@ import {
     Tooltip,
 } from '@mui/material';
 import { useFormikContext, FieldArray } from 'formik';
-import { InvoiceCreate, InvoiceFormProps } from '../../types';
+import { InvoiceCreate, InvoiceFormProps } from '../../../types';
 import InvoiceItemFields from './InvoiceItemFields';
-import { formatDateForAPI } from '../../utils/dateFormatter';
+import { formatDateForAPI } from '../../../utils/dateFormatter';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
-import NumericTextField from '../common/NumericTextField';
-import { createInvoice, getNextInvoiceNumber } from '../../services/api/invoices';
+import NumericTextField from '../../common/NumericTextField';
+import { createInvoice, getNextInvoiceNumber } from '../../../services/api/invoices';
 import { useSnackbar } from 'notistack';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -151,7 +151,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     };
 
     // Ensure that all items have unique ids
-    React.useEffect(() => {
+    useEffect(() => {
         const updatedItems = formik.values.items.map((item) => {
             if (!item.id) {
                 return { ...item, id: Date.now() };
@@ -159,8 +159,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             return item;
         });
         formik.setFieldValue('items', updatedItems);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Run once on mount
+    }, []);    
 
     return (
         <Box component="form" onSubmit={formik.handleSubmit}>
@@ -276,8 +275,16 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
                             {/* Add Item Button */}
                             <Box display="flex" justifyContent="center" mt={0}>
-                                <Tooltip title='Add Item' placement='right' arrow>
+                                <Tooltip 
+                                    title='Add Item' 
+                                    placement='right' 
+                                    arrow 
+                                    sx={{ 
+                                        opacity: '70%',
+                                    }}
+                                >
                                     <IconButton
+                                        aria-label='Add Item'
                                         onClick={() =>
                                             push({
                                                 id: Date.now(),
@@ -301,9 +308,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                     <NumericTextField
                         fullWidth
+                        value={formik.values.tax_rate}
                         name="tax_rate"
                         label="Tax Rate (%)"
-                        value={formik.values.tax_rate}
                         onChange={formik.handleChange}
                         error={formik.touched.tax_rate && Boolean(formik.errors.tax_rate)}
                         helperText={formik.touched.tax_rate && formik.errors.tax_rate}

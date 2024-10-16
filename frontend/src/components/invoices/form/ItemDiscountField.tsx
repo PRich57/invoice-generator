@@ -1,8 +1,6 @@
-// src/components/invoices/ItemDiscountField.tsx
-
 import React, { useCallback } from 'react';
 import { useField } from 'formik';
-import NumericTextField from '../common/NumericTextField';
+import NumericTextField from '../../common/NumericTextField';
 
 interface ItemDiscountFieldProps {
     index: number;

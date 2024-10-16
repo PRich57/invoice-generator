@@ -10,7 +10,7 @@ export const useInvoices = () => {
     const [filters, setFilters] = useState<InvoiceFilters>({});
     const [groupBy, setGroupBy] = useState<string[]>([]);
     const [sorting, setSorting] = useState<{ sortBy: string; sortOrder: 'asc' | 'desc' }>({
-        sortBy: 'date',
+        sortBy: 'invoice_number',
         sortOrder: 'desc'
     });
     const [page, setPage] = useState(1);

@@ -189,6 +189,7 @@ async def create_invoice(db: AsyncSession, invoice: InvoiceCreate, user_id: int)
             raise AlreadyExistsError("invoice")
         raise BadRequestError("An error occurred while creating the invoice")
     except Exception as e:
+        logger.error(f"Error creating invoice: {str(e)}")
         await db.rollback()
         raise BadRequestError("An unexpected error occurred while creating the invoice")
 

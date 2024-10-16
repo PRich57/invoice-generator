@@ -58,6 +58,18 @@ let darkTheme = createTheme({
                 },
             },
         },
+        MuiTooltip: {
+            styleOverrides: {
+                tooltip: {
+                    background: '#2C2C2C',
+                    fontFamily: 'sans-serif',
+                    color: '#BB86FC'
+                },
+                arrow: {
+                    color: '#2C2C2C',
+                }
+            }
+        }
     },
 });
 

@@ -1,8 +1,6 @@
-// src/components/invoices/ItemQuantityField.tsx
-
 import React, { useCallback } from 'react';
 import { useField } from 'formik';
-import NumericTextField from '../common/NumericTextField';
+import NumericTextField from '../../common/NumericTextField';
 
 interface ItemQuantityFieldProps {
     index: number;

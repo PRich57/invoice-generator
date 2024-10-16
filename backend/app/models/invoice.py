@@ -2,6 +2,7 @@ from decimal import Decimal
 from enum import Enum
 from sqlalchemy import (
     DECIMAL,
+    BigInteger,
     Column,
     Date,
     ForeignKey,
@@ -39,7 +40,7 @@ class InvoiceItem(Base):
         Index('ix_invoice_items_invoice_id', 'invoice_id'),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
     invoice_id = Column(Integer, ForeignKey("invoices.id"), index=True)
     description = Column(String(200), nullable=False)
     quantity = Column(DECIMAL(10, 2), nullable=False, default=Decimal('0.00'))
@@ -63,8 +64,8 @@ class InvoiceItem(Base):
 class InvoiceSubItem(Base):
     __tablename__ = "invoice_subitems"
 
-    id = Column(Integer, primary_key=True, index=True)
-    invoice_item_id = Column(Integer, ForeignKey("invoice_items.id"), index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
+    invoice_item_id = Column(BigInteger, ForeignKey("invoice_items.id"), index=True)
     description = Column(String(200), nullable=False)
     order = Column(Integer, nullable=False)
 

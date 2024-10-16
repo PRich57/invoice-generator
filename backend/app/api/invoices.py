@@ -3,8 +3,6 @@ from datetime import date
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 

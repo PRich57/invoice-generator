@@ -1,5 +1,5 @@
 // NumericTextField.tsx
-import React, { useState, forwardRef } from 'react';
+import React, { useState, forwardRef, useEffect } from 'react';
 import TextField, { TextFieldProps } from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
 
@@ -22,6 +22,10 @@ const NumericTextField = forwardRef<HTMLInputElement, NumericTextFieldProps>((pr
   } = props;
 
   const [value, setValue] = useState<string>(initialValue as string || '');
+
+  useEffect(() => {
+    setValue(initialValue as string || '');
+  }, [initialValue]);
 
   const handleInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;

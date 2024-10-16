@@ -7,3 +7,11 @@ export const formatCurrency = (value: string | number): string => {
         maximumFractionDigits: 2,
     });
 };
+
+export const formatNumber = (value: string | number): string => {
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    return numValue.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    });
+};

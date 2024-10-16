@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Box, Typography, Stack, Button, Modal } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { FormikProvider } from 'formik';
 import { useInvoiceForm } from '../hooks/useInvoiceForm';
 import { useTemplates } from '../hooks/useTemplates';
 import { useContacts } from '../hooks/useContacts';
 import { usePDFGeneration } from '../hooks/usePDFGeneration';
-import InvoiceForm from '../components/invoices/InvoiceForm';
-import InvoicePreview from '../components/invoices/InvoicePreview';
+import InvoiceForm from '../components/invoices/form/InvoiceForm';
+import InvoicePreview from '../components/invoices/form/InvoicePreview';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
 import { useSnackbar } from 'notistack';

@@ -2,7 +2,7 @@ import React from 'react';
 import { FieldArray, useField, useFormikContext } from 'formik';
 import { TextField, Box, IconButton, Tooltip } from '@mui/material';
 import { RemoveCircleOutline, DragHandle, AddCircleOutline } from '@mui/icons-material';
-import { InvoiceItemCreate, InvoiceSubItemCreate, InvoiceCreate } from '../../types';
+import { InvoiceItemCreate, InvoiceSubItemCreate, InvoiceCreate } from '../../../types';
 
 // Import DnD Kit components
 import {
@@ -286,7 +286,7 @@ const SortableSubitemField: React.FC<SortableSubitemFieldProps> = ({
                     }}
                     aria-label={`Remove Subitem ${subIndex + 1}`}
                 >
-                    <RemoveCircleOutline fontSize='small' sx={{ opacity: '50%' }} color={'error'} />
+                    <RemoveCircleOutline fontSize='small' sx={{ opacity: '70%' }} color={'error'} />
                 </IconButton>
             </Tooltip>
         </Box>

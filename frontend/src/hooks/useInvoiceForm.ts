@@ -46,21 +46,8 @@ export const useInvoiceForm = () => {
         { method: id ? 'PUT' : 'POST' }
     );
 
-    useEffect(() => {
-        if (id) {
-            refetch();
-        } else {
-            // Fetch next invoice number when creating a new invoice
-            getNextInvoiceNumber()
-                .then(nextNumber => {
-                    formik.setFieldValue('invoice_number', nextNumber);
-                })
-                .catch(handleError);
-        }
-    }, [id]);
-
     const formik = useFormik<InvoiceCreate>({
-        initialValues: invoiceData || initialValues,
+        initialValues,
         validationSchema: invoiceValidationSchema,
         enableReinitialize: true,
         onSubmit: async (values) => {
@@ -81,6 +68,48 @@ export const useInvoiceForm = () => {
             }
         },
     });
+
+    useEffect(() => {
+        if (id) {
+            refetch();
+        } else {
+            // Fetch next invoice number when creating a new invoice
+            getNextInvoiceNumber()
+                .then(nextNumber => {
+                    formik.setFieldValue('invoice_number', nextNumber);
+                })
+                .catch(handleError);
+        }
+    }, [id]);
+
+    useEffect(() => {
+        if (invoiceData) {            
+            // Map invoiceData to form fields
+            const newValues = {
+                invoice_number: invoiceData.invoice_number,
+                invoice_date: invoiceData.invoice_date,
+                bill_to_id: invoiceData.bill_to_id,
+                send_to_id: invoiceData.send_to_id,
+                tax_rate: invoiceData.tax_rate,
+                discount_percentage: invoiceData.discount_percentage,
+                notes: invoiceData.notes || '',
+                items: invoiceData.items.map(item => ({
+                    id: item.id,
+                    description: item.description,
+                    quantity: item.quantity,
+                    unit_price: item.unit_price,
+                    discount_percentage: item.discount_percentage,
+                    subitems: item.subitems.map(subitem => ({
+                        id: subitem.id,
+                        description: subitem.description,
+                    })),
+                })),
+                template_id: invoiceData.template_id,
+            };
+            
+            formik.setValues(newValues);
+        }
+    }, [invoiceData]);
 
     return { formik, isLoading, isSubmitting };
 };
