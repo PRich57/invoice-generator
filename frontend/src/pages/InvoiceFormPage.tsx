@@ -71,14 +71,14 @@ const InvoiceFormPage: React.FC = () => {
                     pl: { lg: 2 },
                     display: { xs: 'none', lg: 'block' }
                 }}>
-                    {/* {selectedTemplate && (
+                    {selectedTemplate && (
                         <InvoicePreview
                             invoice={formik.values}
                             template={selectedTemplate}
                             billToContact={contacts.find(c => c.id === formik.values.bill_to_id) || null}
                             sendToContact={contacts.find(c => c.id === formik.values.send_to_id) || null}
                         />
-                    )} */}
+                    )}
                 </Box>
             </Box>
         </FormikProvider>

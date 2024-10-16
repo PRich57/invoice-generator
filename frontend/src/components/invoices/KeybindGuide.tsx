@@ -11,7 +11,6 @@ import {
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 const KeybindGuide = () => {
   const [open, setOpen] = useState(false);
@@ -21,26 +20,24 @@ const KeybindGuide = () => {
   };
 
   return (
-    <Box sx={{ mt: 2 }}>
-      <Tooltip title="Show Keybind Guide">
+    <Box sx={{ mt: 0, ml: 1 }}>
+      <Tooltip title="Show Keybind Guide" placement='top'>
         <IconButton
           onClick={handleToggle}
           aria-label="toggle keybind guide"
           size="small"
-          sx={{ p: 0 }}
+          sx={{ p: 0, opacity: '50%' }}
         >
           {open ? <ExpandLessIcon /> : <InfoIcon />}
         </IconButton>
       </Tooltip>
       <Collapse in={open} timeout="auto" unmountOnExit>
-        <Box sx={{ mt: 1, pl: 3 }}>
+        <Box sx={{ mt: 1, pl: 0 }}>
           <Typography
             variant="caption"
-            color="secondary"
             component="div"
             sx={{ lineHeight: 1.5, fontSize: 13.5 }}
           >
-            <strong>Invoice Items Quick Navigation:</strong>
             <List
               dense
               disablePadding
@@ -134,7 +131,7 @@ const KeybindGuide = () => {
               <ListItem
                 disableGutters
                 sx={{
-                  py: 0.5,
+                  py: 0,
                 }}
               >
                 <ListItemText
