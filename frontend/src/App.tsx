@@ -8,7 +8,7 @@ import { SnackbarProvider } from 'notistack';
 import { useAuth } from './contexts/AuthContext';
 import theme from './styles/theme';
 import routes from './constants/routes';
-import ResponsiveLayout from './layouts/ResponsiveLayout';
+import ResponsiveLayout from './components/layout/ResponsiveLayout';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import 'react-toastify/dist/ReactToastify.css'
 import dayjs from 'dayjs';

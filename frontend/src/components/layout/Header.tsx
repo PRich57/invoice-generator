@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, IconButton, useMediaQuery, useTheme } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, useMediaQuery, useTheme, Box } from '@mui/material';
 import { Menu as MenuIcon, Logout as LogoutIcon, Login as LoginIcon } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -18,14 +18,17 @@ const Header: React.FC = () => {
     };
 
     return (
-        <AppBar position="static" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+        <AppBar position="fixed" sx={{ 
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+            backdropFilter: 'blur(5px)',
+        }}>
             <Toolbar>
                 {isMobile && (
                     <IconButton edge="start" color="inherit" aria-label="menu" sx={{ mr: 2 }}>
                         <MenuIcon />
                     </IconButton>
                 )}
-                <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: theme.palette.text.primary }}>
                     Invoice Generator
                 </Typography>
                 <IconButton color="inherit" onClick={handleLogoutOrLogin}>

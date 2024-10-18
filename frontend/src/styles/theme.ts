@@ -69,7 +69,24 @@ let darkTheme = createTheme({
                     color: '#2C2C2C',
                 }
             }
-        }
+        },
+        MuiTextField: {
+            styleOverrides: {
+                root: {
+                    '& .MuiInputLabel-root': {
+                        backgroundColor: 'rgba(31, 31, 31, 0.8)',
+                        padding: '0 4px',
+                    },
+                },
+            },
+        },
+        MuiAppBar: {
+            styleOverrides: {
+                root: {
+                    boxShadow: '0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14), 0px 1px 10px 0px rgba(0,0,0,0.12)',
+                },
+            },
+        },
     },
 });
 

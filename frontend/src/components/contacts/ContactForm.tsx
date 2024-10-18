@@ -149,7 +149,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
     if (isLoading) return <LoadingSpinner />;
 
     return (
-        <Box component="form" onSubmit={formik.handleSubmit}  sx={{ maxWidth: 700, margin: 'auto' }}>            
+        <Box component="form" onSubmit={formik.handleSubmit} sx={{ maxWidth: isMobile ? '100%' : 700, margin: 'auto' }}>         
             <TextField
                 fullWidth
                 margin="normal"
@@ -159,6 +159,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 onChange={formik.handleChange}
                 error={formik.touched.name && Boolean(formik.errors.name)}
                 helperText={formik.touched.name && formik.errors.name}
+                size={isMobile ? "small" : "medium"}
             />
 
             <TextField
@@ -170,6 +171,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 onChange={formik.handleChange}
                 error={formik.touched.company && Boolean(formik.errors.company)}
                 helperText={formik.touched.company && formik.errors.company}
+                size={isMobile ? "small" : "medium"}
             />
 
             <TextField
@@ -181,6 +183,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 onChange={formik.handleChange}
                 error={formik.touched.email && Boolean(formik.errors.email)}
                 helperText={formik.touched.email && formik.errors.email}
+                size={isMobile ? "small" : "medium"}
             />
 
             <MuiTelInput
@@ -191,6 +194,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 name="phone"
                 label="Phone"
                 margin="normal"
+                size={isMobile ? "small" : "medium"}
             />
 
             {isScriptLoaded && (
@@ -218,6 +222,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                             margin="normal"
                             error={formik.touched.street_address && Boolean(formik.errors.street_address)}
                             helperText={formik.touched.street_address && formik.errors.street_address}
+                            size={isMobile ? "small" : "medium"}
                         />
                     )}
                 />
@@ -233,6 +238,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                     onChange={formik.handleChange}
                     error={formik.touched.street_address && Boolean(formik.errors.street_address)}
                     helperText={formik.touched.street_address && formik.errors.street_address}
+                    size={isMobile ? "small" : "medium"}
                 />
             )}
 
@@ -245,6 +251,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 onChange={formik.handleChange}
                 error={formik.touched.address_line2 && Boolean(formik.errors.address_line2)}
                 helperText={formik.touched.address_line2 && formik.errors.address_line2}
+                size={isMobile ? "small" : "medium"}
             />
 
             <TextField
@@ -256,6 +263,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 onChange={formik.handleChange}
                 error={formik.touched.city && Boolean(formik.errors.city)}
                 helperText={formik.touched.city && formik.errors.city}
+                size={isMobile ? "small" : "medium"}
             />
 
             <TextField
@@ -267,6 +275,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 onChange={formik.handleChange}
                 error={formik.touched.state && Boolean(formik.errors.state)}
                 helperText={formik.touched.state && formik.errors.state}
+                size={isMobile ? "small" : "medium"}
             />
 
             <TextField
@@ -278,6 +287,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 onChange={formik.handleChange}
                 error={formik.touched.postal_code && Boolean(formik.errors.postal_code)}
                 helperText={formik.touched.postal_code && formik.errors.postal_code}
+                size={isMobile ? "small" : "medium"}
             />
 
             <TextField
@@ -289,6 +299,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 onChange={formik.handleChange}
                 error={formik.touched.country && Boolean(formik.errors.country)}
                 helperText={formik.touched.country && formik.errors.country}
+                size={isMobile ? "small" : "medium"}
             />
 
             <TextField
@@ -302,6 +313,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                 onChange={formik.handleChange}
                 error={formik.touched.notes && Boolean(formik.errors.notes)}
                 helperText={formik.touched.notes && formik.errors.notes}
+                size={isMobile ? "small" : "medium"}
             />
 
             <Button
@@ -313,6 +325,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ id }) => {
                     width: isMobile ? '100%' : 'auto',
                 }}
                 disabled={isSubmitting}
+                size={isMobile ? "small" : "medium"}
             >
                 {isSubmitting ? 'Submitting...' : id ? 'Update Contact' : 'Create Contact'}
             </Button>

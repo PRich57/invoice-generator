@@ -393,13 +393,16 @@ const InvoicesList: React.FC = () => {
                         sortOrder={sortOrder}
                         onSort={handleSort}
                     />
-                    <Pagination
-                        page={page}
-                        pageSize={pageSize}
-                        totalItems={totalCount}
-                        onPageChange={handlePageChange}
-                        onPageSizeChange={handlePageSizeChange}
-                    />
+                    <Box sx={{ mt: 2, display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Pagination
+                            page={page}
+                            pageSize={pageSize}
+                            totalItems={totalCount}
+                            onPageChange={handlePageChange}
+                            onPageSizeChange={handlePageSizeChange}
+                            isMobile={isMobile}
+                        />
+                    </Box>
                 </>
             )}
 

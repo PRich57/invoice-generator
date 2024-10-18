@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Pagination as MuiPagination, Select, MenuItem } from '@mui/material';
+import { Box, Pagination as MuiPagination, Select, MenuItem, Typography } from '@mui/material';
 
 interface PaginationProps {
     page: number;
@@ -7,6 +7,7 @@ interface PaginationProps {
     totalItems: number;
     onPageChange: (page: number) => void;
     onPageSizeChange: (pageSize: number) => void;
+    isMobile: boolean;
 }
 
 const Pagination: React.FC<PaginationProps> = ({
@@ -15,24 +16,38 @@ const Pagination: React.FC<PaginationProps> = ({
     totalItems,
     onPageChange,
     onPageSizeChange,
+    isMobile,
 }) => {
     const totalPages = Math.ceil(totalItems / pageSize);
 
     return (
-        <Box display="flex" justifyContent="space-between" alignItems="center" mt={2}>
-            <MuiPagination
-                count={totalPages}
-                page={page}
-                onChange={(_, newPage) => onPageChange(newPage)}
-                color="primary"
-            />
+        <Box 
+            display="flex" 
+            flexDirection={isMobile ? 'column' : 'row'} 
+            alignItems="center" 
+            justifyContent="space-between" 
+            width="100%"
+        >
+            <Box mb={isMobile ? 1 : 0}>
+                <MuiPagination
+                    count={totalPages}
+                    page={page}
+                    onChange={(_, newPage) => onPageChange(newPage)}
+                    color="primary"
+                    size={isMobile ? 'small' : 'medium'}
+                />
+            </Box>
             <Box display="flex" alignItems="center">
-                <span>Items per page:</span>
+                <Typography variant={isMobile ? 'body2' : 'body1'} sx={{ mr: 1 }}>
+                    Items per page:
+                </Typography>
                 <Select
                     value={pageSize}
                     onChange={(e) => onPageSizeChange(Number(e.target.value))}
                     size="small"
-                    sx={{ ml: 1 }}
+                    sx={{
+                        mt: 2
+                    }}
                 >
                     {[10, 25, 50, 100].map((size) => (
                         <MenuItem key={size} value={size}>
