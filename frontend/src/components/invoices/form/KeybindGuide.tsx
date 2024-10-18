@@ -65,7 +65,7 @@ const KeybindGuide = () => {
                           mt: 0
                         }}
                       >
-                        **Item or Subitem is determined by the current field in focus **
+                        **Item or Subitem is determined by the current field in focus**
                       </Typography>
                     </>
                   }

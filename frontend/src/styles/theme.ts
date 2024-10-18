@@ -74,8 +74,22 @@ let darkTheme = createTheme({
             styleOverrides: {
                 root: {
                     '& .MuiInputLabel-root': {
-                        backgroundColor: 'rgba(31, 31, 31, 0.8)',
+                        backgroundColor: 'transparent',
                         padding: '0 4px',
+                        '&.Mui-focused': {
+                            color: '#BB86FC',
+                        },
+                    },
+                    '& .MuiOutlinedInput-root': {
+                        '& fieldset': {
+                            borderColor: 'rgba(255, 255, 255, 0.23)',
+                        },
+                        '&:hover fieldset': {
+                            borderColor: 'rgba(255, 255, 255, 0.5)',
+                        },
+                        '&.Mui-focused fieldset': {
+                            borderColor: '#BB86FC',
+                        },
                     },
                 },
             },

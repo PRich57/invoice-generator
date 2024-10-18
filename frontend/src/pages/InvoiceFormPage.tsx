@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, useTheme, useMediaQuery } from '@mui/material';
 import { FormikProvider } from 'formik';
 import { useInvoiceForm } from '../hooks/useInvoiceForm';
 import { useTemplates } from '../hooks/useTemplates';
@@ -21,6 +21,8 @@ const InvoiceFormPage: React.FC = () => {
     const { templates, selectedTemplate, setSelectedTemplate } = useTemplates();
     const { handlePreviewPDF, isGenerating: isPDFGenerating } = usePDFGeneration();
     const { enqueueSnackbar } = useSnackbar();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -44,42 +46,43 @@ const InvoiceFormPage: React.FC = () => {
 
     return (
         <FormikProvider value={formik}>
-            <Typography variant="h4" gutterBottom color="primary">
-                {id ? 'Edit Invoice' : 'Create New Invoice'}
-            </Typography>
-            <Box sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', lg: 'row' },
-                p: { xs: 2, sm: 3 },
-                pb: { xs: 10, sm: 3 }
-            }}>
-                <Box sx={{ flex: 1, pr: { lg: 2 } }}>
-                    <InvoiceForm
-                        contacts={contacts}
-                        templates={templates}
-                        isSubmitting={isSubmitting}
-                        setSelectedTemplate={setSelectedTemplate}
-                        isAuthenticated={isAuthenticated}
-                        handlePreview={handlePreview}
-                        isPDFGenerating={isPDFGenerating}
-                        selectedTemplate={selectedTemplate}
-                        isEditing={!!id}
-                    />
-                </Box>
-                {/* <Box sx={{
-                    flex: 1,
-                    pl: { lg: 2 },
-                    display: { xs: 'none', lg: 'block' }
+            <Box sx={{ p: isMobile ? 2 : 3 }}>
+                <Typography variant={isMobile ? "h5" : "h4"} gutterBottom color="primary" sx={{ mb: 3 }}>
+                    {id ? 'Edit Invoice' : 'Create New Invoice'}
+                </Typography>
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', lg: 'row' },
                 }}>
-                    {selectedTemplate && (
-                        <InvoicePreview
-                            invoice={formik.values}
-                            template={selectedTemplate}
-                            billToContact={contacts.find(c => c.id === formik.values.bill_to_id) || null}
-                            sendToContact={contacts.find(c => c.id === formik.values.send_to_id) || null}
+                    <Box sx={{ flex: 1, pr: { lg: 2 } }}>
+                        <InvoiceForm
+                            contacts={contacts}
+                            templates={templates}
+                            isSubmitting={isSubmitting}
+                            setSelectedTemplate={setSelectedTemplate}
+                            isAuthenticated={isAuthenticated}
+                            handlePreview={handlePreview}
+                            isPDFGenerating={isPDFGenerating}
+                            selectedTemplate={selectedTemplate}
+                            isEditing={!!id}
+                            isMobile={isMobile}
                         />
+                    </Box>
+                    {!isMobile && selectedTemplate && (
+                        <Box sx={{
+                            flex: 1,
+                            pl: { lg: 2 },
+                            display: { xs: 'none', lg: 'block' }
+                        }}>
+                            <InvoicePreview
+                                invoice={formik.values}
+                                template={selectedTemplate}
+                                billToContact={contacts.find(c => c.id === formik.values.bill_to_id) || null}
+                                sendToContact={contacts.find(c => c.id === formik.values.send_to_id) || null}
+                            />
+                        </Box>
                     )}
-                </Box> */}
+                </Box>
             </Box>
         </FormikProvider>
     );

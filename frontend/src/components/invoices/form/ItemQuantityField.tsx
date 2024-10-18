@@ -6,9 +6,10 @@ interface ItemQuantityFieldProps {
     index: number;
     inputRef: React.Ref<HTMLInputElement>;
     focusElementById: (id: string) => void;
+    isMobile: boolean;
 }
 
-const ItemQuantityField: React.FC<ItemQuantityFieldProps> = React.memo(({ index, inputRef, focusElementById }) => {
+const ItemQuantityField: React.FC<ItemQuantityFieldProps> = React.memo(({ index, inputRef, focusElementById, isMobile }) => {
     const [field, , helpers] = useField(`items[${index}].quantity`);
 
     const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -48,9 +49,9 @@ const ItemQuantityField: React.FC<ItemQuantityFieldProps> = React.memo(({ index,
             onChange={(e) => helpers.setValue(Number(e.target.value))}
             onKeyDown={handleKeyDown}
             inputRef={inputRef}
-            sx={{ width: '8%' }}
+            sx={{ width:'100%' }}
             slotProps={{ inputLabel: { shrink: true } }}
-            size='small'
+            size="small"
         />
     );
 });

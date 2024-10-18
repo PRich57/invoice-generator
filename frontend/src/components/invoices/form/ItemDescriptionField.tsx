@@ -6,19 +6,20 @@ interface ItemDescriptionFieldProps {
     index: number;
     inputRef: React.Ref<HTMLInputElement>;
     onKeyDown: React.KeyboardEventHandler<HTMLInputElement>;
+    isMobile: boolean;
 }
 
-const ItemDescriptionField: React.FC<ItemDescriptionFieldProps> = React.memo(({ index, inputRef, onKeyDown }) => {
+const ItemDescriptionField: React.FC<ItemDescriptionFieldProps> = React.memo(({ index, inputRef, onKeyDown, isMobile }) => {
     const [field] = useField(`items[${index}].description`);
     return (
         <TextField
-            sx={{ width: '70%' }}
+            sx={{ width: '100%' }}
             id={`item-${index}-description`}
             {...field}
             label="Description"
             inputRef={inputRef}
             onKeyDown={onKeyDown}
-            size='small'
+            size="small"
         />
     );
 });

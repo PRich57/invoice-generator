@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { FieldArray } from 'formik';
-import { Box, IconButton, Tooltip } from '@mui/material';
-import { RemoveCircleOutline, DragHandle, AddCircleOutline } from '@mui/icons-material';
+import { Box, Button, Collapse, IconButton, Stack, Tooltip, Typography } from '@mui/material';
+import { RemoveCircleOutline, DragHandle, AddCircleOutline, ExpandLess, ExpandMore } from '@mui/icons-material';
 import { InvoiceItemCreate } from '../../../types';
 import SubitemFields from './SubitemFields';
 import ItemDescriptionField from './ItemDescriptionField';
@@ -18,10 +18,11 @@ interface InvoiceItemFieldsProps {
     index: number;
     remove: (index: number) => void;
     totalItems: number;
+    isMobile: boolean;
 }
 
 const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = React.memo(
-    ({ id, index, remove, totalItems }) => {
+    ({ id, index, remove, totalItems, isMobile }) => {
         // Refs for Main Item Fields
         const descriptionRef = useRef<HTMLInputElement>(null);
         const quantityRef = useRef<HTMLInputElement>(null);
@@ -30,6 +31,7 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = React.memo(
 
         // DnD Kit sortable setup
         const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+        const [expanded, setExpanded] = React.useState(!isMobile);
 
         const style = {
             transform: CSS.Transform.toString(transform),
@@ -48,6 +50,10 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = React.memo(
             const element = document.getElementById(id);
             element?.focus();
         }, []);
+
+        const handleToggleExpand = () => {
+            setExpanded(!expanded);
+        };
 
         return (
             <div ref={setNodeRef} style={style} {...attributes}>
@@ -142,41 +148,30 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = React.memo(
                             }, 0);
                         };
 
+                        console.log(descriptionRef);
+
                         const label = totalItems <= 1 ? `Cannot delete the only item` : `Remove Item ${index + 1}`
 
                         return (
-                            <Box mb={0}>
-                                <Box display="flex" alignItems="center" mt={1} mb={0}>
-                                    {/* Drag Handle */}
-                                    <Tooltip title='Drag and Drop' placement='top' arrow>
-                                        <IconButton {...listeners} sx={{ cursor: 'grab' }}>
+                            <Box mb={2} border={1} borderColor="divider" borderRadius={2} p={2}>
+                                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+                                    <Box display="flex" alignItems="center">
+                                        <IconButton {...listeners} sx={{ cursor: 'grab', mr: 1 }}>
                                             <DragHandle sx={{ opacity: '30%' }} />
                                         </IconButton>
-                                    </Tooltip>
-                                    {/* Rest of the item fields */}
-                                    <ItemDescriptionField
-                                        index={index}
-                                        inputRef={descriptionRef}
-                                        onKeyDown={handleItemDescriptionKeyDown}
-                                    />
-                                    <ItemQuantityField
-                                        index={index}
-                                        inputRef={quantityRef}
-                                        focusElementById={focusElementById}
-                                    />
-                                    <ItemUnitPriceField
-                                        index={index}
-                                        inputRef={unitPriceRef}
-                                        focusElementById={focusElementById}
-                                    />
-                                    <ItemDiscountField
-                                        index={index}
-                                        inputRef={discountRef}
-                                        focusElementById={focusElementById}
-                                        totalItems={totalItems}
-                                        insert={insert}
-                                    />
+                                        <Typography variant="subtitle1">
+                                            {item.description.trim() === ""
+                                                ? `Item ${index + 1}`
+                                                : item.description.length > 20
+                                                    ? `${item.description.slice(0, 20)}...`
+                                                    : item.description
+                                            }
+                                        </Typography>
+                                    </Box>
                                     <Box>
+                                        <IconButton onClick={handleToggleExpand} size="small">
+                                            {expanded ? <ExpandLess /> : <ExpandMore />}
+                                        </IconButton>
                                         <Tooltip title={label} placement='right' arrow>
                                             <span>
                                                 <IconButton
@@ -197,19 +192,66 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = React.memo(
                                                 </IconButton>
                                             </span>
                                         </Tooltip>
-                                        <Tooltip title='Add Subitem' placement='right' arrow>
-                                            <IconButton onClick={handleAddSubitem} size="small">
-                                                <AddCircleOutline fontSize="small" sx={{ opacity: '70%' }} color='secondary' />
-                                            </IconButton>
-                                        </Tooltip>
                                     </Box>
-                                </Box>
-                                {item.subitems && item.subitems.length > 0 && (
-                                    <SubitemFields
-                                        parentIndex={index}
-                                        focusElementById={focusElementById}
-                                    />
-                                )}
+                                </Stack>
+                                <Collapse in={expanded}>
+                                    <Stack spacing={2}>
+                                        <Stack direction={isMobile ? "column" : "row"} spacing={2} alignItems="flex-start">
+                                            <Box width={isMobile ? "100%" : "60%"}>
+                                                <ItemDescriptionField
+                                                    index={index}
+                                                    inputRef={descriptionRef}
+                                                    onKeyDown={handleItemDescriptionKeyDown}
+                                                    isMobile={isMobile}
+                                                />
+                                            </Box>
+                                            <Box width={isMobile ? "100%" : "10%"}>
+                                                <ItemQuantityField
+                                                    index={index}
+                                                    inputRef={quantityRef}
+                                                    focusElementById={focusElementById}
+                                                    isMobile={isMobile}
+                                                />
+                                            </Box>
+                                            <Box width={isMobile ? "100%" : "15%"}>
+                                                <ItemUnitPriceField
+                                                    index={index}
+                                                    inputRef={unitPriceRef}
+                                                    focusElementById={focusElementById}
+                                                    isMobile={isMobile}
+                                                />
+                                            </Box>
+                                            <Box width={isMobile ? "100%" : "15%"}>
+                                                <ItemDiscountField
+                                                    index={index}
+                                                    inputRef={discountRef}
+                                                    focusElementById={focusElementById}
+                                                    totalItems={totalItems}
+                                                    insert={insert}
+                                                    isMobile={isMobile}
+                                                />
+                                            </Box>
+                                        </Stack>
+                                        {item.subitems && item.subitems.length > 0 && (
+                                            <SubitemFields
+                                                parentIndex={index}
+                                                focusElementById={focusElementById}
+                                                isMobile={isMobile}
+                                            />
+                                        )}
+                                        <Box display="flex" justifyContent="flex-end">
+                                            <Button
+                                                startIcon={<AddCircleOutline />}
+                                                onClick={handleAddSubitem}
+                                                variant="text"
+                                                color="secondary"
+                                                size="small"
+                                            >
+                                                Add Subitem
+                                            </Button>
+                                        </Box>
+                                    </Stack>
+                                </Collapse>
                             </Box>
                         );
                     }}

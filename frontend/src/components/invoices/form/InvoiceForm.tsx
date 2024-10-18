@@ -54,6 +54,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     isPDFGenerating,
     selectedTemplate,
     isEditing,
+    isMobile
 }) => {
     const formik = useFormikContext<InvoiceCreate>();
     const { enqueueSnackbar } = useSnackbar();
@@ -159,11 +160,11 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             return item;
         });
         formik.setFieldValue('items', updatedItems);
-    }, []);    
+    }, []);
 
     return (
         <Box component="form" onSubmit={formik.handleSubmit}>
-            <Stack spacing={2}>
+            <Stack spacing={isMobile ? 2 : 3}>
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                     <TextField
                         fullWidth
@@ -184,7 +185,14 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                                 formik.values.invoice_date ? dayjs(formik.values.invoice_date) : null
                             }
                             onChange={handleDateChange}
-                            slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+                            slotProps={{
+                                textField: {
+                                    fullWidth: true,
+                                    size: "small",
+                                    error: formik.touched.invoice_date && Boolean(formik.errors.invoice_date),
+                                    helperText: formik.touched.invoice_date && formik.errors.invoice_date,
+                                }
+                            }}
                         />
                     </LocalizationProvider>
                 </Stack>
@@ -244,7 +252,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                     <Typography variant="h6" gutterBottom>
                         Invoice Items
                     </Typography>
-                    <KeybindGuide />
+                    {!isMobile && <KeybindGuide />}
                 </Box>
 
                 <FieldArray name="items">
@@ -259,7 +267,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                                     items={formik.values.items.map((item, index) => item.id ?? index)}
                                     strategy={verticalListSortingStrategy}
                                 >
-                                    <Stack spacing={1}>
+                                    <Stack spacing={isMobile ? 3 : 1}>
                                         {formik.values.items.map((item, index) => (
                                             <InvoiceItemFields
                                                 key={item.id ?? index}
@@ -267,6 +275,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                                                 index={index}
                                                 remove={remove}
                                                 totalItems={formik.values.items.length}
+                                                isMobile={isMobile}
                                             />
                                         ))}
                                     </Stack>
@@ -274,13 +283,13 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                             </DndContext>
 
                             {/* Add Item Button */}
-                            <Box display="flex" justifyContent="center" mt={0}>
-                                <Tooltip 
-                                    title='Add Item' 
-                                    placement='right' 
-                                    arrow 
-                                    sx={{ 
-                                        opacity: '70%',
+                            <Box display="flex" justifyContent="center" mt={2}>
+                                <Tooltip
+                                    title='Add Item'
+                                    placement='right'
+                                    arrow
+                                    sx={{
+                                        opacity: '100%',
                                     }}
                                 >
                                     <IconButton
@@ -374,13 +383,15 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 </FormControl>
 
                 {/* Action Buttons */}
-                <Stack direction="row" spacing={2}>
+                <Stack direction={isMobile ? "column" : "row"} spacing={2}>
                     {isAuthenticated && (
                         <Button
                             type="submit"
                             variant="contained"
                             color="primary"
                             disabled={isSubmitting}
+                            fullWidth={isMobile}
+                            size={isMobile ? "medium" : "large"}
                         >
                             {isSubmitting ? 'Submitting...' : 'Save Invoice'}
                         </Button>
@@ -390,6 +401,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         variant="outlined"
                         color="secondary"
                         disabled={isPDFGenerating || !selectedTemplate}
+                        fullWidth={isMobile}
+                        size={isMobile ? "medium" : "large"}
                     >
                         {isPDFGenerating ? 'Generating PDF...' : 'PDF Preview'}
                     </Button>
@@ -399,6 +412,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                             variant="outlined"
                             color="primary"
                             disabled={isSubmitting}
+                            fullWidth={isMobile}
+                            size={isMobile ? "medium" : "large"}
                         >
                             {isSubmitting ? 'Submitting...' : 'Save as New'}
                         </Button>

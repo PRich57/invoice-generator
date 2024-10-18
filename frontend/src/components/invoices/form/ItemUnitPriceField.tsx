@@ -6,9 +6,10 @@ interface ItemUnitPriceFieldProps {
     index: number;
     inputRef: React.Ref<HTMLInputElement>;
     focusElementById: (id: string) => void;
+    isMobile: boolean;
 }
 
-const ItemUnitPriceField: React.FC<ItemUnitPriceFieldProps> = React.memo(({ index, inputRef, focusElementById }) => {
+const ItemUnitPriceField: React.FC<ItemUnitPriceFieldProps> = React.memo(({ index, inputRef, focusElementById, isMobile }) => {
     const [field, , helpers] = useField(`items[${index}].unit_price`);
 
     const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -48,10 +49,10 @@ const ItemUnitPriceField: React.FC<ItemUnitPriceFieldProps> = React.memo(({ inde
             onChange={(e) => helpers.setValue(Number(e.target.value))}
             onKeyDown={handleKeyDown}
             inputRef={inputRef}
-            sx={{ width: '12%' }}
+            sx={{ width: '100%' }}
             slotProps={{ inputLabel: { shrink: true } }}
             startAdornment="$"
-            size='small'
+            size="small"
         />
     );
 });

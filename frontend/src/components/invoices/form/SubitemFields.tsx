@@ -4,7 +4,6 @@ import { TextField, Box, IconButton, Tooltip } from '@mui/material';
 import { RemoveCircleOutline, DragHandle, AddCircleOutline } from '@mui/icons-material';
 import { InvoiceItemCreate, InvoiceSubItemCreate, InvoiceCreate } from '../../../types';
 
-// Import DnD Kit components
 import {
     DndContext,
     closestCenter,
@@ -26,14 +25,14 @@ import { CSS } from '@dnd-kit/utilities';
 interface SubitemFieldsProps {
     parentIndex: number;
     focusElementById: (id: string) => void;
+    isMobile: boolean;
 }
 
 const SubitemFields: React.FC<SubitemFieldsProps> = React.memo(
-    ({ parentIndex, focusElementById }) => {
+    ({ parentIndex, focusElementById, isMobile }) => {
         const [{ value: item }] = useField<InvoiceItemCreate>(`items[${parentIndex}]`);
         const form = useFormikContext<InvoiceCreate>();
 
-        // DnD Kit sensors
         const sensors = useSensors(
             useSensor(PointerSensor, {
                 activationConstraint: {
@@ -64,13 +63,11 @@ const SubitemFields: React.FC<SubitemFieldsProps> = React.memo(
                 const overIndex = destinationSubitems.findIndex((subitem) => subitem.id === over.id);
 
                 if (sourceParentIndex === destinationParentIndex) {
-                    // Reordering within the same subitem list
                     if (activeIndex !== overIndex) {
                         const newSubitems = arrayMove(sourceSubitems, activeIndex, overIndex);
                         form.setFieldValue(`items[${sourceParentIndex}].subitems`, newSubitems);
                     }
                 } else {
-                    // Moving between different subitem lists
                     const [movedSubitem] = sourceSubitems.splice(activeIndex, 1);
                     destinationSubitems.splice(overIndex + 1, 0, movedSubitem);
 
@@ -85,7 +82,6 @@ const SubitemFields: React.FC<SubitemFieldsProps> = React.memo(
                 {({ form }) => {
                     const subitems = item.subitems || [];
 
-                    // Handler to add a new subitem
                     const handleAddSubitem = () => {
                         const newSubitem: InvoiceSubItemCreate = {
                             id: Date.now(),
@@ -121,6 +117,7 @@ const SubitemFields: React.FC<SubitemFieldsProps> = React.memo(
                                             subIndex={subIndex}
                                             form={form}
                                             focusElementById={focusElementById}
+                                            isMobile={isMobile}
                                         />
                                     ))}
                                 </Box>
@@ -139,6 +136,7 @@ interface SortableSubitemFieldProps {
     subIndex: number;
     form: any;
     focusElementById: (id: string) => void;
+    isMobile: boolean;
 }
 
 const SortableSubitemField: React.FC<SortableSubitemFieldProps> = ({
@@ -147,8 +145,8 @@ const SortableSubitemField: React.FC<SortableSubitemFieldProps> = ({
     subIndex,
     form,
     focusElementById,
+    isMobile,
 }) => {
-    // DnD Kit sortable setup
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
         id: subitem.id ?? `subitem-${parentIndex}-${subIndex}`,
     });
@@ -178,16 +176,13 @@ const SortableSubitemField: React.FC<SortableSubitemFieldProps> = ({
         } else if (event.ctrlKey && event.code === 'Space') {
             event.preventDefault();
 
-            // Remove the subitem from subitems
             const newSubitems = subitems.filter((_: any, i: number) => i !== subIndex);
 
-            // Create updated parent item with new subitems
             const updatedParentItem = {
                 ...form.values.items[parentIndex],
                 subitems: newSubitems,
             };
 
-            // Create new item from subitem
             const newItem: InvoiceItemCreate = {
                 id: Date.now(),
                 description: subitem.description,
@@ -197,7 +192,6 @@ const SortableSubitemField: React.FC<SortableSubitemFieldProps> = ({
                 subitems: [],
             };
 
-            // Build new items array
             const items = form.values.items as InvoiceItemCreate[];
             const newItems = [
                 ...items.slice(0, parentIndex),
@@ -206,10 +200,8 @@ const SortableSubitemField: React.FC<SortableSubitemFieldProps> = ({
                 ...items.slice(parentIndex + 1),
             ];
 
-            // Update the items array in the form
             form.setFieldValue('items', newItems);
 
-            // Focus on the new item's description field
             setTimeout(() => {
                 const newItemIndex = parentIndex + 1;
                 focusElementById(`item-${newItemIndex}-description`);
@@ -255,13 +247,12 @@ const SortableSubitemField: React.FC<SortableSubitemFieldProps> = ({
         <Box
             display="flex"
             alignItems="center"
-            gap={1}
+            gap={0}
             mt={1}
             ref={setNodeRef}
             style={style}
             {...attributes}
         >
-            {/* Drag Handle */}
             <IconButton {...listeners} sx={{ cursor: 'grab' }}>
                 <DragHandle sx={{ opacity: '30%' }} />
             </IconButton>
@@ -285,8 +276,9 @@ const SortableSubitemField: React.FC<SortableSubitemFieldProps> = ({
                         form.setFieldValue(`items[${parentIndex}].subitems`, newSubitems);
                     }}
                     aria-label={`Remove Subitem ${subIndex + 1}`}
+                    size="small"
                 >
-                    <RemoveCircleOutline fontSize='small' sx={{ opacity: '70%' }} color={'error'} />
+                    <RemoveCircleOutline fontSize="small" sx={{ opacity: '70%' }} color={'error'} />
                 </IconButton>
             </Tooltip>
         </Box>

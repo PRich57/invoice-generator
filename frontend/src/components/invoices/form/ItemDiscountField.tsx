@@ -8,9 +8,10 @@ interface ItemDiscountFieldProps {
     focusElementById: (id: string) => void;
     totalItems: number;
     insert: (index: number, value: any) => void;
+    isMobile: boolean;
 }
 
-const ItemDiscountField: React.FC<ItemDiscountFieldProps> = React.memo(({ index, inputRef, focusElementById, totalItems, insert }) => {
+const ItemDiscountField: React.FC<ItemDiscountFieldProps> = React.memo(({ index, inputRef, focusElementById, totalItems, insert, isMobile }) => {
     const [field, , helpers] = useField(`items[${index}].discount_percentage`);
 
     const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -73,10 +74,10 @@ const ItemDiscountField: React.FC<ItemDiscountFieldProps> = React.memo(({ index,
             onChange={(e) => helpers.setValue(Number(e.target.value))}
             onKeyDown={handleKeyDown}
             inputRef={inputRef}
-            sx={{ width: '10%' }}
+            sx={{ width: '100%' }}
             slotProps={{ inputLabel: { shrink: true } }}
             endAdornment="%"
-            size='small'
+            size="small"
         />
     );
 });
