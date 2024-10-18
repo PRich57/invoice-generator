@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
     TextField,
     Button,
@@ -54,7 +54,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     isPDFGenerating,
     selectedTemplate,
     isEditing,
-    isMobile
+    isMobile,
 }) => {
     const formik = useFormikContext<InvoiceCreate>();
     const { enqueueSnackbar } = useSnackbar();
@@ -70,49 +70,64 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
         useSensor(KeyboardSensor)
     );
 
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
+    const handleDragEnd = useCallback(
+        (event: DragEndEvent) => {
+            const { active, over } = event;
 
-        if (active.id !== over?.id && over) {
-            const oldIndex = formik.values.items.findIndex(
-                (item) => item.id?.toString() === active.id.toString()
-            );
-            const newIndex = formik.values.items.findIndex(
-                (item) => item.id?.toString() === over.id.toString()
-            );
+            if (active.id !== over?.id && over) {
+                const oldIndex = formik.values.items.findIndex(
+                    (item) => item.id?.toString() === active.id.toString()
+                );
+                const newIndex = formik.values.items.findIndex(
+                    (item) => item.id?.toString() === over.id.toString()
+                );
 
-            if (oldIndex !== -1 && newIndex !== -1) {
-                const updatedItems = arrayMove(formik.values.items, oldIndex, newIndex);
-                formik.setFieldValue('items', updatedItems);
+                if (oldIndex !== -1 && newIndex !== -1) {
+                    const updatedItems = arrayMove(formik.values.items, oldIndex, newIndex);
+                    formik.setFieldValue('items', updatedItems);
+                }
             }
-        }
-    };
+        },
+        [formik]
+    );
 
-    const handleTemplateChange = (event: SelectChangeEvent<string>) => {
-        const value = event.target.value;
-        const templateId = value === '' ? null : Number(value);
-        formik.setFieldValue('template_id', templateId);
-        const selected = templates.find((t) => t.id === templateId) || null;
-        setSelectedTemplate(selected);
-    };
+    const handleTemplateChange = useCallback(
+        (event: SelectChangeEvent<string>) => {
+            const value = event.target.value;
+            const templateId = value === '' ? null : Number(value);
+            formik.setFieldValue('template_id', templateId);
+            const selected = templates.find((t) => t.id === templateId) || null;
+            setSelectedTemplate(selected);
+        },
+        [formik, templates, setSelectedTemplate]
+    );
 
-    const handleBillToChange = (event: SelectChangeEvent<string>) => {
-        const value = event.target.value;
-        const billToId = value === '' ? null : Number(value);
-        formik.setFieldValue('bill_to_id', billToId);
-    };
+    const handleBillToChange = useCallback(
+        (event: SelectChangeEvent<string>) => {
+            const value = event.target.value;
+            const billToId = value === '' ? null : Number(value);
+            formik.setFieldValue('bill_to_id', billToId);
+        },
+        [formik]
+    );
 
-    const handleSendToChange = (event: SelectChangeEvent<string>) => {
-        const value = event.target.value;
-        const sendToId = value === '' ? null : Number(value);
-        formik.setFieldValue('send_to_id', sendToId);
-    };
+    const handleSendToChange = useCallback(
+        (event: SelectChangeEvent<string>) => {
+            const value = event.target.value;
+            const sendToId = value === '' ? null : Number(value);
+            formik.setFieldValue('send_to_id', sendToId);
+        },
+        [formik]
+    );
 
-    const handleDateChange = (newValue: dayjs.Dayjs | null) => {
-        if (newValue) {
-            formik.setFieldValue('invoice_date', formatDateForAPI(newValue.toDate()));
-        }
-    };
+    const handleDateChange = useCallback(
+        (newValue: dayjs.Dayjs | null) => {
+            if (newValue) {
+                formik.setFieldValue('invoice_date', formatDateForAPI(newValue.toDate()));
+            }
+        },
+        [formik]
+    );
 
     const handleSaveAsNew = async () => {
         try {
@@ -155,7 +170,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     useEffect(() => {
         const updatedItems = formik.values.items.map((item) => {
             if (!item.id) {
-                return { ...item, id: Date.now() };
+                return { ...item, id: Date.now() + Math.random() };
             }
             return item;
         });
@@ -188,10 +203,13 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                             slotProps={{
                                 textField: {
                                     fullWidth: true,
-                                    size: "small",
-                                    error: formik.touched.invoice_date && Boolean(formik.errors.invoice_date),
-                                    helperText: formik.touched.invoice_date && formik.errors.invoice_date,
-                                }
+                                    size: 'small',
+                                    error:
+                                        formik.touched.invoice_date &&
+                                        Boolean(formik.errors.invoice_date),
+                                    helperText:
+                                        formik.touched.invoice_date && formik.errors.invoice_date,
+                                },
                             }}
                         />
                     </LocalizationProvider>
@@ -256,7 +274,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 </Box>
 
                 <FieldArray name="items">
-                    {({ push, remove }) => (
+                    {({ push, remove, insert }) => (
                         <>
                             <DndContext
                                 sensors={sensors}
@@ -274,8 +292,12 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                                                 id={item.id ?? index}
                                                 index={index}
                                                 remove={remove}
+                                                insert={insert}
                                                 totalItems={formik.values.items.length}
                                                 isMobile={isMobile}
+                                                item={item}
+                                                items={formik.values.items}
+                                                setFieldValue={formik.setFieldValue}
                                             />
                                         ))}
                                     </Stack>
@@ -285,18 +307,18 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                             {/* Add Item Button */}
                             <Box display="flex" justifyContent="center" mt={2}>
                                 <Tooltip
-                                    title='Add Item'
-                                    placement='right'
+                                    title="Add Item"
+                                    placement="right"
                                     arrow
                                     sx={{
                                         opacity: '100%',
                                     }}
                                 >
                                     <IconButton
-                                        aria-label='Add Item'
+                                        aria-label="Add Item"
                                         onClick={() =>
                                             push({
-                                                id: Date.now(),
+                                                id: Date.now() + Math.random(),
                                                 description: '',
                                                 quantity: 1,
                                                 unit_price: 0,
@@ -305,7 +327,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                                             })
                                         }
                                     >
-                                        <AddCircleOutline color='secondary' fontSize='small' />
+                                        <AddCircleOutline color="secondary" fontSize="small" />
                                     </IconButton>
                                 </Tooltip>
                             </Box>
@@ -383,7 +405,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 </FormControl>
 
                 {/* Action Buttons */}
-                <Stack direction={isMobile ? "column" : "row"} spacing={2}>
+                <Stack direction={isMobile ? 'column' : 'row'} spacing={2}>
                     {isAuthenticated && (
                         <Button
                             type="submit"
@@ -391,7 +413,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                             color="primary"
                             disabled={isSubmitting}
                             fullWidth={isMobile}
-                            size={isMobile ? "medium" : "large"}
+                            size={isMobile ? 'medium' : 'large'}
                         >
                             {isSubmitting ? 'Submitting...' : 'Save Invoice'}
                         </Button>
@@ -402,7 +424,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         color="secondary"
                         disabled={isPDFGenerating || !selectedTemplate}
                         fullWidth={isMobile}
-                        size={isMobile ? "medium" : "large"}
+                        size={isMobile ? 'medium' : 'large'}
                     >
                         {isPDFGenerating ? 'Generating PDF...' : 'PDF Preview'}
                     </Button>
@@ -413,7 +435,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                             color="primary"
                             disabled={isSubmitting}
                             fullWidth={isMobile}
-                            size={isMobile ? "medium" : "large"}
+                            size={isMobile ? 'medium' : 'large'}
                         >
                             {isSubmitting ? 'Submitting...' : 'Save as New'}
                         </Button>
@@ -424,4 +446,4 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     );
 };
 
-export default InvoiceForm;
+export default React.memo(InvoiceForm);

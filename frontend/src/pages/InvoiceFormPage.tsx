@@ -39,21 +39,26 @@ const InvoiceFormPage: React.FC = () => {
 
     if (isLoading || contactsLoading) return <LoadingSpinner />;
     if (contactsError) {
-        enqueueSnackbar("Failed to load contacts. Please try again.",
-            { variant: 'error' }
-        );
+        enqueueSnackbar('Failed to load contacts. Please try again.', { variant: 'error' });
     }
 
     return (
         <FormikProvider value={formik}>
             <Box sx={{ p: isMobile ? 2 : 3 }}>
-                <Typography variant={isMobile ? "h5" : "h4"} gutterBottom color="primary" sx={{ mb: 3 }}>
+                <Typography
+                    variant={isMobile ? 'h5' : 'h4'}
+                    gutterBottom
+                    color="primary"
+                    sx={{ mb: 3 }}
+                >
                     {id ? 'Edit Invoice' : 'Create New Invoice'}
                 </Typography>
-                <Box sx={{
-                    display: 'flex',
-                    flexDirection: { xs: 'column', lg: 'row' },
-                }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', lg: 'row' },
+                    }}
+                >
                     <Box sx={{ flex: 1, pr: { lg: 2 } }}>
                         <InvoiceForm
                             contacts={contacts}
@@ -69,16 +74,22 @@ const InvoiceFormPage: React.FC = () => {
                         />
                     </Box>
                     {!isMobile && selectedTemplate && (
-                        <Box sx={{
-                            flex: 1,
-                            pl: { lg: 2 },
-                            display: { xs: 'none', lg: 'block' }
-                        }}>
+                        <Box
+                            sx={{
+                                flex: 1,
+                                pl: { lg: 2 },
+                                display: { xs: 'none', lg: 'block' },
+                            }}
+                        >
                             <InvoicePreview
                                 invoice={formik.values}
                                 template={selectedTemplate}
-                                billToContact={contacts.find(c => c.id === formik.values.bill_to_id) || null}
-                                sendToContact={contacts.find(c => c.id === formik.values.send_to_id) || null}
+                                billToContact={
+                                    contacts.find((c) => c.id === formik.values.bill_to_id) || null
+                                }
+                                sendToContact={
+                                    contacts.find((c) => c.id === formik.values.send_to_id) || null
+                                }
                             />
                         </Box>
                     )}
