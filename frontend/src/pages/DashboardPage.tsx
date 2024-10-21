@@ -11,10 +11,11 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useContacts } from '../hooks/useContacts';
-import { useInvoices } from '../hooks/useInvoices';
+import { useDashboard } from '../hooks/useDashboard';
 import { useTemplates } from '../hooks/useTemplates';
 import { formatCurrency } from '../utils/currencyFormatter';
 import { formatDateForDisplay } from '../utils/dateFormatter';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const Dashboard: React.FC = () => {
     const { isAuthenticated } = useAuth();
@@ -23,8 +24,9 @@ const Dashboard: React.FC = () => {
         invoiceTotals,
         invoiceCounts,
         recentInvoices,
-        getPaidInvoices
-    } = useInvoices();
+        getPaidInvoices,
+        loading
+    } = useDashboard();
     const { templateCount } = useTemplates();
 
     const [paidInvoicesPeriod, setPaidInvoicesPeriod] = useState<'30' | '60' | '90' | 'all'>('30');
@@ -62,7 +64,7 @@ const Dashboard: React.FC = () => {
             <Typography component="h2" variant="h6" color="primary" gutterBottom>{title}</Typography>
             <Typography component="p" variant="h4" sx={{ mb: 2 }}>{count}</Typography>
             <Typography color="text.secondary" sx={{ flex: 1, mb: 1 }}>
-                {isAuthenticated ? 'Active items' : 'Try our free invoice generator'}
+                {isAuthenticated ? 'Total items' : 'Try our free invoice generator'}
             </Typography>
             <Button
                 variant='contained'
@@ -106,11 +108,12 @@ const Dashboard: React.FC = () => {
         </Box>
     );
 
+    if (loading) return <LoadingSpinner />;
+
     return (
         <Box mb={2}>
             <Typography variant="h4" color="primary">Dashboard</Typography>
             <Box sx={{ p: { xs: 2, sm: 3 }, pb: { xs: 10, sm: 3 } }}>
-
                 {isAuthenticated ? (
                     <>
                         <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
