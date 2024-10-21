@@ -92,7 +92,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
                 <TableBody>
                     {invoices.map((invoice) => (
                         <TableRow key={invoice.id}>
-                            <TableCell>{invoice.invoice_number}</TableCell>
+                            <TableCell>#{invoice.invoice_number}</TableCell>
                             <TableCell>{dayjs(invoice.invoice_date).format('MM/DD/YYYY')}</TableCell>
                             <TableCell>{contacts[invoice.bill_to_id] || 'Unknown'}</TableCell>
                             <TableCell>{formatCurrency(invoice.total)}</TableCell>

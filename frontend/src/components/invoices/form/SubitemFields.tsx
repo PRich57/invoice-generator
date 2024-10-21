@@ -119,7 +119,7 @@ const SortableSubitemField: React.FC<SortableSubitemFieldProps> = ({
         if (event.key === 'Enter') {
             event.preventDefault();
             const newSubitem: InvoiceSubItemCreate = {
-                id: Date.now() + Math.random(),
+                id: Math.floor(Date.now() + Math.random()),
                 description: '',
             };
             const newSubitems = [
@@ -139,7 +139,7 @@ const SortableSubitemField: React.FC<SortableSubitemFieldProps> = ({
 
             // Create a new item from the subitem
             const newItem: InvoiceItemCreate = {
-                id: Date.now() + Math.random(),
+                id: Math.floor(Date.now() + Math.random()),
                 description: subitem.description,
                 quantity: 1,
                 unit_price: 0,

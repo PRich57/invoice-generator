@@ -1,3 +1,4 @@
+from decimal import Decimal
 from io import BytesIO
 
 from reportlab.lib import colors
@@ -15,6 +16,10 @@ from ...models.template import Template
 from ...schemas.invoice import InvoiceCreate
 from ..contact import crud as crud_contact
 from .crud import get_invoice
+
+
+def format_currency(amount: Decimal) -> str:
+    return f"${amount:,.2f}"
 
 
 def generate_pdf(invoice: Invoice, template: Template) -> bytes:
@@ -39,6 +44,8 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
         bottomMargin=template.layout['margin_bottom'] * inch,
         leftMargin=template.layout['margin_left'] * inch
     )
+    
+    available_width = doc.width
 
     styles = getSampleStyleSheet()
     
@@ -155,11 +162,11 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
         [Paragraph(f"#{invoice_number}", styles['InvoiceNumber'])],
         [Spacer(1, 20)],
         [Table([[Paragraph("Date:", styles['RightAligned']), Paragraph(formatted_date, styles['RightAligned'])]], 
-               colWidths=[1.5*inch, 1.75*inch],
+               colWidths=[(available_width / 2) * 0.4, (available_width / 2) * 0.6],
                style=[('ALIGN', (0, 0), (-1, -1), 'RIGHT')])],
         [Spacer(1, 10)],
-        [Table([[Paragraph("Balance Due:", styles['BalanceDue']), Paragraph(f"${total:.2f}", styles['BalanceDue'])]], 
-               colWidths=[1.5*inch, 1.75*inch],
+        [Table([[Paragraph("Balance Due:", styles['BalanceDue']), Paragraph(f"${total:,.2f}", styles['BalanceDue'])]], 
+               colWidths=[(available_width / 2) * 0.4, (available_width / 2) * 0.6],
                style=[
                    ('BACKGROUND', (0, 0), (-1, 0), "#cccccc"),
                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
@@ -172,8 +179,11 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
     ]
 
     # Combine left and right columns
-    header_data = [[Table(left_column, style=[('TOPPADDING', (0, 0), (-1, -1), -2)]), Table(right_column, style=[('TOPPADDING', (0, 0), (-1, -1), -3)])]]
-    header_table = Table(header_data, colWidths=[3.5*inch, 3.5*inch])
+    header_data = [[
+        Table(left_column, style=[('TOPPADDING', (0, 0), (-1, -1), -2)]),
+        Table(right_column, style=[('TOPPADDING', (0, 0), (-1, -1), -3)])
+    ]]
+    header_table = Table(header_data, colWidths=[available_width / 2, available_width / 2])
     header_table.setStyle(TableStyle([
         ('ALIGN', (0, 0), (0, 0), 'LEFT'),
         ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
@@ -191,9 +201,9 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
             description += f" ({item.discount_percentage}% Discount)"
         items_data.append([
             Paragraph(description, styles['ItemDescription']),
-            f"${item.unit_price:.2f}",
-            str(item.quantity),
-            f"${item.line_total:.2f}"
+            f"${item.unit_price:,.2f}",
+            f"{item.quantity:,.2f}",
+            f"${item.line_total:,.2f}"
         ])
         # Add subitems
         for subitem in item.subitems:
@@ -202,7 +212,12 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
                 '', '', ''
             ])
             
-    col_widths = [4*inch, 1*inch, 1*inch, 1*inch]
+    col_widths = [
+        available_width * 0.5,
+        available_width * 0.15,
+        available_width * 0.15,
+        available_width * 0.2,
+    ]
     items_table = Table(items_data, colWidths=col_widths)
     items_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), accent_color),
@@ -224,21 +239,25 @@ def generate_pdf(invoice: Invoice, template: Template) -> bytes:
 
     # Totals
     totals_data = [
-        ['', 'Subtotal:', f"${subtotal:.2f}"],
+        ['', 'Subtotal:', f"${subtotal:,.2f}"],
     ]
     
     if discount_percentage > 0:
         totals_data.extend([
-            ['', f"Discount ({discount_percentage}%):", f"-${discount_amount:.2f}"],
-            ['', 'Discounted Subtotal:', f"${discounted_subtotal:.2f}"],
+            ['', f"Discount ({discount_percentage}%):", f"-${discount_amount:,.2f}"],
+            ['', 'Discounted Subtotal:', f"${discounted_subtotal:,.2f}"],
         ])
     
     totals_data.extend([
-        ['', f"Tax ({invoice.tax_rate}%):", f"${tax:.2f}"],
-        ['', 'Total:', f"${total:.2f}"]
+        ['', f"Tax ({invoice.tax_rate}%):", f"${tax:,.2f}"],
+        ['', 'Total:', f"${total:,.2f}"]
     ])
     
-    totals_table = Table(totals_data, colWidths=[4*inch, 2*inch, 1*inch])
+    totals_table = Table(totals_data, colWidths=[
+        available_width * 0.5,
+        available_width * 0.3,
+        available_width * 0.2
+    ])
     totals_table.setStyle(TableStyle([
         ('ALIGN', (1, 0), (2, -1), 'RIGHT'),
         ('FONTNAME', (0, -1), (-1, -1), accent_font),

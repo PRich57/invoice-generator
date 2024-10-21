@@ -14,11 +14,10 @@ import { useSnackbar } from 'notistack';
 
 const InvoiceFormPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
     const { formik, isLoading, isSubmitting } = useInvoiceForm();
     const { contacts, error: contactsError, loading: contactsLoading } = useContacts();
-    const { templates, selectedTemplate, setSelectedTemplate } = useTemplates();
+    const { templates, selectedTemplate, setSelectedTemplate, loading: templatesLoading } = useTemplates();
     const { handlePreviewPDF, isGenerating: isPDFGenerating } = usePDFGeneration();
     const { enqueueSnackbar } = useSnackbar();
     const theme = useTheme();
@@ -71,6 +70,7 @@ const InvoiceFormPage: React.FC = () => {
                             selectedTemplate={selectedTemplate}
                             isEditing={!!id}
                             isMobile={isMobile}
+                            templatesLoading={templatesLoading}
                         />
                     </Box>
                     {!isMobile && selectedTemplate && (

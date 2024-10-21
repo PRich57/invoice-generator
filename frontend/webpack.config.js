@@ -72,10 +72,14 @@ module.exports = {
     },
     plugins: [
         new HtmlWebpackPlugin({
-            template: './public/index.html'
+            template: './public/index.html',
+            templateParameters: {
+                PLACES_API_KEY: env.PLACES_API_KEY,
+            }
         }),
         new webpack.DefinePlugin({
-            'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+            'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+            ...envKeys,
         }),
         new webpack.DefinePlugin(envKeys)
     ]

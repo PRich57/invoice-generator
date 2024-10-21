@@ -34,7 +34,7 @@ export const useInvoiceForm = () => {
                 subitems: [],
             },
         ],
-        template_id: 1,
+        template_id: null,
     };
 
     const { data: invoiceData, isLoading, refetch } = useFetch<Invoice | null>(
@@ -90,8 +90,8 @@ export const useInvoiceForm = () => {
                 invoice_date: invoiceData.invoice_date,
                 bill_to_id: invoiceData.bill_to_id,
                 send_to_id: invoiceData.send_to_id,
-                tax_rate: invoiceData.tax_rate,
-                discount_percentage: invoiceData.discount_percentage,
+                tax_rate: invoiceData.tax_rate || 0,
+                discount_percentage: invoiceData.discount_percentage || 0,
                 notes: invoiceData.notes || '',
                 items: invoiceData.items.map(item => ({
                     id: item.id,

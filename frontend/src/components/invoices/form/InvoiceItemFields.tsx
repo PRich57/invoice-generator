@@ -81,7 +81,7 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = React.memo(
                     event.preventDefault();
                     // Add new main item
                     insert(index + 1, {
-                        id: Date.now() + Math.random(),
+                        id: Math.floor(Date.now() + Math.random()),
                         description: '',
                         quantity: 1,
                         unit_price: 0,
@@ -148,7 +148,7 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = React.memo(
         // Handler for adding a subitem
         const handleAddSubitem = useCallback(() => {
             const newSubitem = {
-                id: Date.now() + Math.random(),
+                id: Math.floor(Date.now() + Math.random()),
                 description: '',
             };
             const updatedSubitems = [...(item.subitems || []), newSubitem];
@@ -231,18 +231,18 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = React.memo(
                                         isMobile={isMobile}
                                     />
                                 </Box>
-                                <Box width={isMobile ? '100%' : '10%'}>
-                                    <ItemQuantityField
-                                        index={index}
-                                        inputRef={quantityRef}
-                                        focusElementById={focusElementById}
-                                        isMobile={isMobile}
-                                    />
-                                </Box>
                                 <Box width={isMobile ? '100%' : '15%'}>
                                     <ItemUnitPriceField
                                         index={index}
                                         inputRef={unitPriceRef}
+                                        focusElementById={focusElementById}
+                                        isMobile={isMobile}
+                                    />
+                                </Box>
+                                <Box width={isMobile ? '100%' : '10%'}>
+                                    <ItemQuantityField
+                                        index={index}
+                                        inputRef={quantityRef}
                                         focusElementById={focusElementById}
                                         isMobile={isMobile}
                                     />

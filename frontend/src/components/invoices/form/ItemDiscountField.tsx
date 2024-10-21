@@ -73,7 +73,7 @@ const ItemDiscountField: React.FC<ItemDiscountFieldProps> = React.memo(
                     <NumericTextField
                         id={`item-${index}-discount_percentage`}
                         label="Discount (%)"
-                        placeholder={`${field.value}`}
+                        placeholder={`${field.value}.00%`}
                         value={field.value}
                         onChange={(e) => form.setFieldValue(field.name, Number(e.target.value))}
                         onKeyDown={handleKeyDown}

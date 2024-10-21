@@ -48,7 +48,7 @@ const ItemUnitPriceField: React.FC<ItemUnitPriceFieldProps> = React.memo(
                     <NumericTextField
                         id={`item-${index}-unit_price`}
                         label="Unit Price"
-                        placeholder={`${field.value}`}
+                        placeholder={`$${field.value}.00`}
                         value={field.value}
                         onChange={(e) => form.setFieldValue(field.name, Number(e.target.value))}
                         onKeyDown={handleKeyDown}

@@ -55,6 +55,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     selectedTemplate,
     isEditing,
     isMobile,
+    templatesLoading,
 }) => {
     const formik = useFormikContext<InvoiceCreate>();
     const { enqueueSnackbar } = useSnackbar();
@@ -170,12 +171,25 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     useEffect(() => {
         const updatedItems = formik.values.items.map((item) => {
             if (!item.id) {
-                return { ...item, id: Date.now() + Math.random() };
+                return { ...item, id: Math.floor(Date.now() + Math.random()) };
             }
             return item;
         });
         formik.setFieldValue('items', updatedItems);
     }, []);
+
+    useEffect(() => {
+        if (!templatesLoading && templates.length > 0 && !formik.values.template_id) {
+            const defaultTemplate = templates.find(t => t.id === 1) || templates[0];
+            formik.setFieldValue('template_id', defaultTemplate.id);
+            setSelectedTemplate(defaultTemplate);
+        }
+    }, [templatesLoading, templates, formik.values.template_id, formik.setFieldValue, setSelectedTemplate]);
+
+    const handleNumericChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = event.target.value;
+        formik.setFieldValue(field, value === '' ? 0 : Number(value));
+    };
 
     return (
         <Box component="form" onSubmit={formik.handleSubmit}>
@@ -318,7 +332,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                                         aria-label="Add Item"
                                         onClick={() =>
                                             push({
-                                                id: Date.now() + Math.random(),
+                                                id: Math.floor(Date.now() + Math.random()),
                                                 description: '',
                                                 quantity: 1,
                                                 unit_price: 0,
@@ -342,7 +356,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         value={formik.values.tax_rate}
                         name="tax_rate"
                         label="Tax Rate (%)"
-                        onChange={formik.handleChange}
+                        onChange={handleNumericChange('tax_rate')}
                         error={formik.touched.tax_rate && Boolean(formik.errors.tax_rate)}
                         helperText={formik.touched.tax_rate && formik.errors.tax_rate}
                         size="small"
@@ -353,7 +367,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         name="discount_percentage"
                         label="Discount (%)"
                         value={formik.values.discount_percentage}
-                        onChange={formik.handleChange}
+                        onChange={handleNumericChange('discount_percentage')}
                         error={
                             formik.touched.discount_percentage &&
                             Boolean(formik.errors.discount_percentage)
@@ -392,15 +406,17 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         onChange={handleTemplateChange}
                         error={formik.touched.template_id && Boolean(formik.errors.template_id)}
                         label="Template"
+                        disabled={templatesLoading}
                     >
-                        <MenuItem value="">
-                            <em>Select Template</em>
-                        </MenuItem>
-                        {templates.map((template) => (
-                            <MenuItem key={template.id} value={template.id.toString()}>
-                                {template.name}
-                            </MenuItem>
-                        ))}
+                        {templatesLoading ? (
+                            <MenuItem value="">Loading templates...</MenuItem>
+                        ) : (
+                            templates.map((template) => (
+                                <MenuItem key={template.id} value={template.id.toString()}>
+                                    {template.name}
+                                </MenuItem>
+                            ))
+                        )}
                     </Select>
                 </FormControl>
 

@@ -19,17 +19,6 @@ export const getInvoices = async (params: {
     invoice_type?: string;
     status?: string;
 }) => {
-
-    const cleanParams = Object.entries(params).reduce((acc, [key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-            if (Array.isArray(value) && value.length === 0) {
-                return acc;
-            }
-            acc[key] = value;
-        }
-        return acc;
-    }, {} as Record<string, any>);
-
     try {
         const response = await api.get<InvoiceListResponse>(API_ENDPOINTS.INVOICES, { params });
         return response.data;
@@ -67,7 +56,11 @@ export const getInvoice = async (id: number): Promise<Invoice> => {
 
 export const createInvoice = async (data: InvoiceCreate) => {
     try {
+        console.log(data);
+        
         const response = await api.post<Invoice>(API_ENDPOINTS.INVOICES, data);
+        console.log(response.data);
+        
         return response.data;
     } catch (error) {
         throw error;

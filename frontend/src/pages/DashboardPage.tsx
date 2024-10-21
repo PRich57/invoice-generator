@@ -45,7 +45,6 @@ const Dashboard: React.FC = () => {
     };
 
     useEffect(() => {
-        console.log(invoiceCounts)
         if (isAuthenticated) {
             getPaidInvoices(paidInvoicesPeriod);
         }
@@ -98,7 +97,7 @@ const Dashboard: React.FC = () => {
                 <Stack spacing={2}>
                     {invoices.map((invoice) => (
                         <Paper key={invoice.id} sx={{ p: 2 }}>
-                            <Typography variant="subtitle1">{invoice.invoice_number}</Typography>
+                            <Typography variant="subtitle1">#{invoice.invoice_number}</Typography>
                             <Typography variant="body2" color="text.secondary">Due: {formatDateForDisplay(invoice.invoice_date)}</Typography>
                             <Typography variant="h6" color="primary.main">{formatCurrency(invoice.total)}</Typography>
                         </Paper>

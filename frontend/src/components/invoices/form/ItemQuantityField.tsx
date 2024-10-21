@@ -47,9 +47,12 @@ const ItemQuantityField: React.FC<ItemQuantityFieldProps> = React.memo(({ index,
                 <NumericTextField
                     id={`item-${index}-quantity`}
                     label="Quantity"
-                    placeholder={`${field.value}`}
-                    value={field.value}
-                    onChange={(e) => form.setFieldValue(field.name, Number(e.target.value))}
+                    placeholder="1.00"
+                    value={field.value === 1 ? '' : field.value}
+                    onChange={(e) => {
+                        const newValue = e.target.value === '' ? 1 : Number(e.target.value);
+                        form.setFieldValue(field.name, newValue);
+                    }}
                     onKeyDown={handleKeyDown}
                     inputRef={inputRef}
                     sx={{ width: '100%' }}

@@ -109,6 +109,7 @@ export interface InvoiceFormProps {
     selectedTemplate: Template | null;
     isEditing: boolean;
     isMobile: boolean;
+    templatesLoading: boolean;
 }
 
 export type InvoiceFormErrors = {
