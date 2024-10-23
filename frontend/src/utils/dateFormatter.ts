@@ -20,3 +20,24 @@ export const formatDateForDisplay = (date: string | Date): string => {
 export const parseDate = (date: string | Date): Dayjs => {
     return dayjs(date);
 };
+
+// Function to get the first and last day of the current month in UTC
+export const getThisMonthRangeUTC = () => {
+    const now = dayjs.utc();
+
+    const start = now.startOf('month').format('YYYY-MM-DD');
+    const end = now.endOf('month').format('YYYY-MM-DD');
+
+    return { thisMonthStart: start, thisMonthEnd: end };
+};
+
+// Function to get the first and last day of the last month in UTC
+export const getLastMonthRangeUTC = () => {
+    const now = dayjs.utc();
+
+    const lastMonth = now.subtract(1, 'month');
+    const start = lastMonth.startOf('month').format('YYYY-MM-DD');
+    const end = lastMonth.endOf('month').format('YYYY-MM-DD');
+
+    return { lastMonthStart: start, lastMonthEnd: end };
+}

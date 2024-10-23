@@ -25,6 +25,8 @@ import MobileInvoiceFilters from '../components/invoices/MobileInvoiceFilters';
 import MobileGroupControls from '../components/invoices/MobileGroupControls';
 import { formatCurrency } from '../utils/currencyFormatter';
 import Pagination from '../components/common/CustomPagination';
+import { formatFilterLabel } from '../utils/filterFormatter';
+import { Add } from '@mui/icons-material';
 
 const InvoicesList: React.FC = () => {
     const navigate = useNavigate();
@@ -202,7 +204,7 @@ const InvoicesList: React.FC = () => {
                     color="primary"
                     onClick={() => navigate('/invoices/new')}
                 >
-                    Create New Invoice
+                    {!isMobile ? 'Create New Invoice' : <Add/>}
                 </Button>
             </Stack>
 

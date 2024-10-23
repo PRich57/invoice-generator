@@ -6,27 +6,19 @@ import {
     Typography,
     useTheme,
     useMediaQuery,
-    Chip,
-    Divider,
-    CircularProgress,
-    Fade,
-    Badge,
-    Tooltip,
-    Collapse,
+    Drawer,
     IconButton,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
+    Tooltip,
+    RadioGroup,
+    FormControlLabel,
+    Radio,
+    Chip,
 } from '@mui/material';
-import SwipeableDrawer from '@mui/material/SwipeableDrawer';
-import { TransitionGroup } from 'react-transition-group';
 import {
     GroupWork as GroupIcon,
     ArrowBack as ArrowBackIcon,
-    ExpandMore as ExpandMoreIcon,
-    DragIndicator as DragIndicatorIcon
+    Close as CloseIcon
 } from '@mui/icons-material';
-import GroupByComponent, { groupOptions } from './GroupByComponent';
 
 interface MobileGroupControlsProps {
     groupBy: string[];
@@ -34,124 +26,109 @@ interface MobileGroupControlsProps {
     isLoading?: boolean;
 }
 
+export const groupOptions = [
+    { value: 'bill_to', label: 'Bill To' },
+    { value: 'send_to', label: 'Send To' },
+    { value: 'month', label: 'Month' },
+    { value: 'year', label: 'Year' },
+    { value: 'status', label: 'Status' },
+    { value: 'client_type', label: 'Client Type' },
+    { value: 'invoice_type', label: 'Invoice Type' },
+];
+
 const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
     groupBy,
     onUpdateGrouping,
     isLoading = false
 }) => {
     const [drawerOpen, setDrawerOpen] = useState(false);
-    const [expanded, setExpanded] = useState(false);
+    const [isButtonHovered, setIsButtonHovered] = useState(false);
+    const [isBadgeHovered, setIsBadgeHovered] = useState(false);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const handleClearGroups = () => {
         onUpdateGrouping([]);
     };
-
-    // Get the label for the current group
+    
     const currentGroup = groupBy.length > 0 ? groupBy[0] : '';
-    const currentGroupLabel = groupOptions.find(opt => opt.value === currentGroup)?.label || '';
+    const currentGroupLabel = groupOptions.find(opt => opt.value === currentGroup)?.label;
+    
 
-    // Desktop view
-    if (!isMobile) {
-        return (
-            <Box width="30%">
-                <Accordion
-                    expanded={expanded}
-                    onChange={() => setExpanded(!expanded)}
-                    sx={{
-                        bgcolor: 'background.paper'
-                    }}
-                >
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography>
-                            {groupBy ? `Grouped by: ${currentGroupLabel}` : 'Group By'}
-                        </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                        <Stack spacing={2}>
-                            <GroupByComponent
-                                groupBy={groupBy}
-                                onUpdateGrouping={onUpdateGrouping}
-                            />
-                            {groupBy && (
-                                <Button
-                                    variant="text"
-                                    size="small"
-                                    onClick={handleClearGroups}
-                                    color="primary"
-                                >
-                                    Clear Grouping
-                                </Button>
-                            )}
-                        </Stack>
-                    </AccordionDetails>
-                </Accordion>
-            </Box>
-        );
-    }
-
-    // Mobile view
     return (
-        <Box mb={2}>
-            <Stack spacing={2}>
+        <Box>
+            <Tooltip
+                title={currentGroupLabel ? `Grouped by: ${currentGroupLabel}` : "Group Options"}
+                placement='top'
+                arrow
+                open={isButtonHovered && !isBadgeHovered}
+            >
                 <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    gap={1}
+                    sx={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setIsButtonHovered(true)}
+                    onMouseLeave={() => setIsButtonHovered(false)}
                 >
-                    <Tooltip title={currentGroupLabel ? `Grouped by: ${currentGroupLabel}` : "Group Options"}>
-                        <Badge
-                            badgeContent={groupBy.length}
-                            color="primary"
-                            sx={{
-                                '& .MuiBadge-badge': {
-                                    right: 4,
-                                    top: 4,
-                                }
-                            }}
+                    <Button
+                        variant="outlined"
+                        startIcon={<GroupIcon />}
+                        onClick={() => setDrawerOpen(true)}
+                        sx={{
+                            minWidth: 'auto',
+                            color: '#EEEEEE',
+                            borderColor: '#CCCCCC',
+                            borderRadius: '5px',
+                            borderWidth: '.1px',
+                            '&:hover': {
+                                borderColor: '#FFFFFF',
+                            }
+                        }}
+                    >
+                        {currentGroupLabel || 'Group By'}
+                    </Button>
+                    {currentGroupLabel && (
+                        <Tooltip
+                            title="Clear Group"
+                            placement='right'
+                            arrow
+                            open={isBadgeHovered}
                         >
-                            <Button
-                                variant="outlined"
-                                startIcon={<GroupIcon />}
-                                onClick={() => setDrawerOpen(true)}
-                                sx={{ minWidth: 'auto' }}
-                            >
-                                {currentGroupLabel || 'Group By'}
-                            </Button>
-                        </Badge>
-                    </Tooltip>
-                    {groupBy.length > 0 && (
-                        <Fade in>
-                            <Button
-                                variant="outlined"
+                            <IconButton
                                 size="small"
-                                onClick={handleClearGroups}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onUpdateGrouping([]);
+                                }}
+                                onMouseEnter={() => setIsBadgeHovered(true)}
+                                onMouseLeave={() => setIsBadgeHovered(false)}
                                 sx={{
-                                    whiteSpace: 'nowrap',
-                                    px: 2,
-                                    minWidth: 'auto',
-                                    height: '32px',
-                                    typography: 'body2',
+                                    position: 'absolute',
+                                    top: -8,
+                                    right: -8,
+                                    backgroundColor: theme.palette.primary.main,
+                                    color: theme.palette.primary.contrastText,
+                                    width: 20,
+                                    height: 20,
+                                    '&:hover': {
+                                        backgroundColor: theme.palette.primary.dark,
+                                    },
                                 }}
                             >
-                                Clear Group
-                            </Button>
-                        </Fade>
+                                <CloseIcon sx={{ fontSize: 14 }} />
+                            </IconButton>
+                        </Tooltip>
                     )}
                 </Box>
-            </Stack>
+            </Tooltip>
 
-            <SwipeableDrawer
+            <Drawer
                 anchor="right"
                 open={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
-                onOpen={() => setDrawerOpen(true)}
                 PaperProps={{
                     sx: {
-                        width: '400px',
-                        maxWidth: '90%',
+                        width: isMobile ? '90%' : '500px',
+                        maxWidth: '100%',
+                        p: 0,
                         zIndex: (theme) => theme.zIndex.drawer + 2,
                     }
                 }}
@@ -161,89 +138,66 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
                     }
                 }}
             >
-                <Box
-                    sx={{
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column'
-                    }}
-                >
-                    <Box
-                        sx={{
-                            p: 2,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            borderBottom: 1,
-                            borderColor: 'divider',
-                        }}
-                    >
-                        <Typography
-                            variant="h6"
-                            sx={{
-                                flexGrow: 1,
-                                color: 'text.primary',
-                            }}
-                        >
-                            Group By
+                <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                        <Typography variant="h6" sx={{ color: 'text.primary' }}>
+                            Group By:
                         </Typography>
-                        {groupBy && (
-                            <Button
-                                variant="text"
-                                size="small"
-                                onClick={handleClearGroups}
-                                sx={{
-                                    color: 'text.secondary',
-                                    '&:hover': {
-                                        bgcolor: 'action.hover',
-                                    }
-                                }}
-                            >
-                                Clear
-                            </Button>
-                        )}
                     </Box>
 
-                    <Box
-                        sx={{
-                            flexGrow: 1,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            px: 2,
-                            py: 2,
-                            '& .MuiFormControl-root': {
-                                mb: 0
-                            }
-                        }}
-                    >
-                        <GroupByComponent
-                            groupBy={groupBy}
-                            onUpdateGrouping={(value) => {
-                                onUpdateGrouping(value);
+                    <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 3, py: 2 }}>
+                        <RadioGroup
+                            value={currentGroup}
+                            onChange={(e) => {
+                                onUpdateGrouping([e.target.value]);
                                 setDrawerOpen(false);
                             }}
-                        />
-                        {!isLoading && (
-                            <Button
-                                startIcon={<ArrowBackIcon />}
-                                onClick={() => setDrawerOpen(false)}
-                                sx={{
-                                    color: 'text.secondary',
-                                    '&:hover': {
-                                        bgcolor: 'action.hover',
-                                    },
-                                    px: 1,
-                                    minWidth: 'auto',
-                                    mt: 2,
-                                    alignSelf: 'flex-start'
-                                }}
-                            >
-                                Back to list
-                            </Button>
-                        )}
+                        >
+                            {groupOptions.map((option) => (
+                                <FormControlLabel
+                                    key={option.value}
+                                    value={option.value}
+                                    control={<Radio />}
+                                    label={option.label}
+                                />
+                            ))}
+                        </RadioGroup>
+                        <Button
+                            startIcon={<ArrowBackIcon />}
+                            onClick={() => setDrawerOpen(false)}
+                            sx={{
+                                color: 'text.secondary',
+                                '&:hover': {
+                                    bgcolor: 'action.hover',
+                                },
+                                px: 1,
+                                minWidth: 'auto',
+                                mt: 2,
+                                alignSelf: 'flex-start'
+                            }}
+                        >
+                            Back to list
+                        </Button>
                     </Box>
 
-                    {/* Current grouping display */}
+                    {groupBy.length > 0 && (
+                        <Button
+                            variant="text"
+                            size="small"
+                            onClick={handleClearGroups}
+                            sx={{
+                                color: 'text.primary',
+                                '&:hover': {
+                                    bgcolor: 'action.hover',
+                                },
+                                borderRadius: '0'
+                            }}
+                        >
+                            Clear Group
+                        </Button>
+                    )}
+
+                    {/* Current group at bottom */}
                     {groupBy.length > 0 && (
                         <Box
                             sx={{
@@ -269,7 +223,7 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
                         </Box>
                     )}
                 </Box>
-            </SwipeableDrawer>
+            </Drawer>
         </Box>
     );
 };
