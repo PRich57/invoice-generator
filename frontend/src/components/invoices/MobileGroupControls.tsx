@@ -2,143 +2,152 @@ import React, { useState } from 'react';
 import {
     Box,
     Button,
-    Drawer,
     Stack,
     Typography,
     useTheme,
     useMediaQuery,
     Chip,
     Divider,
-    FormGroup,
-    FormControlLabel,
-    Checkbox
+    CircularProgress,
+    Fade,
+    Badge,
+    Tooltip,
+    Collapse,
+    IconButton,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
 } from '@mui/material';
-import { GroupWork as GroupIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import SwipeableDrawer from '@mui/material/SwipeableDrawer';
+import { TransitionGroup } from 'react-transition-group';
+import { 
+    GroupWork as GroupIcon, 
+    ArrowBack as ArrowBackIcon,
+    ExpandMore as ExpandMoreIcon,
+    DragIndicator as DragIndicatorIcon
+} from '@mui/icons-material';
+import GroupByComponent, { groupOptions } from './GroupByComponent';
 
 interface MobileGroupControlsProps {
-    groupBy: string[];
-    onUpdateGrouping: (value: string, checked: boolean) => void;
+    groupBy: string[]; 
+    onUpdateGrouping: (value: string[]) => void;
+    isLoading?: boolean;
 }
-
-const groupOptions = [
-    { value: 'bill_to', label: 'Bill To' },
-    { value: 'send_to', label: 'Send To' },
-    { value: 'month', label: 'Month' },
-    { value: 'year', label: 'Year' },
-    { value: 'status', label: 'Status' },
-    { value: 'client_type', label: 'Client Type' },
-    { value: 'invoice_type', label: 'Invoice Type' },
-];
 
 const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
     groupBy,
     onUpdateGrouping,
+    isLoading = false
 }) => {
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const [expanded, setExpanded] = useState(false);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-    if (!isMobile) {
-        return null;
-    }
-
     const handleClearGroups = () => {
-        groupBy.forEach(group => onUpdateGrouping(group, false));
+        onUpdateGrouping([]);
     };
 
+    // Get the label for the current group
+    const currentGroup = groupBy.length > 0 ? groupBy[0] : '';
+    const currentGroupLabel = groupOptions.find(opt => opt.value === currentGroup)?.label || '';
+
+    // Desktop view
+    if (!isMobile) {
+        return (
+            <Box width="30%">
+                <Accordion 
+                    expanded={expanded} 
+                    onChange={() => setExpanded(!expanded)}
+                    sx={{
+                        bgcolor: 'background.paper'
+                    }}
+                >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography>
+                            {groupBy ? `Grouped by: ${currentGroupLabel}` : 'Group By'}
+                        </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                        <Stack spacing={2}>
+                            <GroupByComponent
+                                groupBy={groupBy}
+                                onUpdateGrouping={onUpdateGrouping}
+                            />
+                            {groupBy && (
+                                <Button
+                                    variant="text"
+                                    size="small"
+                                    onClick={handleClearGroups}
+                                    color="primary"
+                                >
+                                    Clear Grouping
+                                </Button>
+                            )}
+                        </Stack>
+                    </AccordionDetails>
+                </Accordion>
+            </Box>
+        );
+    }
+
+    // Mobile view
     return (
         <Box mb={2}>
             <Stack spacing={2}>
-                {/* Group Button */}
                 <Box
                     display="flex"
                     justifyContent="space-between"
                     alignItems="center"
                     gap={1}
                 >
-                    <Box display="flex" gap={2} alignItems="center">
-                        <Button
-                            variant="outlined"
-                            startIcon={<GroupIcon />}
-                            onClick={() => setDrawerOpen(true)}
-                            sx={{ minWidth: 'auto' }}
+                    <Tooltip title={currentGroupLabel ? `Grouped by: ${currentGroupLabel}` : "Group Options"}>
+                        <Badge 
+                            badgeContent={groupBy.length} 
+                            color="primary"
+                            sx={{
+                                '& .MuiBadge-badge': {
+                                    right: 4,
+                                    top: 4,
+                                }
+                            }}
                         >
-                            Group By
-                        </Button>
-                    </Box>
+                            <Button
+                                variant="outlined"
+                                startIcon={<GroupIcon />}
+                                onClick={() => setDrawerOpen(true)}
+                                sx={{ minWidth: 'auto' }}
+                            >
+                                {currentGroupLabel || 'Group By'}
+                            </Button>
+                        </Badge>
+                    </Tooltip>
                     {groupBy.length > 0 && (
-                        <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={handleClearGroups}
-                            sx={{
-                                whiteSpace: 'nowrap',
-                                px: 2,
-                                minWidth: 'auto',
-                                height: '32px',
-                                typography: 'body2',
-                            }}
-                        >
-                            Clear Groups
-                        </Button>
-                    )}
-                </Box>
-
-                {/* Active Groups Display */}
-                {groupBy.length > 0 && (
-                    <Box>
-                        <Typography variant="body2" color="text.secondary">
-                            {groupBy.length} active
-                        </Typography>
-                        <Box
-                            sx={{
-                                overflowX: 'auto',
-                                pb: 1,
-                                mt: 1,
-                                '&::-webkit-scrollbar': {
-                                    height: '4px',
-                                },
-                                '&::-webkit-scrollbar-track': {
-                                    backgroundColor: theme.palette.background.paper,
-                                },
-                                '&::-webkit-scrollbar-thumb': {
-                                    backgroundColor: theme.palette.primary.main,
-                                    borderRadius: '4px',
-                                },
-                            }}
-                        >
-                            <Stack
-                                direction="row"
-                                spacing={1}
+                        <Fade in>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={handleClearGroups}
                                 sx={{
-                                    minWidth: 'min-content',
+                                    whiteSpace: 'nowrap',
+                                    px: 2,
+                                    minWidth: 'auto',
+                                    height: '32px',
+                                    typography: 'body2',
                                 }}
                             >
-                                {groupBy.map((group) => (
-                                    <Chip
-                                        key={group}
-                                        label={groupOptions.find(opt => opt.value === group)?.label || group}
-                                        onDelete={() => onUpdateGrouping(group, false)}
-                                        size="small"
-                                        sx={{
-                                            height: 'auto',
-                                            '& .MuiChip-label': {
-                                                px: 1,
-                                                py: 0.75,
-                                            },
-                                        }}
-                                    />
-                                ))}
-                            </Stack>
-                        </Box>
-                    </Box>
-                )}
+                                Clear Group
+                            </Button>
+                        </Fade>
+                    )}
+                </Box>
             </Stack>
 
-            <Drawer
+            <SwipeableDrawer
                 anchor="right"
                 open={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
+                onOpen={() => setDrawerOpen(true)}
                 PaperProps={{
                     sx: {
                         width: '400px',
@@ -159,7 +168,6 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
                         flexDirection: 'column'
                     }}
                 >
-                    {/* Header */}
                     <Box
                         sx={{
                             p: 2,
@@ -179,7 +187,7 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
                         >
                             Group By
                         </Typography>
-                        {groupBy.length > 0 && (
+                        {groupBy && (
                             <Button
                                 variant="text"
                                 size="small"
@@ -191,12 +199,11 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
                                     }
                                 }}
                             >
-                                Clear All
+                                Clear
                             </Button>
                         )}
                     </Box>
 
-                    {/* Group options */}
                     <Box
                         sx={{
                             flexGrow: 1,
@@ -205,39 +212,34 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
                             py: 2,
                         }}
                     >
-                        <FormGroup>
-                            {groupOptions.map((option) => (
-                                <FormControlLabel
-                                    key={option.value}
-                                    control={
-                                        <Checkbox
-                                            checked={groupBy.includes(option.value)}
-                                            onChange={(e) => onUpdateGrouping(option.value, e.target.checked)}
-                                        />
-                                    }
-                                    label={option.label}
-                                />
-                            ))}
-                        </FormGroup>
-                        <Button
-                            startIcon={<ArrowBackIcon />}
-                            onClick={() => setDrawerOpen(false)}
-                            sx={{
-                                color: 'text.secondary',
-                                '&:hover': {
-                                    bgcolor: 'action.hover',
-                                },
-                                px: 1,
-                                minWidth: 'auto',
-                                mt: 2
+                        <GroupByComponent
+                            groupBy={groupBy}
+                            onUpdateGrouping={(value) => {
+                                onUpdateGrouping(value);
+                                setDrawerOpen(false);
                             }}
-                        >
-                            Back to list
-                        </Button>
+                        />
+                        {!isLoading && (
+                            <Button
+                                startIcon={<ArrowBackIcon />}
+                                onClick={() => setDrawerOpen(false)}
+                                sx={{
+                                    color: 'text.secondary',
+                                    '&:hover': {
+                                        bgcolor: 'action.hover',
+                                    },
+                                    px: 1,
+                                    minWidth: 'auto',
+                                    mt: 2
+                                }}
+                            >
+                                Back to list
+                            </Button>
+                        )}
                     </Box>
 
-                    {/* Active groups at bottom */}
-                    {groupBy.length > 0 && (
+                    {/* Current grouping display */}
+                    {groupBy && (
                         <Box
                             sx={{
                                 p: 2,
@@ -250,27 +252,19 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
                                 color="text.secondary"
                                 sx={{ mb: 1 }}
                             >
-                                Active Groups
+                                Current Grouping
                             </Typography>
-                            <Stack
-                                direction="row"
-                                spacing={1}
-                                flexWrap="wrap"
-                                gap={1}
-                            >
-                                {groupBy.map((group) => (
-                                    <Chip
-                                        key={group}
-                                        label={groupOptions.find(opt => opt.value === group)?.label || group}
-                                        onDelete={() => onUpdateGrouping(group, false)}
-                                        size="small"
-                                    />
-                                ))}
-                            </Stack>
+                            <Chip
+                                label={currentGroupLabel}
+                                onDelete={handleClearGroups}
+                                size="small"
+                                color="primary"
+                                variant="outlined"
+                            />
                         </Box>
                     )}
                 </Box>
-            </Drawer>
+            </SwipeableDrawer>
         </Box>
     );
 };

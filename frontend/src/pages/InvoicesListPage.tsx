@@ -4,20 +4,11 @@ import {
     Box,
     Button,
     Typography,
+    Stack,
     useTheme,
     useMediaQuery,
-    Stack,
-    Chip,
-    Drawer,
-    IconButton,
     SelectChangeEvent,
-    AccordionDetails,
-    Accordion,
-    Checkbox,
-    FormControlLabel,
-    AccordionSummary,
 } from '@mui/material';
-import { GroupWork as GroupIcon } from '@mui/icons-material';
 import { useInvoices } from '../hooks/useInvoices';
 import { deleteInvoice, generateInvoicePDF } from '../services/api/invoices';
 import { getContacts } from '../services/api/contacts';
@@ -25,33 +16,37 @@ import { getTemplates } from '../services/api/templates';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import ConfirmationDialog from '../components/common/ConfirmationDialogue';
-import { Invoice, InvoiceFilters } from '../types';
+import { Invoice } from '../types';
 import { useSnackbar } from 'notistack';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import dayjs from 'dayjs';
 import InvoiceList from '../components/invoices/InvoiceList';
 import MobileInvoiceFilters from '../components/invoices/MobileInvoiceFilters';
+import MobileGroupControls from '../components/invoices/MobileGroupControls';
 import { formatCurrency } from '../utils/currencyFormatter';
 import Pagination from '../components/common/CustomPagination';
-
-const groupOptions = [
-    { value: 'bill_to', label: 'Bill To' },
-    { value: 'send_to', label: 'Send To' },
-    { value: 'month', label: 'Month' },
-    { value: 'year', label: 'Year' },
-    { value: 'status', label: 'Status' },
-    { value: 'client_type', label: 'Client Type' },
-    { value: 'invoice_type', label: 'Invoice Type' },
-];
 
 const InvoicesList: React.FC = () => {
     const navigate = useNavigate();
     const {
-        invoices, error, loading, fetchInvoices,
-        updateSorting, updateGrouping, updateFilters,
-        sortBy, sortOrder, groupBy, filters, page,
-        pageSize, totalCount, updatePage, updatePageSize
+        invoices,
+        error,
+        loading,
+        fetchInvoices,
+        updateSorting,
+        updateGrouping,
+        updateFilters,
+        sortBy,
+        sortOrder,
+        groupBy,
+        filters,
+        page,
+        pageSize,
+        totalCount,
+        updatePage,
+        updatePageSize
     } = useInvoices();
+
     const [contacts, setContacts] = useState<Record<number, string>>({});
     const [templates, setTemplates] = useState<Record<number, string>>({});
     const { handleError } = useErrorHandler();
@@ -60,7 +55,6 @@ const InvoicesList: React.FC = () => {
     const [invoiceToDelete, setInvoiceToDelete] = useState<number | null>(null);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const [groupDrawerOpen, setGroupDrawerOpen] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -108,18 +102,13 @@ const InvoicesList: React.FC = () => {
         updateFilters({ [field]: value });
     }, [updateFilters]);
 
-    const handleUpdateGrouping = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-        const { value, checked } = event.target;
-        if (checked) {
-            updateGrouping([...groupBy, value]);
-        } else {
-            updateGrouping(groupBy.filter(item => item !== value));
-        }
-    }, [groupBy, updateGrouping]);
+    const handleUpdateGrouping = useCallback((values: string[]) => {
+        updateGrouping(values);
+    }, [updateGrouping]);
 
     const groupedInvoices = useMemo(() => {
         if (groupBy.length === 0) return null;
-
+    
         const grouped: any = {};
         invoices.forEach((invoice) => {
             let key = 'Others';
@@ -138,7 +127,7 @@ const InvoicesList: React.FC = () => {
             } else if (groupBy.includes('invoice_type')) {
                 key = invoice.invoice_type || 'Unknown';
             }
-
+    
             if (!grouped[key]) {
                 grouped[key] = {
                     invoices: [],
@@ -146,12 +135,12 @@ const InvoicesList: React.FC = () => {
                     total_amount: 0
                 };
             }
-
+    
             grouped[key].invoices.push(invoice);
             grouped[key].invoice_count += 1;
             grouped[key].total_amount += parseFloat(invoice.total.toString());
         });
-
+    
         return grouped;
     }, [invoices, groupBy, contacts]);
 
@@ -194,27 +183,6 @@ const InvoicesList: React.FC = () => {
         }
     }, [enqueueSnackbar, handleError]);
 
-    const handleQuickFilter = useCallback((filter: Partial<InvoiceFilters>) => {
-        if (Object.keys(filter).length === 0) {
-            // This is the "All" filter
-            const clearFilters: InvoiceFilters = {
-                invoice_number: undefined,
-                bill_to_name: undefined,
-                send_to_name: undefined,
-                client_type: undefined,
-                invoice_type: undefined,
-                status: undefined,
-                date_from: undefined,
-                date_to: undefined,
-                total_min: undefined,
-                total_max: undefined
-            };
-            updateFilters(clearFilters);
-        } else {
-            updateFilters(filter);
-        }
-    }, [updateFilters]);
-
     // Get active filters for display
     const activeFilters = Object.entries(filters).filter(([_, value]) => value !== '' && value !== undefined);
 
@@ -238,57 +206,24 @@ const InvoicesList: React.FC = () => {
                 </Button>
             </Stack>
 
-            <MobileInvoiceFilters
-                filters={filters}
-                onFilterChange={handleFilterChange}
-                onDateChange={handleDateChange}
-                onQuickFilter={handleQuickFilter}
-                activeFilters={activeFilters}
-                onRemoveFilter={handleRemoveFilter}
-            />
+            {/* Filter and Group Controls */}
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 3 }}>
+                <MobileInvoiceFilters
+                    filters={filters}
+                    onFilterChange={handleFilterChange}
+                    onDateChange={handleDateChange}
+                    onQuickFilter={updateFilters}
+                    activeFilters={activeFilters}
+                    onRemoveFilter={handleRemoveFilter}
+                />
 
-            
-                <Button
-                    startIcon={<GroupIcon />}
-                    onClick={() => setGroupDrawerOpen(true)}
-                    variant="outlined"
-                    fullWidth
-                    sx={{ mb: 2 }}
-                >
-                    Group
-                </Button>
-          
+                <MobileGroupControls
+                    groupBy={groupBy}
+                    onUpdateGrouping={handleUpdateGrouping}
+                />
+            </Stack>
 
-            <Drawer
-                anchor="right"
-                open={groupDrawerOpen}
-                onClose={() => setGroupDrawerOpen(false)}
-                PaperProps={{
-                    sx: {
-                        width: '100%',
-                        maxWidth: '400px',
-                        p: 2,
-                    }
-                }}
-            >
-                <Box sx={{ p: 2 }}>
-                    <Typography variant="h6" gutterBottom>Group By</Typography>
-                    {groupOptions.map((option) => (
-                        <FormControlLabel
-                            key={option.value}
-                            control={
-                                <Checkbox
-                                    checked={groupBy.includes(option.value)}
-                                    onChange={handleUpdateGrouping}
-                                    value={option.value}
-                                />
-                            }
-                            label={option.label}
-                        />
-                    ))}
-                </Box>
-            </Drawer>
-
+            {/* Grouped or Regular Invoice List */}
             {groupedInvoices ? (
                 Object.entries(groupedInvoices).map(([group, data]: [string, any]) => (
                     <Box key={group} sx={{ mb: 4 }}>

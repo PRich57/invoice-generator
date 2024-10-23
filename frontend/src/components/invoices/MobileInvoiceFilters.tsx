@@ -13,8 +13,21 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
+    Tooltip,
+    Badge,
+    Fade,
+    Slide,
+    CircularProgress,
 } from '@mui/material';
-import { FilterList as FilterIcon, ArrowBack as ArrowBackIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import { 
+    FilterList as FilterIcon, 
+    ArrowBack as ArrowBackIcon, 
+    SortByAlpha as SortIcon,
+    Refresh as RefreshIcon,
+    ExpandMore as ExpandMoreIcon,
+} from '@mui/icons-material';
+import { TransitionGroup } from 'react-transition-group';
+import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 import InvoiceFiltersComponent from './InvoiceFilters';
 import { InvoiceFilters } from '../../types';
 
@@ -25,6 +38,11 @@ interface MobileInvoiceFiltersProps {
     onQuickFilter: (filter: Partial<InvoiceFilters>) => void;
     activeFilters: [string, string | undefined][];
     onRemoveFilter: (key: string) => void;
+    onRefresh?: () => void;
+    isLoading?: boolean;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    onSort?: (field: string) => void;
 }
 
 const quickFilters = [
@@ -45,15 +63,22 @@ const quickFilters = [
     },
 ];
 
+
 const MobileInvoiceFilters: React.FC<MobileInvoiceFiltersProps> = ({
     filters,
     onFilterChange,
     onDateChange,
     onQuickFilter,
     activeFilters,
-    onRemoveFilter
+    onRemoveFilter,
+    onRefresh,
+    isLoading = false,
+    sortBy,
+    sortOrder,
+    onSort
 }) => {
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const [sortDrawerOpen, setSortDrawerOpen] = useState(false);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -93,95 +118,115 @@ const MobileInvoiceFilters: React.FC<MobileInvoiceFiltersProps> = ({
         );
     }
 
+    const handleRefresh = () => {
+        if (onRefresh && !isLoading) {
+            onRefresh();
+        }
+    };
+
     // Mobile view
     return (
         <Box mb={2}>
             <Stack spacing={2}>
+                {/* Top Controls */}
                 <Box
                     display="flex"
                     justifyContent="space-between"
                     alignItems="center"
-                    
+                    gap={1}
                 >
-                    <Box display="flex" gap={2} alignItems="center">
-                        <Button
-                            variant="outlined"
-                            startIcon={<FilterIcon />}
-                            onClick={() => setDrawerOpen(true)}
-                            sx={{ minWidth: 'auto' }}
-                        >
-                            Filters
-                        </Button>
-                    </Box>
-                    {activeFilters.length > 0 && (
-                        <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={() => onQuickFilter({})}
-                            sx={{
-                                whiteSpace: 'nowrap',
-                                px: 2,
-                                minWidth: 'auto',
-                                height: '32px',
-                                typography: 'body2',
-                            }}
-                        >
-                            Clear Filters
-                        </Button>
-                    )}
-                </Box>
-                {activeFilters.length > 0 && (
-                    <Typography variant="body2" color="text.secondary">
-                        {activeFilters.length} active
-                    </Typography>
-                )}
-
-                {/* Quick Filters */}
-                <Box
-                    sx={{
-                        overflowX: 'auto',
-                        pb: 1,
-                        '&::-webkit-scrollbar': {
-                            height: '4px',
-                        },
-                        '&::-webkit-scrollbar-track': {
-                            backgroundColor: theme.palette.background.paper,
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                            backgroundColor: theme.palette.primary.main,
-                            borderRadius: '4px',
-                        },
-                    }}
-                >
-                    <Stack
-                        direction="row"
-                        spacing={1}
-                        sx={{
-                            minWidth: 'min-content',
-                        }}
-                    >
-                        {quickFilters.map((qf, index) => (
-                            <Button
-                                key={index}
-                                variant="outlined"
-                                size="small"
-                                onClick={() => onQuickFilter(qf.filter)}
+                    <Stack direction="row" spacing={1}>
+                        <Tooltip title="Filters">
+                            <Badge 
+                                badgeContent={activeFilters.length} 
+                                color="primary"
                                 sx={{
-                                    whiteSpace: 'nowrap',
-                                    px: 2,
-                                    minWidth: 'auto',
-                                    height: '32px',
-                                    typography: 'body2',
+                                    '& .MuiBadge-badge': {
+                                        right: 4,
+                                        top: 4,
+                                    }
                                 }}
                             >
-                                {qf.label}
-                            </Button>
-                        ))}
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<FilterIcon />}
+                                    onClick={() => setDrawerOpen(true)}
+                                    sx={{ minWidth: 'auto' }}
+                                >
+                                    Filters
+                                </Button>
+                            </Badge>
+                        </Tooltip>
+                        {onSort && (
+                            <Tooltip title="Sort Options">
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<SortIcon />}
+                                    onClick={() => setSortDrawerOpen(true)}
+                                    sx={{ minWidth: 'auto' }}
+                                >
+                                    Sort
+                                </Button>
+                            </Tooltip>
+                        )}
+                    </Stack>
+                    <Stack direction="row" spacing={1}>
+                    {activeFilters.length > 0 && (
+                            <Fade in>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() => {
+                                        // Clear all filter fields
+                                        const clearFilters: InvoiceFilters = {
+                                            invoice_number: undefined,
+                                            bill_to_name: undefined,
+                                            send_to_name: undefined,
+                                            client_type: undefined,
+                                            invoice_type: undefined,
+                                            status: undefined,
+                                            date_from: undefined,
+                                            date_to: undefined,
+                                            total_min: undefined,
+                                            total_max: undefined
+                                        };
+                                        onQuickFilter(clearFilters);
+                                    }}
+                                    sx={{
+                                        whiteSpace: 'nowrap',
+                                        px: 2,
+                                        minWidth: 'auto',
+                                        height: '32px',
+                                        typography: 'body2',
+                                    }}
+                                >
+                                    Clear Filters
+                                </Button>
+                            </Fade>
+                        )}
+                        {onRefresh && (
+                            <Tooltip title="Refresh">
+                                <IconButton 
+                                    onClick={handleRefresh}
+                                    disabled={isLoading}
+                                    size="small"
+                                    sx={{ 
+                                        animation: isLoading ? 'spin 1s linear infinite' : 'none',
+                                        '@keyframes spin': {
+                                            '0%': { transform: 'rotate(0deg)' },
+                                            '100%': { transform: 'rotate(360deg)' }
+                                        }
+                                    }}
+                                >
+                                    {isLoading ? <CircularProgress size={20} /> : <RefreshIcon />}
+                                </IconButton>
+                            </Tooltip>
+                        )}
                     </Stack>
                 </Box>
 
-                {/* Active Filters */}
-                {activeFilters.length > 0 && (
+                {/* Quick Filters with Animation */}
+                <Slide direction="right" in mountOnEnter unmountOnExit>
                     <Box
                         sx={{
                             overflowX: 'auto',
@@ -205,44 +250,70 @@ const MobileInvoiceFilters: React.FC<MobileInvoiceFiltersProps> = ({
                                 minWidth: 'min-content',
                             }}
                         >
-                            {activeFilters.map(([key, value]) => (
-                                <Chip
-                                    key={key}
-                                    label={
-                                        <Typography
-                                            variant="body2"
-                                            sx={{
-                                                whiteSpace: 'nowrap',
-                                                display: 'block',
-                                                px: 0.5
-                                            }}
-                                        >
-                                            {`${key}: ${value}`}
-                                        </Typography>
-                                    }
-                                    onDelete={() => onRemoveFilter(key)}
-                                    size="small"
-                                    sx={{
-                                        height: 'auto',
-                                        '& .MuiChip-label': {
-                                            px: 1,
-                                            py: 0.75,
-                                        },
-                                        '& .MuiChip-deleteIcon': {
-                                            fontSize: '18px',
-                                        },
-                                    }}
-                                />
+                            {quickFilters.map((qf, index) => (
+                                <Fade in key={index} timeout={500} style={{ transitionDelay: `${index * 100}ms` }}>
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        onClick={() => onQuickFilter(qf.filter)}
+                                        sx={{
+                                            whiteSpace: 'nowrap',
+                                            px: 2,
+                                            minWidth: 'auto',
+                                            height: '32px',
+                                            typography: 'body2',
+                                        }}
+                                    >
+                                        {qf.label}
+                                    </Button>
+                                </Fade>
                             ))}
                         </Stack>
+                    </Box>
+                </Slide>
+
+                {/* Active Filters with Animation */}
+                {activeFilters.length > 0 && (
+                    <Box>
+                        <Typography variant="body2" color="text.secondary">
+                            {activeFilters.length} active
+                        </Typography>
+                        <Box
+                            sx={{
+                                overflowX: 'auto',
+                                pb: 1,
+                                mt: 1,
+                            }}
+                        >
+                            <TransitionGroup component={Stack} direction="row" spacing={1}>
+                                {activeFilters.map(([key, value]) => (
+                                    <Fade key={key} timeout={300}>
+                                        <Chip
+                                            label={`${key}: ${value}`}
+                                            onDelete={() => onRemoveFilter(key)}
+                                            size="small"
+                                            sx={{
+                                                height: 'auto',
+                                                '& .MuiChip-label': {
+                                                    px: 1,
+                                                    py: 0.75,
+                                                },
+                                            }}
+                                        />
+                                    </Fade>
+                                ))}
+                            </TransitionGroup>
+                        </Box>
                     </Box>
                 )}
             </Stack>
 
-            <Drawer
+            {/* Filter Drawer */}
+            <SwipeableDrawer
                 anchor="right"
                 open={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
+                onOpen={() => setDrawerOpen(true)}
                 PaperProps={{
                     sx: {
                         width: '400px',
@@ -369,7 +440,7 @@ const MobileInvoiceFilters: React.FC<MobileInvoiceFiltersProps> = ({
                         </Box>
                     )}
                 </Box>
-            </Drawer>
+            </SwipeableDrawer>
         </Box>
     );
 };

@@ -77,8 +77,8 @@ export const useInvoices = () => {
         }));
     }, []);
 
-    const updateGrouping = useCallback((newGroupBy: string[]) => {
-        setGroupBy(newGroupBy);
+    const updateGrouping = useCallback((values: string[]) => {
+        setGroupBy(values);
     }, []);
 
     const updatePage = useCallback((newPage: number) => {
