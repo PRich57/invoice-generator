@@ -20,8 +20,8 @@ import {
 } from '@mui/material';
 import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 import { TransitionGroup } from 'react-transition-group';
-import { 
-    GroupWork as GroupIcon, 
+import {
+    GroupWork as GroupIcon,
     ArrowBack as ArrowBackIcon,
     ExpandMore as ExpandMoreIcon,
     DragIndicator as DragIndicatorIcon
@@ -29,7 +29,7 @@ import {
 import GroupByComponent, { groupOptions } from './GroupByComponent';
 
 interface MobileGroupControlsProps {
-    groupBy: string[]; 
+    groupBy: string[];
     onUpdateGrouping: (value: string[]) => void;
     isLoading?: boolean;
 }
@@ -56,8 +56,8 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
     if (!isMobile) {
         return (
             <Box width="30%">
-                <Accordion 
-                    expanded={expanded} 
+                <Accordion
+                    expanded={expanded}
                     onChange={() => setExpanded(!expanded)}
                     sx={{
                         bgcolor: 'background.paper'
@@ -102,8 +102,8 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
                     gap={1}
                 >
                     <Tooltip title={currentGroupLabel ? `Grouped by: ${currentGroupLabel}` : "Group Options"}>
-                        <Badge 
-                            badgeContent={groupBy.length} 
+                        <Badge
+                            badgeContent={groupBy.length}
                             color="primary"
                             sx={{
                                 '& .MuiBadge-badge': {
@@ -207,9 +207,13 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
                     <Box
                         sx={{
                             flexGrow: 1,
-                            overflowY: 'auto',
+                            display: 'flex',
+                            flexDirection: 'column',
                             px: 2,
                             py: 2,
+                            '& .MuiFormControl-root': {
+                                mb: 0
+                            }
                         }}
                     >
                         <GroupByComponent
@@ -230,7 +234,8 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
                                     },
                                     px: 1,
                                     minWidth: 'auto',
-                                    mt: 2
+                                    mt: 2,
+                                    alignSelf: 'flex-start'
                                 }}
                             >
                                 Back to list
@@ -239,7 +244,7 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
                     </Box>
 
                     {/* Current grouping display */}
-                    {groupBy && (
+                    {groupBy.length > 0 && (
                         <Box
                             sx={{
                                 p: 2,
