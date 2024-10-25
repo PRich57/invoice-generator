@@ -4,13 +4,13 @@ import {
   Typography,
   IconButton,
   Collapse,
-  Tooltip,
   List,
   ListItem,
   ListItemText,
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import MobileResponsiveTooltip from '../../common/MobileResponsiveTooltip';
 
 const KeybindGuide = () => {
   const [open, setOpen] = useState(false);
@@ -21,7 +21,7 @@ const KeybindGuide = () => {
 
   return (
     <Box sx={{ mt: 0, ml: 1 }}>
-      <Tooltip title="Keybind Guide" placement='right' arrow>
+      <MobileResponsiveTooltip title="Keybind Guide" placement='right' arrow>
         <IconButton
           onClick={handleToggle}
           aria-label="toggle keybind guide"
@@ -30,7 +30,8 @@ const KeybindGuide = () => {
         >
           {open ? <ExpandLessIcon /> : <InfoIcon fontSize='small'/>}
         </IconButton>
-      </Tooltip>
+      </MobileResponsiveTooltip>
+      
       <Collapse in={open} timeout="auto" unmountOnExit>
         <Box sx={{ mt: 1, pl: 0 }}>
           <Typography

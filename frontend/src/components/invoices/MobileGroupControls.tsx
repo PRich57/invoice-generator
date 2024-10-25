@@ -8,7 +8,6 @@ import {
     useMediaQuery,
     Drawer,
     IconButton,
-    Tooltip,
     RadioGroup,
     FormControlLabel,
     Radio,
@@ -19,6 +18,7 @@ import {
     ArrowBack as ArrowBackIcon,
     Close as CloseIcon
 } from '@mui/icons-material';
+import MobileResponsiveTooltip from '../common/MobileResponsiveTooltip';
 
 interface MobileGroupControlsProps {
     groupBy: string[];
@@ -53,20 +53,19 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
     
     const currentGroup = groupBy.length > 0 ? groupBy[0] : '';
     const currentGroupLabel = groupOptions.find(opt => opt.value === currentGroup)?.label;
-    
+
 
     return (
         <Box>
-            <Tooltip
-                title={currentGroupLabel ? `Grouped by: ${currentGroupLabel}` : "Group Options"}
-                placement='top'
-                arrow
-                open={isButtonHovered && !isBadgeHovered}
+            <Box
+                sx={{ position: 'relative', display: 'inline-flex' }}
+                onMouseEnter={() => setIsButtonHovered(true)}
+                onMouseLeave={() => setIsButtonHovered(false)}
             >
-                <Box
-                    sx={{ position: 'relative', display: 'inline-flex' }}
-                    onMouseEnter={() => setIsButtonHovered(true)}
-                    onMouseLeave={() => setIsButtonHovered(false)}
+                <MobileResponsiveTooltip
+                    title={currentGroupLabel ? `Grouped by: ${currentGroupLabel}` : "Group Options"}
+                    placement="top"
+                    arrow
                 >
                     <Button
                         variant="outlined"
@@ -85,40 +84,40 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
                     >
                         {currentGroupLabel || 'Group By'}
                     </Button>
-                    {currentGroupLabel && (
-                        <Tooltip
-                            title="Clear Group"
-                            placement='right'
-                            arrow
-                            open={isBadgeHovered}
+                </MobileResponsiveTooltip>
+
+                {currentGroupLabel && (
+                    <MobileResponsiveTooltip
+                        title="Clear Group"
+                        placement="right"
+                        arrow
+                    >
+                        <IconButton
+                            size="small"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateGrouping([]);
+                            }}
+                            onMouseEnter={() => setIsBadgeHovered(true)}
+                            onMouseLeave={() => setIsBadgeHovered(false)}
+                            sx={{
+                                position: 'absolute',
+                                top: -8,
+                                right: -8,
+                                backgroundColor: theme.palette.primary.main,
+                                color: theme.palette.primary.contrastText,
+                                width: 20,
+                                height: 20,
+                                '&:hover': {
+                                    backgroundColor: theme.palette.primary.dark,
+                                },
+                            }}
                         >
-                            <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onUpdateGrouping([]);
-                                }}
-                                onMouseEnter={() => setIsBadgeHovered(true)}
-                                onMouseLeave={() => setIsBadgeHovered(false)}
-                                sx={{
-                                    position: 'absolute',
-                                    top: -8,
-                                    right: -8,
-                                    backgroundColor: theme.palette.primary.main,
-                                    color: theme.palette.primary.contrastText,
-                                    width: 20,
-                                    height: 20,
-                                    '&:hover': {
-                                        backgroundColor: theme.palette.primary.dark,
-                                    },
-                                }}
-                            >
-                                <CloseIcon sx={{ fontSize: 14 }} />
-                            </IconButton>
-                        </Tooltip>
-                    )}
-                </Box>
-            </Tooltip>
+                            <CloseIcon sx={{ fontSize: 14 }} />
+                        </IconButton>
+                    </MobileResponsiveTooltip>
+                )}
+            </Box>
 
             <Drawer
                 anchor="right"
@@ -197,7 +196,6 @@ const MobileGroupControls: React.FC<MobileGroupControlsProps> = ({
                         </Button>
                     )}
 
-                    {/* Current group at bottom */}
                     {groupBy.length > 0 && (
                         <Box
                             sx={{

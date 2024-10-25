@@ -11,7 +11,6 @@ import {
     SelectChangeEvent,
     Stack,
     IconButton,
-    Tooltip,
 } from '@mui/material';
 import { useFormikContext, FieldArray } from 'formik';
 import { InvoiceCreate, InvoiceFormProps } from '../../../types';
@@ -26,6 +25,8 @@ import { useSnackbar } from 'notistack';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import KeybindGuide from './KeybindGuide';
+import MobileResponsiveTooltip from '../../common/MobileResponsiveTooltip';
+import { AddCircleOutline } from '@mui/icons-material';
 
 // Import DnD Kit components
 import {
@@ -42,7 +43,6 @@ import {
     SortableContext,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { AddCircleOutline } from '@mui/icons-material';
 
 const InvoiceForm: React.FC<InvoiceFormProps> = ({
     contacts,
@@ -320,13 +320,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
                             {/* Add Item Button */}
                             <Box display="flex" justifyContent="center" mt={2}>
-                                <Tooltip
+                                <MobileResponsiveTooltip
                                     title="Add Item"
                                     placement="right"
                                     arrow
-                                    sx={{
-                                        opacity: '100%',
-                                    }}
                                 >
                                     <IconButton
                                         aria-label="Add Item"
@@ -343,7 +340,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                                     >
                                         <AddCircleOutline color="secondary" fontSize="small" />
                                     </IconButton>
-                                </Tooltip>
+                                </MobileResponsiveTooltip>
                             </Box>
                         </>
                     )}

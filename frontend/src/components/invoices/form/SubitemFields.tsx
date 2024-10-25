@@ -1,7 +1,8 @@
 import React from 'react';
-import { Box, IconButton, Tooltip, TextField } from '@mui/material';
+import { Box, IconButton, TextField } from '@mui/material';
 import { RemoveCircleOutline, DragHandle } from '@mui/icons-material';
 import { InvoiceSubItemCreate, InvoiceItemCreate, InvoiceCreate } from '../../../types';
+import MobileResponsiveTooltip from '../../common/MobileResponsiveTooltip';
 
 // Import DnD Kit components
 import {
@@ -233,7 +234,7 @@ const SortableSubitemField: React.FC<SortableSubitemFieldProps> = ({
                     />
                 )}
             </FastField>
-            <Tooltip title={`Remove Subitem ${subIndex + 1}`} placement="right" arrow>
+            <MobileResponsiveTooltip title={`Remove Subitem ${subIndex + 1}`} placement="right" arrow>
                 <IconButton
                     onClick={() => {
                         const newSubitems = subitems.filter((_, i) => i !== subIndex);
@@ -244,7 +245,7 @@ const SortableSubitemField: React.FC<SortableSubitemFieldProps> = ({
                 >
                     <RemoveCircleOutline fontSize="small" sx={{ opacity: '70%' }} color="error" />
                 </IconButton>
-            </Tooltip>
+            </MobileResponsiveTooltip>
         </Box>
     );
 };

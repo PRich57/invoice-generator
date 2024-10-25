@@ -32,6 +32,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
+import MobileResponsiveTooltip from '../common/MobileResponsiveTooltip';
 
 const Header = () => {
     const { logout, isAuthenticated } = useAuth();
@@ -246,16 +247,19 @@ const Header = () => {
         }}>
             <Toolbar>
                 {isMobile && (
-                    <IconButton
-                        edge="start"
-                        color="inherit"
-                        aria-label="menu"
-                        sx={{ mr: 2 }}
-                        onClick={() => setMobileMenuOpen(true)}
-                    >
-                        <MenuIcon />
-                    </IconButton>
+                    <MobileResponsiveTooltip title="Menu" placement="right">
+                        <IconButton
+                            edge="start"
+                            color="inherit"
+                            aria-label="menu"
+                            sx={{ mr: 2 }}
+                            onClick={() => setMobileMenuOpen(true)}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                    </MobileResponsiveTooltip>
                 )}
+
                 <Typography
                     variant="h6"
                     component="div"
@@ -268,14 +272,21 @@ const Header = () => {
                 >
                     Invoice Generator
                 </Typography>
+
                 {!isMobile && (
-                    <IconButton
-                        color="inherit"
-                        onClick={handleLogoutOrLogin}
-                        aria-label={isAuthenticated ? "logout" : "login"}
+                    <MobileResponsiveTooltip
+                        title={isAuthenticated ? "Sign Out" : "Sign In"}
+                        placement="left"
+                        arrow
                     >
-                        {isAuthenticated ? <LogoutIcon /> : <LoginIcon />}
-                    </IconButton>
+                        <IconButton
+                            color="inherit"
+                            onClick={handleLogoutOrLogin}
+                            aria-label={isAuthenticated ? "Sign Out" : "Sign in"}
+                        >
+                            {isAuthenticated ? <LogoutIcon /> : <LoginIcon />}
+                        </IconButton>
+                    </MobileResponsiveTooltip>
                 )}
             </Toolbar>
             {renderMobileMenu()}
