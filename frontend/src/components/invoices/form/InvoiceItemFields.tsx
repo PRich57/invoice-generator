@@ -121,6 +121,8 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = React.memo(
                     }
                 } else if (event.key === 'ArrowDown') {
                     event.preventDefault();
+                    console.log(item.subitems);
+                    
                     if (item.subitems && item.subitems.length > 0) {
                         focusElementById(`item-${index}-subitem-0-description`);
                     } else {
@@ -137,7 +139,7 @@ const InvoiceItemFields: React.FC<InvoiceItemFieldsProps> = React.memo(
                         const { selectionStart, value = '' } = input;
                         if (selectionStart !== null && selectionStart === value.length) {
                             event.preventDefault();
-                            focusElementById(`item-${index}-quantity`);
+                            focusElementById(`item-${index}-unit_price`);
                         }
                     }
                 }

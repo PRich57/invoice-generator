@@ -19,16 +19,16 @@ const ItemUnitPriceField: React.FC<ItemUnitPriceFieldProps> = React.memo(
                 if (event.key === 'ArrowLeft') {
                     if (selectionStart === 0 && selectionEnd === 0) {
                         event.preventDefault();
-                        focusElementById(`item-${index}-quantity`);
+                        focusElementById(`item-${index}-description`);
                     }
                 } else if (event.key === 'ArrowRight') {
                     if (selectionStart === value.length && selectionEnd === value.length) {
                         event.preventDefault();
-                        focusElementById(`item-${index}-discount_percentage`);
+                        focusElementById(`item-${index}-quantity`);
                     }
                 } else if (event.key === 'Enter') {
                     event.preventDefault();
-                    focusElementById(`item-${index}-discount_percentage`);
+                    focusElementById(`item-${index}-quantity`);
                 } else if (event.key === 'ArrowDown') {
                     event.preventDefault();
                     focusElementById(`item-${index + 1}-unit_price`);

@@ -18,16 +18,16 @@ const ItemQuantityField: React.FC<ItemQuantityFieldProps> = React.memo(({ index,
             if (event.key === 'ArrowLeft') {
                 if (selectionStart === 0 && selectionEnd === 0) {
                     event.preventDefault();
-                    focusElementById(`item-${index}-description`);
+                    focusElementById(`item-${index}-unit_price`);
                 }
             } else if (event.key === 'ArrowRight') {
                 if (selectionStart === value.length && selectionEnd === value.length) {
                     event.preventDefault();
-                    focusElementById(`item-${index}-unit_price`);
+                    focusElementById(`item-${index}-discount_percentage`);
                 }
             } else if (event.key === 'Enter') {
                 event.preventDefault();
-                focusElementById(`item-${index}-unit_price`);
+                focusElementById(`item-${index}-discount_percentage`);
             } else if (event.key === 'ArrowDown') {
                 event.preventDefault();
                 focusElementById(`item-${index + 1}-quantity`);

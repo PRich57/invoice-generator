@@ -21,7 +21,7 @@ const ItemDiscountField: React.FC<ItemDiscountFieldProps> = React.memo(
                 if (event.key === 'ArrowLeft') {
                     if (selectionStart === 0 && selectionEnd === 0) {
                         event.preventDefault();
-                        focusElementById(`item-${index}-unit_price`);
+                        focusElementById(`item-${index}-quantity`);
                     }
                 } else if (event.key === 'ArrowRight') {
                     if (selectionStart === value.length && selectionEnd === value.length) {
