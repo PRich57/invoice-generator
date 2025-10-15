@@ -1,5 +1,15 @@
 # Invoice Generator
 
+## Development Workflow
+
+Run the entire application stack (FastAPI backend and Vite/React frontend) with a single command:
+
+```
+python dev_server.py
+```
+
+The helper script checks that required Python and Node.js tooling is available before launching both processes and cleans them up automatically when you exit with <kbd>Ctrl</kbd>+<kbd>C</kbd>.
+
 ## ** This README is outdated. I am currently in the process of converting this CLI application into a full stack application and will update this README to reflect these changes soon. **
 
 ## Description
