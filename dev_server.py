@@ -51,10 +51,11 @@ def ensure_python_dependencies() -> None:
         raise SystemExit(1) from exc
 
 
-def ensure_node_dependencies() -> None:
+def ensure_node_dependencies() -> str:
     from shutil import which
 
-    if which("npm") is None:
+    npm_path = which("npm")
+    if npm_path is None:
         print(
             "Node.js dependency check failed: `npm` command not found.\n"
             "Install Node.js (which includes npm) and ensure it is on your PATH."
@@ -68,10 +69,11 @@ def ensure_node_dependencies() -> None:
         )
         raise SystemExit(1)
 
+    return npm_path
 
 def main() -> None:
     ensure_python_dependencies()
-    ensure_node_dependencies()
+    npm_executable = ensure_node_dependencies()
 
     manager = ProcessManager()
 
@@ -80,8 +82,12 @@ def main() -> None:
     backend_proc = subprocess.Popen(backend_cmd)
     manager.add(backend_proc)
 
-    frontend_cmd = ["npm", "run", "start"]
-    print("Starting frontend server with:", " ".join(frontend_cmd), "(cwd=frontend)")
+    frontend_cmd = [npm_executable, "run", "start"]
+    print(
+        "Starting frontend server with:",
+        " ".join(frontend_cmd),
+        "(cwd=frontend)",
+    )
     frontend_proc = subprocess.Popen(frontend_cmd, cwd="frontend")
     manager.add(frontend_proc)
 
